@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || "3001";
-const hostname = process.env.HOSTNAME || "0.0.0.0";
+const hostname = process.env.APP_HOST || "0.0.0.0";
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.join(currentDir, "..");
 const standaloneCandidates = [
