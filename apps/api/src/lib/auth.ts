@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
+import { OAuth2Client } from "google-auth-library";
 import { ensureRuntimeSchema, getPool } from "./db";
 
 export type SessionUser = {
@@ -30,6 +31,17 @@ function verifyPassword(password: string, encoded: string | null) {
 
 function hashToken(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function getGoogleAudienceList() {
+  return [
+    process.env.GOOGLE_WEB_CLIENT_ID,
+    process.env.GOOGLE_ANDROID_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_ID,
+  ]
+    .flatMap((value) => String(value ?? "").split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
 }
 
 export function readBearerToken(request: Request) {
@@ -87,6 +99,67 @@ export async function loginUser(input: { email: string; password: string; device
   }
 
   return createSession(Number(user.id), input.deviceName ?? "React Native");
+}
+
+export async function loginWithGoogle(input: { idToken: string; deviceName?: string | null }) {
+  await ensureRuntimeSchema();
+  const audiences = getGoogleAudienceList();
+  if (audiences.length === 0) {
+    throw new Error("Dang nhap Google chua duoc cau hinh tren may chu.");
+  }
+
+  const googleClient = new OAuth2Client();
+  const ticket = await googleClient.verifyIdToken({
+    idToken: input.idToken,
+    audience: audiences,
+  });
+  const payload = ticket.getPayload();
+
+  if (!payload?.sub || !payload.email) {
+    throw new Error("Google token khong hop le.");
+  }
+  if (payload.email_verified === false) {
+    throw new Error("Tai khoan Google chua xac minh email.");
+  }
+
+  const pool = getPool();
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const googleSub = payload.sub;
+  const displayName = String(payload.name ?? normalizedEmail.split("@")[0] ?? "Nguoi dung Google").trim();
+  const avatarUrl = String(payload.picture ?? `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(displayName)}`);
+
+  const [[existingByGoogle]] = await pool.query<RowDataPacket[]>(
+    "SELECT id FROM users WHERE google_sub = ? LIMIT 1",
+    [googleSub]
+  );
+
+  let userId = existingByGoogle ? Number(existingByGoogle.id) : null;
+
+  if (!userId) {
+    const [[existingByEmail]] = await pool.query<RowDataPacket[]>(
+      "SELECT id FROM users WHERE email = ? LIMIT 1",
+      [normalizedEmail]
+    );
+
+    if (existingByEmail) {
+      userId = Number(existingByEmail.id);
+      await pool.execute(
+        `UPDATE users
+         SET google_sub = ?, full_name = COALESCE(NULLIF(full_name, ''), ?), avatar_url = COALESCE(?, avatar_url)
+         WHERE id = ?`,
+        [googleSub, displayName, avatarUrl, userId]
+      );
+    } else {
+      const [result] = await pool.execute<ResultSetHeader>(
+        `INSERT INTO users (full_name, email, password_hash, phone, role, avatar_url, google_sub)
+         VALUES (?, ?, NULL, NULL, 'USER', ?, ?)`,
+        [displayName, normalizedEmail, avatarUrl, googleSub]
+      );
+      userId = result.insertId;
+    }
+  }
+
+  return createSession(userId, input.deviceName ?? "Google Sign-In");
 }
 
 export async function createSession(userId: number, deviceName?: string | null) {

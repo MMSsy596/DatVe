@@ -1,11 +1,14 @@
 import React from "react";
 import * as SecureStore from "expo-secure-store";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as AuthSession from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
 import { BlurView } from "expo-blur";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import * as WebBrowser from "expo-web-browser";
 import { ActivityIndicator, Animated, BackHandler, Linking, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
 import {
   CheckoutScreen,
@@ -44,6 +47,10 @@ import {
 const DEFAULT_API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || "https://datve.up.railway.app/api/v1";
 const SESSION_STORAGE_KEY = "datve.mobile.session";
+const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID?.trim() || "";
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || "";
+
+WebBrowser.maybeCompleteAuthSession();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -180,6 +187,20 @@ export default function App() {
   const toastCloseTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastHideTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabHighlightX = React.useRef(new Animated.Value(0)).current;
+  const tabPressScales = React.useRef(tabItems.map(() => new Animated.Value(1))).current;
+  const redirectUri = React.useMemo(
+    () =>
+      AuthSession.makeRedirectUri({
+        scheme: "datve",
+        path: "auth",
+      }),
+    []
+  );
+  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+    webClientId: GOOGLE_WEB_CLIENT_ID || undefined,
+    redirectUri,
+  });
 
   const persistSession = React.useCallback(
     async (nextToken: string | null, nextUser: SessionUser | null) => {
@@ -509,7 +530,7 @@ export default function App() {
   React.useEffect(() => {
     if (!bottomBarWidth) return;
     const activeIndex = tabItems.findIndex((item) => item.id === activeTab);
-    const pillWidth = (bottomBarWidth - 20) / tabItems.length;
+    const pillWidth = (bottomBarWidth - 24) / tabItems.length;
     Animated.spring(tabHighlightX, {
       toValue: pillWidth * Math.max(activeIndex, 0),
       tension: 90,
@@ -517,6 +538,22 @@ export default function App() {
       useNativeDriver: true,
     }).start();
   }, [activeTab, bottomBarWidth, tabHighlightX]);
+
+  const animateTabPress = React.useCallback(
+    (index: number, pressed: boolean) => {
+      const scale = tabPressScales[index];
+      if (!scale) {
+        return;
+      }
+      Animated.spring(scale, {
+        toValue: pressed ? 0.94 : 1,
+        tension: 220,
+        friction: 14,
+        useNativeDriver: true,
+      }).start();
+    },
+    [tabPressScales]
+  );
 
   React.useEffect(() => {
     const subscription = Linking.addEventListener("url", ({ url }) => {
@@ -631,8 +668,87 @@ export default function App() {
   };
 
   const continueWithGoogle = React.useCallback(() => {
-    showToast("Google Sign-In cần cấu hình OAuth client và endpoint backend để hoàn tất. Nút đã được mở sẵn cho bước tích hợp production tiếp theo.", "info", "auth");
-  }, [showToast]);
+    if (!GOOGLE_ANDROID_CLIENT_ID || !GOOGLE_WEB_CLIENT_ID) {
+      showToast("Chưa cấu hình Google Client ID cho Android/Web.", "error", "auth");
+      return;
+    }
+    if (!googleRequest) {
+      showToast("Đang chuẩn bị Google Sign-In, thử lại sau một chút.", "info", "auth");
+      return;
+    }
+    setAuthLoading(true);
+    promptGoogleAsync().catch((error) => {
+      setAuthLoading(false);
+      showToast(error instanceof Error ? error.message : "Không thể mở Google Sign-In", "error", "auth");
+    });
+  }, [googleRequest, promptGoogleAsync, showToast]);
+
+  React.useEffect(() => {
+    if (!googleResponse) {
+      return;
+    }
+    if (googleResponse.type === "dismiss" || googleResponse.type === "cancel") {
+      setAuthLoading(false);
+      return;
+    }
+    if (googleResponse.type !== "success") {
+      setAuthLoading(false);
+      showToast("Đăng nhập Google thất bại.", "error", "auth");
+      return;
+    }
+
+    const idToken =
+      (typeof googleResponse.params?.id_token === "string" ? googleResponse.params.id_token : null) ??
+      googleResponse.authentication?.idToken ??
+      null;
+
+    if (!idToken) {
+      setAuthLoading(false);
+      showToast("Google không trả về id_token hợp lệ.", "error", "auth");
+      return;
+    }
+
+    let disposed = false;
+    const run = async () => {
+      try {
+        const json = await requestJson("/auth/google", {
+          method: "POST",
+          body: JSON.stringify({
+            idToken,
+            deviceName: Device.deviceName || "Thiết bị Android",
+          }),
+        });
+        if (disposed) {
+          return;
+        }
+        setAuthToken(json.token);
+        setSessionUser(json.user);
+        setCustomerName(json.user.fullName);
+        setCustomerEmail(json.user.email);
+        setCustomerPhone(json.user.phone ?? "");
+        showToast("Đăng nhập Google thành công.", "success", "auth");
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+        showToast(
+          error instanceof Error ? error.message : "Không thể hoàn tất đăng nhập Google",
+          "error",
+          "auth"
+        );
+      } finally {
+        if (!disposed) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      disposed = true;
+    };
+  }, [googleResponse, requestJson, showToast]);
 
   const logout = async () => {
     try {
@@ -871,6 +987,7 @@ export default function App() {
   }, [exploreCinemaFilter, exploreGenreFilter, exploreHourFilter, exploreStatusFilter, moviesData, showtimesData]);
 
   let content: React.ReactNode = null;
+  const activePillWidth = bottomBarWidth > 0 ? (bottomBarWidth - 24) / tabItems.length : 0;
   const requiresAuth = !sessionUser;
 
   if (!authReady) {
@@ -1029,26 +1146,42 @@ export default function App() {
       {screen === "tabs" && !requiresAuth ? (
         <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event) => setBottomBarWidth(event.nativeEvent.layout.width)}>
           {bottomBarWidth > 0 ? (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.tabItemActive,
-                {
-                  width: (bottomBarWidth - 20) / tabItems.length,
-                  transform: [{ translateX: tabHighlightX }],
-                },
-              ]}
-            />
+            <>
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.tabItemGlow,
+                  {
+                    width: activePillWidth,
+                    transform: [{ translateX: tabHighlightX }],
+                  },
+                ]}
+              />
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.tabItemActive,
+                  {
+                    width: activePillWidth,
+                    transform: [{ translateX: tabHighlightX }],
+                  },
+                ]}
+              />
+            </>
           ) : null}
-          {tabItems.map((item) => (
+          {tabItems.map((item, index) => (
             <Pressable
               key={item.id}
               onPress={() => navigate({ screen: "tabs", tab: item.id })}
-              style={styles.tabItem}
+              onPressIn={() => animateTabPress(index, true)}
+              onPressOut={() => animateTabPress(index, false)}
+              style={styles.tabPressable}
               hitSlop={10}
             >
-              <MaterialCommunityIcons name={activeTab === item.id ? item.activeIcon : item.icon} size={20} style={[styles.tabIcon, activeTab === item.id && styles.tabIconActive]} />
-              <Text style={[styles.tabText, activeTab === item.id && styles.tabTextActive]}>{item.label}</Text>
+              <Animated.View style={[styles.tabItem, { transform: [{ scale: tabPressScales[index] }] }]}>
+                <MaterialCommunityIcons name={activeTab === item.id ? item.activeIcon : item.icon} size={20} style={[styles.tabIcon, activeTab === item.id && styles.tabIconActive]} />
+                <Text style={[styles.tabText, activeTab === item.id && styles.tabTextActive]}>{item.label}</Text>
+              </Animated.View>
             </Pressable>
           ))}
         </BlurView>

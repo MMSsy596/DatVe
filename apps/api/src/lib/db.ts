@@ -57,6 +57,12 @@ export async function ensureRuntimeSchema() {
         );
       }
 
+      if (!(await hasColumn(pool, "users", "google_sub"))) {
+        await pool.execute(
+          "ALTER TABLE users ADD COLUMN google_sub VARCHAR(255) NULL AFTER avatar_url"
+        );
+      }
+
       if (!(await hasColumn(pool, "banners", "image_url"))) {
         await pool.execute("ALTER TABLE banners ADD COLUMN image_url TEXT NULL AFTER accent_color");
       }

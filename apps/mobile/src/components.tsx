@@ -1,7 +1,10 @@
 import React from "react";
 import { BlurView } from "expo-blur";
-import { ActivityIndicator, Animated, Easing, Image, ImageBackground, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { ActivityIndicator, Animated, Easing, Image, ImageBackground, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { WebView } from "react-native-webview";
 import { palette, styles } from "./theme";
 import { Banner, ComboItem, Movie, PaymentProvider, ProfileData, ReminderItem, SeatMapRow, SeatSelection, Setter, SessionUser, ShowtimeItem, TicketDetail, TicketItem, ToastKind, ToastTone, Voucher } from "./types";
 
@@ -42,6 +45,36 @@ const mapCheckinStatus = (status?: string | null) => {
   }
 };
 
+const trailerUrlsBySlug: Record<string, string> = {
+  "lat-mat-8": "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&playsinline=1",
+  "the-last-voyage": "https://www.youtube.com/embed/ScMzIvxBSi4?autoplay=1&playsinline=1",
+  "mua-he-truoc-cua-em": "https://www.youtube.com/embed/ysz5S6PUM-U?autoplay=1&playsinline=1",
+};
+
+function useMinuteNow() {
+  const [minuteNow, setMinuteNow] = React.useState(() => Date.now());
+
+  React.useEffect(() => {
+    const refresh = () => setMinuteNow(Date.now());
+    const timeoutMs = 60000 - (Date.now() % 60000);
+    const bootstrap = setTimeout(() => {
+      refresh();
+      const interval = setInterval(refresh, 60000);
+      (refresh as typeof refresh & { interval?: ReturnType<typeof setInterval> }).interval = interval;
+    }, timeoutMs);
+
+    return () => {
+      clearTimeout(bootstrap);
+      const interval = (refresh as typeof refresh & { interval?: ReturnType<typeof setInterval> }).interval;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, []);
+
+  return minuteNow;
+}
+
 export function SectionHeader({ title, action }: { title: string; action?: string }) {
   return (
     <View style={styles.sectionHeader}>
@@ -73,6 +106,16 @@ const toastKindMeta: Record<ToastKind, { label: string; outlineIcon: React.Compo
   system: { label: "H? th?ng", outlineIcon: "information-outline", filledIcon: "information", color: palette.text, bg: "rgba(255,255,255,0.08)" },
 };
 
+const toastKindMotion: Record<ToastKind, { delay: number; outputRange: [number, number]; keyframes: number[] }> = {
+  ticket: { delay: 52, outputRange: [-7.5, 7.5], keyframes: [1, -1, 0.7, -0.35, 0] },
+  favorite: { delay: 66, outputRange: [-5.5, 5.5], keyframes: [0.85, -0.85, 0.45, -0.2, 0] },
+  seat: { delay: 42, outputRange: [-8.5, 8.5], keyframes: [1, -1, 0.85, -0.45, 0] },
+  payment: { delay: 36, outputRange: [-9.5, 9.5], keyframes: [1, -1, 0.9, -0.5, 0] },
+  reminder: { delay: 72, outputRange: [-4.5, 4.5], keyframes: [0.7, -0.7, 0.35, -0.14, 0] },
+  auth: { delay: 58, outputRange: [-6, 6], keyframes: [0.9, -0.9, 0.5, -0.24, 0] },
+  system: { delay: 76, outputRange: [-4, 4], keyframes: [0.6, -0.6, 0.25, -0.1, 0] },
+};
+
 export function Toast({ toastId, message, tone = "info", kind = "system", closing = false }: { toastId: number; message: string; tone?: ToastTone; kind?: ToastKind; closing?: boolean }) {
   const shellOpacity = React.useRef(new Animated.Value(0)).current;
   const shellScale = React.useRef(new Animated.Value(0.72)).current;
@@ -86,9 +129,11 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
   const progress = React.useRef(new Animated.Value(1)).current;
   const toneLabel = toastToneLabel(tone);
   const meta = toastKindMeta[kind];
+  const motion = toastKindMotion[kind];
   const toneAccent = tone === "success" ? "#8affea" : tone === "error" ? "#ff8d8d" : meta.color;
   const iconName = tone === "success" ? meta.filledIcon : meta.outlineIcon;
-  const wobbleSize = tone === "error" ? 1.6 : tone === "success" ? 1 : 0.7;
+  const progressColor = tone === "success" ? "#8affea" : tone === "error" ? "#ff7b7b" : meta.color;
+  const progressGlow = tone === "success" ? "rgba(138,255,234,0.3)" : tone === "error" ? "rgba(255,123,123,0.28)" : meta.bg;
 
   React.useEffect(() => {
     shellOpacity.setValue(0);
@@ -129,11 +174,12 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
       ]),
     ]).start();
     Animated.sequence([
-      Animated.delay(tone === "error" ? 40 : 70),
-      Animated.timing(wobble, { toValue: 1, duration: 70, easing: Easing.linear, useNativeDriver: true }),
-      Animated.timing(wobble, { toValue: -1, duration: 82, easing: Easing.linear, useNativeDriver: true }),
-      Animated.timing(wobble, { toValue: 0.6, duration: 62, easing: Easing.linear, useNativeDriver: true }),
-      Animated.timing(wobble, { toValue: 0, duration: 80, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.delay(motion.delay + (tone === "error" ? 0 : tone === "success" ? 8 : 18)),
+      Animated.timing(wobble, { toValue: motion.keyframes[0], duration: 60, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(wobble, { toValue: motion.keyframes[1], duration: 72, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(wobble, { toValue: motion.keyframes[2], duration: 58, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(wobble, { toValue: motion.keyframes[3], duration: 52, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(wobble, { toValue: motion.keyframes[4], duration: 74, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]).start();
     Animated.timing(progress, {
       toValue: 0,
@@ -141,7 +187,12 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
       easing: Easing.linear,
       useNativeDriver: false,
     }).start();
-  }, [bodyOpacity, bodyTranslateX, iconRotate, iconScale, progress, shellOpacity, shellScale, shellTranslateY, shellWidth, toastId, wobble, tone]);
+    if (tone === "success") {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else if (tone === "error") {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  }, [bodyOpacity, bodyTranslateX, iconRotate, iconScale, motion.delay, motion.keyframes, progress, shellOpacity, shellScale, shellTranslateY, shellWidth, toastId, wobble, tone]);
 
   React.useEffect(() => {
     if (!closing) return;
@@ -164,7 +215,7 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         styles.toast,
         tone === "success" && styles.toastSuccess,
         tone === "error" && styles.toastError,
-        { opacity: shellOpacity, transform: [{ translateX: wobble.interpolate({ inputRange: [-1, 1], outputRange: [-6 * wobbleSize, 6 * wobbleSize] }) }, { translateY: shellTranslateY }, { scaleX: shellWidth }, { scaleY: shellScale }] },
+        { opacity: shellOpacity, transform: [{ translateX: wobble.interpolate({ inputRange: [-1, 1], outputRange: motion.outputRange }) }, { translateY: shellTranslateY }, { scaleX: shellWidth }, { scaleY: shellScale }] },
       ]}
     >
       <Animated.View style={[styles.toastIconWrap, tone === "success" && styles.toastIconWrapSuccess, tone === "error" && styles.toastIconWrapError, { backgroundColor: meta.bg, transform: [{ scale: iconScale }, { rotate: iconRotate.interpolate({ inputRange: [-1, 1], outputRange: ["-1rad", "1rad"] }) }] }]}>
@@ -178,7 +229,8 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         </View>
         <Text style={styles.toastText} numberOfLines={2}>{message}</Text>
         <View style={styles.toastProgressTrack}>
-          <Animated.View style={[styles.toastProgressFill, tone === "success" && styles.toastProgressFillSuccess, tone === "error" && styles.toastProgressFillError, { width: progress.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }) }]} />
+          <Animated.View style={[styles.toastProgressFill, tone === "success" && styles.toastProgressFillSuccess, tone === "error" && styles.toastProgressFillError, { width: progress.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }), backgroundColor: progressColor, shadowColor: progressColor }]} />
+          <View pointerEvents="none" style={[styles.toastProgressGlow, { backgroundColor: progressGlow }]} />
         </View>
       </Animated.View>
     </Animated.View>
@@ -664,18 +716,21 @@ export function ProfileScreen(props: {
 
 export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onBook: (showtime: ShowtimeItem) => void; showtimesData: ShowtimeItem[]; isFavorite: boolean; isInWatchlist: boolean; onToggleFavorite: () => void; onToggleWatchlist: () => void; }) {
   const { movie, onBack, onBook, showtimesData, isFavorite, isInWatchlist, onToggleFavorite, onToggleWatchlist } = props;
+  const now = useMinuteNow();
+  const [trailerVisible, setTrailerVisible] = React.useState(false);
   const movieShowtimes = showtimesData.filter((item) => item.movieId === movie.id);
-  const now = Date.now();
   const activeShowtimeId = movieShowtimes
     .filter((item) => new Date(item.startTime).getTime() >= now)
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0]?.id ?? null;
   const featuredShowtime = movieShowtimes.find((item) => item.id === activeShowtimeId) ?? movieShowtimes[0];
+  const trailerUrl = trailerUrlsBySlug[movie.slug] ?? movie.bannerUrl ?? null;
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={onBack}>
-        <Text style={styles.backLink}>? Quay l?i</Text>
-      </Pressable>
+    <>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Pressable onPress={onBack}>
+          <Text style={styles.backLink}>? Quay l?i</Text>
+        </Pressable>
 
       <View style={styles.detailHeaderRow}>
         <View style={styles.detailThumbWrap}>
@@ -700,7 +755,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
           <Text style={styles.detailOverlayText}>{movie.status === "COMING_SOON" ? "S?p chi?u" : "?ang chi?u"}</Text>
         </View>
         <View style={styles.detailMediaBottom}>
-          <Pressable style={styles.detailMediaPlay}>
+          <Pressable style={styles.detailMediaPlay} onPress={() => setTrailerVisible(true)}>
             <MaterialCommunityIcons name="play-circle" size={20} color="#fff4ef" />
             <Text style={styles.detailMediaPlayText}>Trailer</Text>
           </Pressable>
@@ -770,7 +825,35 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
       </View>
 
       {featuredShowtime ? <NeonButton label="Ch?n gh?" onPress={() => onBook(featuredShowtime)} /> : null}
-    </ScrollView>
+      </ScrollView>
+
+      <Modal visible={trailerVisible} animationType="slide" transparent onRequestClose={() => setTrailerVisible(false)}>
+        <View style={styles.trailerModalBackdrop}>
+          <View style={styles.trailerModalShell}>
+            <LinearGradient colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0.02)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.trailerModalStroke} />
+            <View style={styles.trailerModalHeader}>
+              <View>
+                <Text style={styles.accountTitle}>Trailer</Text>
+                <Text style={styles.accountDetail}>{movie.title}</Text>
+              </View>
+              <Pressable style={styles.trailerCloseButton} onPress={() => setTrailerVisible(false)}>
+                <MaterialCommunityIcons name="close" size={20} color={palette.text} />
+              </Pressable>
+            </View>
+            {trailerUrl ? (
+              <View style={styles.trailerPlayerWrap}>
+                <WebView source={{ uri: trailerUrl }} style={styles.trailerWebview} allowsFullscreenVideo mediaPlaybackRequiresUserAction={false} />
+              </View>
+            ) : (
+              <View style={styles.accountRow}>
+                <Text style={styles.accountTitle}>Chưa có trailer</Text>
+                <Text style={styles.accountDetail}>Phim này hiện chưa có link trailer để phát trong app.</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -879,6 +962,13 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         </View>
       </ScrollView>
       <View style={styles.stickyFooterWrap}>
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0.06)", "rgba(255,255,255,0)"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.stickyFooterTopGlow}
+        />
         <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
           <View style={styles.stickySummaryMain}>
             <Text style={styles.summaryLabel}>Gh? ?? ch?n</Text>
@@ -981,6 +1071,13 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
         </View>
       </ScrollView>
       <View style={styles.stickyFooterWrap}>
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0.06)", "rgba(255,255,255,0)"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.stickyFooterTopGlow}
+        />
         <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
           <View style={styles.stickySummaryMain}>
             <Text style={styles.summaryLabel}>Thanh to?n</Text>
