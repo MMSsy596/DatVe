@@ -1,11 +1,12 @@
 import React from "react";
 import * as SecureStore from "expo-secure-store";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { ActivityIndicator, BackHandler, Linking, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
+import { ActivityIndicator, Animated, BackHandler, Linking, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
 import {
   CheckoutScreen,
   ExploreScreen,
@@ -122,11 +123,11 @@ type RouteState = {
   tab: TabId;
 };
 
-const tabItems: Array<{ id: TabId; label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = [
-  { id: "home", label: "Trang chủ", icon: "home-variant-outline" },
-  { id: "explore", label: "Khám phá", icon: "compass-outline" },
-  { id: "tickets", label: "Vé của tôi", icon: "ticket-confirmation-outline" },
-  { id: "profile", label: "Tài khoản", icon: "account-circle-outline" },
+const tabItems: Array<{ id: TabId; label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; activeIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = [
+  { id: "home", label: "Trang chủ", icon: "home-variant-outline", activeIcon: "home-variant" },
+  { id: "explore", label: "Khám phá", icon: "compass-outline", activeIcon: "compass" },
+  { id: "tickets", label: "Vé của tôi", icon: "ticket-confirmation-outline", activeIcon: "ticket-confirmation" },
+  { id: "profile", label: "Tài khoản", icon: "account-circle-outline", activeIcon: "account-circle" },
 ];
 
 export default function App() {
@@ -174,9 +175,11 @@ export default function App() {
   const [customerName, setCustomerName] = React.useState("Nguyễn Văn A");
   const [customerEmail, setCustomerEmail] = React.useState("user@datve.local");
   const [customerPhone, setCustomerPhone] = React.useState("0900000002");
+  const [bottomBarWidth, setBottomBarWidth] = React.useState(0);
   const historyRef = React.useRef<RouteState[]>([]);
   const toastCloseTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastHideTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tabHighlightX = React.useRef(new Animated.Value(0)).current;
 
   const persistSession = React.useCallback(
     async (nextToken: string | null, nextUser: SessionUser | null) => {
@@ -502,6 +505,18 @@ export default function App() {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => goBack());
     return () => subscription.remove();
   }, [goBack]);
+
+  React.useEffect(() => {
+    if (!bottomBarWidth) return;
+    const activeIndex = tabItems.findIndex((item) => item.id === activeTab);
+    const pillWidth = (bottomBarWidth - 20) / tabItems.length;
+    Animated.spring(tabHighlightX, {
+      toValue: pillWidth * Math.max(activeIndex, 0),
+      tension: 90,
+      friction: 12,
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab, bottomBarWidth, tabHighlightX]);
 
   React.useEffect(() => {
     const subscription = Linking.addEventListener("url", ({ url }) => {
@@ -1012,19 +1027,31 @@ export default function App() {
       {toast ? <Toast toastId={toast.id} message={toast.message} tone={toast.tone} kind={toast.kind} closing={toast.closing} /> : null}
       {content}
       {screen === "tabs" && !requiresAuth ? (
-        <View style={styles.bottomBar}>
+        <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event) => setBottomBarWidth(event.nativeEvent.layout.width)}>
+          {bottomBarWidth > 0 ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.tabItemActive,
+                {
+                  width: (bottomBarWidth - 20) / tabItems.length,
+                  transform: [{ translateX: tabHighlightX }],
+                },
+              ]}
+            />
+          ) : null}
           {tabItems.map((item) => (
             <Pressable
               key={item.id}
               onPress={() => navigate({ screen: "tabs", tab: item.id })}
-              style={[styles.tabItem, activeTab === item.id && styles.tabItemActive]}
+              style={styles.tabItem}
               hitSlop={10}
             >
-              <MaterialCommunityIcons name={item.icon} size={20} style={[styles.tabIcon, activeTab === item.id && styles.tabIconActive]} />
+              <MaterialCommunityIcons name={activeTab === item.id ? item.activeIcon : item.icon} size={20} style={[styles.tabIcon, activeTab === item.id && styles.tabIconActive]} />
               <Text style={[styles.tabText, activeTab === item.id && styles.tabTextActive]}>{item.label}</Text>
             </Pressable>
           ))}
-        </View>
+        </BlurView>
       ) : null}
     </SafeAreaView>
   );
