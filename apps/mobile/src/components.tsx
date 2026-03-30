@@ -1,4 +1,5 @@
 import React from "react";
+import { BlurView } from "expo-blur";
 import { ActivityIndicator, Animated, Easing, Image, ImageBackground, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { palette, styles } from "./theme";
@@ -58,16 +59,18 @@ export function NeonButton({ label, variant = "primary", onPress }: { label: str
   );
 }
 
+const TOAST_VISIBLE_MS = 2200;
+
 const toastToneLabel = (tone: ToastTone) => (tone === "success" ? "Ho?n t?t" : tone === "error" ? "L?i" : "Th?ng b?o");
 
-const toastKindMeta: Record<ToastKind, { label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; color: string; bg: string }> = {
-  ticket: { label: "V?", icon: "ticket-confirmation-outline", color: palette.amber, bg: "rgba(255,207,106,0.14)" },
-  favorite: { label: "Y?u th?ch", icon: "heart-outline", color: "#ff88a4", bg: "rgba(201,63,98,0.16)" },
-  seat: { label: "Gh?", icon: "armchair", color: palette.cyan, bg: "rgba(115,246,221,0.14)" },
-  payment: { label: "Thanh to?n", icon: "credit-card-outline", color: "#9cc7ff", bg: "rgba(98,141,235,0.16)" },
-  reminder: { label: "Nh?c l?ch", icon: "bell-outline", color: "#ffd88d", bg: "rgba(255,184,72,0.16)" },
-  auth: { label: "T?i kho?n", icon: "account-circle-outline", color: "#d7b8ff", bg: "rgba(147,51,234,0.18)" },
-  system: { label: "H? th?ng", icon: "information-outline", color: palette.text, bg: "rgba(255,255,255,0.08)" },
+const toastKindMeta: Record<ToastKind, { label: string; outlineIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; filledIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; color: string; bg: string }> = {
+  ticket: { label: "V?", outlineIcon: "ticket-confirmation-outline", filledIcon: "ticket-confirmation", color: palette.amber, bg: "rgba(255,207,106,0.14)" },
+  favorite: { label: "Y?u th?ch", outlineIcon: "heart-outline", filledIcon: "heart", color: "#ff88a4", bg: "rgba(201,63,98,0.16)" },
+  seat: { label: "Gh?", outlineIcon: "sofa-single-outline", filledIcon: "sofa-single", color: palette.cyan, bg: "rgba(115,246,221,0.14)" },
+  payment: { label: "Thanh to?n", outlineIcon: "credit-card-outline", filledIcon: "credit-card", color: "#9cc7ff", bg: "rgba(98,141,235,0.16)" },
+  reminder: { label: "Nh?c l?ch", outlineIcon: "bell-outline", filledIcon: "bell", color: "#ffd88d", bg: "rgba(255,184,72,0.16)" },
+  auth: { label: "T?i kho?n", outlineIcon: "account-circle-outline", filledIcon: "account-circle", color: "#d7b8ff", bg: "rgba(147,51,234,0.18)" },
+  system: { label: "H? th?ng", outlineIcon: "information-outline", filledIcon: "information", color: palette.text, bg: "rgba(255,255,255,0.08)" },
 };
 
 export function Toast({ toastId, message, tone = "info", kind = "system", closing = false }: { toastId: number; message: string; tone?: ToastTone; kind?: ToastKind; closing?: boolean }) {
@@ -77,11 +80,15 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
   const shellWidth = React.useRef(new Animated.Value(0.76)).current;
   const iconScale = React.useRef(new Animated.Value(0.74)).current;
   const iconRotate = React.useRef(new Animated.Value(-0.18)).current;
+  const wobble = React.useRef(new Animated.Value(0)).current;
   const bodyOpacity = React.useRef(new Animated.Value(0)).current;
   const bodyTranslateX = React.useRef(new Animated.Value(-14)).current;
+  const progress = React.useRef(new Animated.Value(1)).current;
   const toneLabel = toastToneLabel(tone);
   const meta = toastKindMeta[kind];
   const toneAccent = tone === "success" ? "#8affea" : tone === "error" ? "#ff8d8d" : meta.color;
+  const iconName = tone === "success" ? meta.filledIcon : meta.outlineIcon;
+  const wobbleSize = tone === "error" ? 1.6 : tone === "success" ? 1 : 0.7;
 
   React.useEffect(() => {
     shellOpacity.setValue(0);
@@ -90,8 +97,10 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
     shellWidth.setValue(0.76);
     iconScale.setValue(0.74);
     iconRotate.setValue(-0.18);
+    wobble.setValue(0);
     bodyOpacity.setValue(0);
     bodyTranslateX.setValue(-14);
+    progress.setValue(1);
 
     Animated.sequence([
       Animated.parallel([
@@ -119,7 +128,20 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         ]),
       ]),
     ]).start();
-  }, [bodyOpacity, bodyTranslateX, iconRotate, iconScale, shellOpacity, shellScale, shellTranslateY, shellWidth, toastId]);
+    Animated.sequence([
+      Animated.delay(tone === "error" ? 40 : 70),
+      Animated.timing(wobble, { toValue: 1, duration: 70, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(wobble, { toValue: -1, duration: 82, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(wobble, { toValue: 0.6, duration: 62, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(wobble, { toValue: 0, duration: 80, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+    ]).start();
+    Animated.timing(progress, {
+      toValue: 0,
+      duration: TOAST_VISIBLE_MS,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start();
+  }, [bodyOpacity, bodyTranslateX, iconRotate, iconScale, progress, shellOpacity, shellScale, shellTranslateY, shellWidth, toastId, wobble, tone]);
 
   React.useEffect(() => {
     if (!closing) return;
@@ -142,11 +164,11 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         styles.toast,
         tone === "success" && styles.toastSuccess,
         tone === "error" && styles.toastError,
-        { opacity: shellOpacity, transform: [{ translateY: shellTranslateY }, { scaleX: shellWidth }, { scaleY: shellScale }] },
+        { opacity: shellOpacity, transform: [{ translateX: wobble.interpolate({ inputRange: [-1, 1], outputRange: [-6 * wobbleSize, 6 * wobbleSize] }) }, { translateY: shellTranslateY }, { scaleX: shellWidth }, { scaleY: shellScale }] },
       ]}
     >
       <Animated.View style={[styles.toastIconWrap, tone === "success" && styles.toastIconWrapSuccess, tone === "error" && styles.toastIconWrapError, { backgroundColor: meta.bg, transform: [{ scale: iconScale }, { rotate: iconRotate.interpolate({ inputRange: [-1, 1], outputRange: ["-1rad", "1rad"] }) }] }]}>
-        <MaterialCommunityIcons name={meta.icon} size={18} color={toneAccent} />
+        <MaterialCommunityIcons name={iconName} size={18} color={toneAccent} />
       </Animated.View>
       <Animated.View style={[styles.toastBody, { opacity: bodyOpacity, transform: [{ translateX: bodyTranslateX }] }]}>
         <View style={styles.toastHeader}>
@@ -155,6 +177,9 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
           <Text style={[styles.toastTone, tone === "success" && styles.toastToneSuccess, tone === "error" && styles.toastToneError]}>{toneLabel}</Text>
         </View>
         <Text style={styles.toastText} numberOfLines={2}>{message}</Text>
+        <View style={styles.toastProgressTrack}>
+          <Animated.View style={[styles.toastProgressFill, tone === "success" && styles.toastProgressFillSuccess, tone === "error" && styles.toastProgressFillError, { width: progress.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }) }]} />
+        </View>
       </Animated.View>
     </Animated.View>
   );
@@ -640,7 +665,11 @@ export function ProfileScreen(props: {
 export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onBook: (showtime: ShowtimeItem) => void; showtimesData: ShowtimeItem[]; isFavorite: boolean; isInWatchlist: boolean; onToggleFavorite: () => void; onToggleWatchlist: () => void; }) {
   const { movie, onBack, onBook, showtimesData, isFavorite, isInWatchlist, onToggleFavorite, onToggleWatchlist } = props;
   const movieShowtimes = showtimesData.filter((item) => item.movieId === movie.id);
-  const featuredShowtime = movieShowtimes[0];
+  const now = Date.now();
+  const activeShowtimeId = movieShowtimes
+    .filter((item) => new Date(item.startTime).getTime() >= now)
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0]?.id ?? null;
+  const featuredShowtime = movieShowtimes.find((item) => item.id === activeShowtimeId) ?? movieShowtimes[0];
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -671,9 +700,10 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
           <Text style={styles.detailOverlayText}>{movie.status === "COMING_SOON" ? "S?p chi?u" : "?ang chi?u"}</Text>
         </View>
         <View style={styles.detailMediaBottom}>
-          <View style={styles.detailMediaPlay}>
-            <Text style={styles.detailMediaPlayText}>XEM TRAILER</Text>
-          </View>
+          <Pressable style={styles.detailMediaPlay}>
+            <MaterialCommunityIcons name="play-circle" size={20} color="#fff4ef" />
+            <Text style={styles.detailMediaPlayText}>Trailer</Text>
+          </Pressable>
           <View style={styles.detailMediaFacts}>
             <Text style={styles.detailMediaFactText}>{featuredShowtime ? featuredShowtime.startTime.slice(11, 16) : "C?p nh?t s?m"}</Text>
             <Text style={styles.detailMediaFactDivider}>?</Text>
@@ -710,18 +740,33 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
 
       <SectionHeader title="L?ch chi?u h?m nay" action={`${movieShowtimes.length} su?t`} />
       <View style={styles.showtimeGrid}>
-        {movieShowtimes.map((item) => (
-          <Pressable key={`${item.id}-${item.roomName}`} style={styles.showtimeCard} onPress={() => onBook(item)}>
-            <View style={styles.showtimePillRow}>
-              <Text style={styles.showtimePill}>{item.formatLabel}</Text>
-              <Text style={styles.showtimePillSecondary}>{item.languageLabel}</Text>
-            </View>
-            <Text style={styles.showtimeTime}>{item.startTime.slice(11, 16)}</Text>
-            <Text style={styles.showtimeCinema}>{item.cinemaName}</Text>
-            <Text style={styles.showtimeInfo}>{item.roomName}</Text>
-            <Text style={styles.showtimePrice}>{formatCurrency(item.basePrice)}</Text>
-          </Pressable>
-        ))}
+        {movieShowtimes.map((item) => {
+          const showtimeTimestamp = new Date(item.startTime).getTime();
+          const isDisabled = showtimeTimestamp < now;
+          const isActive = item.id === activeShowtimeId;
+          return (
+            <Pressable
+              key={`${item.id}-${item.roomName}`}
+              disabled={isDisabled}
+              style={[styles.showtimeCard, isActive && styles.showtimeCardActive, isDisabled && styles.showtimeCardDisabled]}
+              onPress={() => onBook(item)}
+            >
+              <View style={styles.showtimePillRow}>
+                <Text style={[styles.showtimePill, isActive && styles.showtimePillActive, isDisabled && styles.showtimePillDisabled]}>{item.formatLabel}</Text>
+                <Text style={[styles.showtimePillSecondary, isDisabled && styles.showtimePillSecondaryDisabled]}>{item.languageLabel}</Text>
+              </View>
+              <Text style={[styles.showtimeTime, isDisabled && styles.showtimeTimeDisabled]}>{item.startTime.slice(11, 16)}</Text>
+              <Text style={[styles.showtimeCinema, isDisabled && styles.showtimeCinemaDisabled]}>{item.cinemaName}</Text>
+              <Text style={styles.showtimeInfo}>{item.roomName}</Text>
+              <View style={styles.showtimeFooterRow}>
+                <Text style={[styles.showtimePrice, isDisabled && styles.showtimePriceDisabled]}>{formatCurrency(item.basePrice)}</Text>
+                <Text style={[styles.showtimeState, isActive && styles.showtimeStateActive, isDisabled && styles.showtimeStateDisabled]}>
+                  {isDisabled ? "H?t gi?" : isActive ? "?? xu?t" : "M? b?n"}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
 
       {featuredShowtime ? <NeonButton label="Ch?n gh?" onPress={() => onBook(featuredShowtime)} /> : null}
@@ -834,7 +879,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         </View>
       </ScrollView>
       <View style={styles.stickyFooterWrap}>
-        <View style={styles.stickyFooter}>
+        <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
           <View style={styles.stickySummaryMain}>
             <Text style={styles.summaryLabel}>Gh? ?? ch?n</Text>
             <Text style={styles.stickyPrimaryValue}>{selectedSeats.map((item) => item.seatCode).join(", ") || "Ch?a ch?n"}</Text>
@@ -844,7 +889,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
             {holding ? <ActivityIndicator color={palette.cyan} /> : null}
             <NeonButton label="Ti?p t?c" onPress={onContinue} />
           </View>
-        </View>
+        </BlurView>
       </View>
     </View>
   );
@@ -936,7 +981,7 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
         </View>
       </ScrollView>
       <View style={styles.stickyFooterWrap}>
-        <View style={styles.stickyFooter}>
+        <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
           <View style={styles.stickySummaryMain}>
             <Text style={styles.summaryLabel}>Thanh to?n</Text>
             <Text style={styles.stickyPrimaryValue}>{formatCurrency(total)}</Text>
@@ -946,7 +991,7 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
             {confirming ? <ActivityIndicator color={palette.cyan} /> : null}
             <NeonButton label={`Thanh to?n v?i ${selectedPaymentProvider}`} onPress={onConfirm} />
           </View>
-        </View>
+        </BlurView>
       </View>
     </View>
   );
