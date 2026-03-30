@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEON CINEMA - Seat Selection</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500&amp;family=Space_Grotesk:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary-container": "#4d0000",
+            "outline-variant": "#302840",
+            "on-secondary-fixed-variant": "#004d4d",
+            "surface-container-highest": "#28283e",
+            "on-surface-variant": "#a098b0",
+            "surface-container-low": "#111118",
+            "error-container": "#3d0f0f",
+            "on-surface": "#e8e0f0",
+            "on-tertiary-fixed": "#1a1000",
+            "surface-container": "#141422",
+            "background": "#0a0a12",
+            "primary-fixed": "#ffdad4",
+            "on-primary-container": "#ffdad4",
+            "tertiary-fixed-dim": "#ffe04a",
+            "surface-dim": "#0f0f1a",
+            "surface-tint": "#CC0000",
+            "on-background": "#e8e0f0",
+            "secondary": "#00ffcc",
+            "error": "#ff4444",
+            "on-primary-fixed-variant": "#930006",
+            "secondary-fixed-dim": "#00e6b8",
+            "surface-container-lowest": "#0a0a12",
+            "on-secondary": "#001a1a",
+            "primary-fixed-dim": "#ffb4a8",
+            "on-tertiary-container": "#fff0c0",
+            "inverse-surface": "#e8e0f0",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed-variant": "#665200",
+            "on-secondary-container": "#c0fff4",
+            "surface-bright": "#1a1a2e",
+            "inverse-on-surface": "#0a0a12",
+            "tertiary-fixed": "#fff0c0",
+            "on-secondary-fixed": "#001a1a",
+            "secondary-container": "#004d3d",
+            "tertiary-container": "#665200",
+            "surface-container-high": "#1e1e30",
+            "inverse-primary": "#930006",
+            "primary": "#CC0000",
+            "tertiary": "#ffe04a",
+            "surface-variant": "#1e1e30",
+            "secondary-fixed": "#c0fff4",
+            "outline": "#5a5068",
+            "on-error-container": "#ffa0a0",
+            "on-primary-fixed": "#410001",
+            "surface": "#0f0f1a",
+            "on-tertiary": "#1a1000",
+            "on-error": "#1a0000"
+          },
+          fontFamily: {
+            "headline": ["Sora"],
+            "body": ["Inter"],
+            "label": ["Space_Grotesk"]
+          },
+          borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+    .neon-glow-red { text-shadow: 0 0 8px #CC0000; }
+    .neon-glow-cyan { text-shadow: 0 0 8px #00ffcc; }
+    .neon-border-red { border: 1px solid rgba(204, 0, 0, 0.3); box-shadow: inset 0 0 12px rgba(204, 0, 0, 0.1); }
+    .screen-gradient {
+      background: linear-gradient(180deg, rgba(0, 255, 204, 0.3) 0%, rgba(0, 255, 204, 0) 100%);
+      filter: blur(20px);
+    }
+    .cinema-curve {
+      clip-path: ellipse(120% 100% at 50% 0%);
+    }
+    body {
+      min-height: max(884px, 100dvh);
+    }
+    .seat-transition {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary/30 min-h-screen flex flex-col">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0E0E0E] border-b border-[#5E3F3A]/15 shadow-[0_4px_20px_rgba(204,0,0,0.2)]">
+<div class="flex items-center gap-4">
+<button class="text-[#E5E2E1] hover:text-[#CC0000] active:scale-95 transition-all">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-['Space_Grotesk'] uppercase tracking-[0.1em] text-xl font-black text-[#CC0000] drop-shadow-[0_0_15px_rgba(204,0,0,0.6)]">NEON CINEMA</h1>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-[#E5E2E1] hover:text-[#CC0000] cursor-pointer transition-colors active:scale-95">search</span>
+<div class="w-8 h-8 rounded-full border border-[#CC0000]/50 overflow-hidden">
+<img alt="user avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCevXFyCyQTWas0Lz21XBfR8TBbMvWvE0nwaR4ClUBSvs7GCxAQ9EfmkM0Yq_WsERautUDZfMCtW_oLdyFep2XrrCsVeljTkkIgnPpDvUGGtnMb2YTBfSvc_DxwO9KiEpppMfY4xtiTUTMIWkhmtXk6snalhviBonlrn9VRVxJ-qWwpBv97Eds_2van0XCt6520bBF3QJjWEQE-wlgPVw_7U7KU3dH7uCHPs_cYplvAPOu8Au647f3GNh-kmMbXLGXlkkIuquYt7U"/>
+</div>
+</div>
+</header>
+<main class="flex-grow pt-24 pb-48 px-4 md:px-8 max-w-6xl mx-auto w-full">
+<!-- Movie Info Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+<div class="flex gap-6 items-start">
+<div class="w-24 h-36 rounded-lg overflow-hidden border border-white/10 shrink-0">
+<img alt="movie poster" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJh23V0EVv_S91iKufQYe74T-YJ1MR2YtaO2T_qN-TXUlRUKM9-qgW6hZ9h59ZSufQ_nWIVVRYWeNJWHbhG3fLlnNofRXL9ZsI_GlqHWXXDECg5Ry9FSpMsE9nLfTlyuyPBPGSrY_4vNYYFgvlzI5ye5To2re3m_6ZBKrmmjkzmKf5se5ZwsOnrbrNU8QufxRYNuzvRnyKk96hJt5bZzoqNPiCmu-T07VMrW0h_P3vQ4yIetaq77CGvEPFxr13Roh2rIqmwZk4Vq8"/>
+</div>
+<div>
+<h2 class="font-headline text-3xl font-bold tracking-tight text-on-surface mb-2 neon-glow-red uppercase">Cyberpunk 2077: Edge</h2>
+<div class="flex flex-wrap gap-3 items-center">
+<span class="font-label text-xs font-bold px-2 py-1 bg-surface-container-high border border-primary/30 text-primary tracking-widest uppercase">Hall 04 • IMAX</span>
+<span class="font-label text-xs text-on-surface-variant tracking-widest uppercase">Dec 22, 2024 • 20:45</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-x-4 gap-y-2">
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 rounded-sm border border-outline bg-surface"></div>
+<span class="font-label text-[10px] uppercase text-on-surface-variant">Available</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 rounded-sm bg-primary shadow-[0_0_8px_rgba(204,0,0,0.6)]"></div>
+<span class="font-label text-[10px] uppercase text-primary">Selected</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 rounded-sm bg-outline-variant opacity-40"></div>
+<span class="font-label text-[10px] uppercase text-on-surface-variant">Sold</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 rounded-sm border border-tertiary bg-tertiary/10"></div>
+<span class="font-label text-[10px] uppercase text-tertiary">VIP</span>
+</div>
+<div class="flex items-center gap-2 col-span-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label text-[10px] uppercase text-on-surface-variant">Sweetbox</span>
+</div>
+</div>
+</div>
+<!-- Screen Representation -->
+<div class="relative w-full mb-16">
+<div class="w-4/5 mx-auto h-2 bg-secondary/40 rounded-full cinema-curve shadow-[0_0_20px_rgba(0,255,204,0.3)]"></div>
+<div class="screen-gradient w-full h-16 absolute top-0 left-0 pointer-events-none"></div>
+<p class="text-center font-label text-[10px] uppercase tracking-[0.4em] text-secondary mt-4">Screen This Way</p>
+</div>
+<!-- Seat Grid Layout -->
+<div class="flex flex-col gap-6 overflow-x-auto pb-8 items-center scrollbar-hide">
+<!-- Standard Front -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-center gap-2">
+<span class="w-6 text-center font-label text-[10px] text-outline">A</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">1</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">2</button>
+<div class="w-4"></div>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">3</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">4</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">5</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">6</button>
+<div class="w-4"></div>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">7</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">8</button>
+</div>
+<span class="w-6 text-center font-label text-[10px] text-outline">A</span>
+</div>
+<div class="flex items-center justify-center gap-2">
+<span class="w-6 text-center font-label text-[10px] text-outline">B</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">1</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">2</button>
+<div class="w-4"></div>
+<button class="w-8 h-8 md:w-9 md:h-9 border-primary bg-primary text-on-primary rounded-t-lg shadow-[0_0_12px_rgba(204,0,0,0.6)] flex items-center justify-center text-[10px]">3</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border-primary bg-primary text-on-primary rounded-t-lg shadow-[0_0_12px_rgba(204,0,0,0.6)] flex items-center justify-center text-[10px]">4</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">5</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">6</button>
+<div class="w-4"></div>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline-variant bg-outline-variant/30 opacity-40 cursor-not-allowed rounded-t-lg flex items-center justify-center text-[10px] text-on-surface-variant">7</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">8</button>
+</div>
+<span class="w-6 text-center font-label text-[10px] text-outline">B</span>
+</div>
+</div>
+<!-- VIP SECTION (Middle) -->
+<div class="flex flex-col gap-3 py-4 bg-tertiary/5 rounded-2xl border border-tertiary/10 px-8">
+<div class="text-center">
+<span class="font-label text-[9px] text-tertiary uppercase tracking-[0.2em] mb-3 block">Premium VIP • $25.00</span>
+</div>
+<div class="flex items-center justify-center gap-2">
+<span class="w-6 text-center font-label text-[10px] text-tertiary/60">V1</span>
+<div class="flex gap-3">
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">1</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">2</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">3</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">4</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">5</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">6</button>
+</div>
+<span class="w-6 text-center font-label text-[10px] text-tertiary/60">V1</span>
+</div>
+<div class="flex items-center justify-center gap-2">
+<span class="w-6 text-center font-label text-[10px] text-tertiary/60">V2</span>
+<div class="flex gap-3">
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">1</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">2</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">3</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">4</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-tertiary/40 bg-tertiary/10 rounded-xl seat-transition hover:border-tertiary flex items-center justify-center text-xs text-tertiary">5</button>
+<button class="w-10 h-10 md:w-12 md:h-12 border-2 border-outline-variant bg-outline-variant/30 opacity-40 cursor-not-allowed rounded-xl flex items-center justify-center text-xs text-on-surface-variant">6</button>
+</div>
+<span class="w-6 text-center font-label text-[10px] text-tertiary/60">V2</span>
+</div>
+</div>
+<!-- Standard Back -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-center gap-2">
+<span class="w-6 text-center font-label text-[10px] text-outline">C</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">1</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">2</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">3</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">4</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">5</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">6</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">7</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">8</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">9</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">10</button>
+</div>
+<span class="w-6 text-center font-label text-[10px] text-outline">C</span>
+</div>
+<div class="flex items-center justify-center gap-2">
+<span class="w-6 text-center font-label text-[10px] text-outline">D</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">1</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">2</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">3</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">4</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">5</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">6</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">7</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">8</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">9</button>
+<button class="w-8 h-8 md:w-9 md:h-9 border border-outline bg-surface-container rounded-t-lg seat-transition hover:border-primary flex items-center justify-center text-[10px] text-on-surface-variant">10</button>
+</div>
+<span class="w-6 text-center font-label text-[10px] text-outline">D</span>
+</div>
+</div>
+<!-- SWEETBOX SECTION (Back) -->
+<div class="flex flex-col gap-4 mt-4">
+<div class="text-center">
+<span class="font-label text-[9px] text-primary uppercase tracking-[0.2em] block">Sweetbox / Couple • $35.00</span>
+</div>
+<div class="flex items-center justify-center gap-2">
+<span class="w-6 text-center font-label text-[10px] text-primary/60">S</span>
+<div class="flex gap-4">
+<button class="w-24 h-10 md:w-28 md:h-12 border border-primary/40 bg-primary/5 rounded-t-3xl seat-transition hover:bg-primary/15 flex items-center justify-center gap-2 group">
+<span class="material-symbols-outlined text-lg text-primary group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label text-[10px] text-primary">S1-2</span>
+</button>
+<button class="w-24 h-10 md:w-28 md:h-12 border border-primary/40 bg-primary/5 rounded-t-3xl seat-transition hover:bg-primary/15 flex items-center justify-center gap-2 group">
+<span class="material-symbols-outlined text-lg text-primary group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label text-[10px] text-primary">S3-4</span>
+</button>
+<button class="w-24 h-10 md:w-28 md:h-12 border border-outline-variant bg-outline-variant/20 opacity-40 cursor-not-allowed rounded-t-3xl flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label text-[10px] text-on-surface-variant">SOLD</span>
+</button>
+<button class="w-24 h-10 md:w-28 md:h-12 border border-primary/40 bg-primary/5 rounded-t-3xl seat-transition hover:bg-primary/15 flex items-center justify-center gap-2 group">
+<span class="material-symbols-outlined text-lg text-primary group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label text-[10px] text-primary">S7-8</span>
+</button>
+</div>
+<span class="w-6 text-center font-label text-[10px] text-primary/60">S</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Checkout Footer Shell -->
+<footer class="fixed bottom-20 w-full z-50 bg-[#0a0a12]/90 backdrop-blur-md border-t border-[#CC0000]/20 shadow-[0_-4px_16px_rgba(204,0,0,0.15)] px-6 py-4">
+<div class="max-w-6xl mx-auto flex flex-row items-center justify-between gap-6">
+<div class="flex flex-col">
+<div class="flex gap-2 items-center mb-1">
+<span class="font-label text-[10px] uppercase text-on-surface-variant tracking-widest">Selected Seats:</span>
+<span class="font-headline text-sm font-bold text-secondary">B3, B4</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline text-2xl font-black text-[#CC0000] drop-shadow-[0_0_8px_rgba(204,0,0,0.6)]">$30.00</span>
+<span class="font-label text-[10px] text-on-surface-variant uppercase">+ Booking Fee</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="hidden md:flex items-center justify-center px-6 h-12 border border-secondary/30 text-secondary font-label text-xs uppercase tracking-widest hover:bg-secondary/10 transition-colors">
+          Change Movie
+        </button>
+<button class="flex items-center justify-center px-8 h-12 bg-[#CC0000] text-white font-headline font-bold text-sm tracking-tight hover:scale-105 active:scale-95 transition-transform shadow-[0_0_16px_rgba(204,0,0,0.4)]">
+          Continue to F&amp;B
+          <span class="material-symbols-outlined ml-2 text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</footer>
+<!-- BottomNavBar Component -->
+<nav class="fixed bottom-0 w-full z-50 bg-[#131313]/95 backdrop-blur-xl flex justify-around items-center h-20 pb-safe border-t border-[#0E0E0E]">
+<div class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90 px-4 py-2">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90 px-4 py-2">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase">Explore</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#FFB4A8] drop-shadow-[0_0_8px_rgba(204,0,0,0.8)] hover:bg-[#2A2A2A] transition-all active:scale-90 px-4 py-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">confirmation_number</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase">Tickets</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90 px-4 py-2">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase">Profile</span>
+</div>
+</nav>
+</body></html>

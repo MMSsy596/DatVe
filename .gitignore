@@ -1,0 +1,13 @@
+node_modules/
+apps/*/node_modules/
+apps/*/.next/
+apps/*/.expo/
+apps/*/dist/
+apps/*/web-build/
+*.log
+.DS_Store
+adb-activities.txt
+adb-logcat*.txt
+device-screen*.png
+datve-screen*.png
+datve-release-screen*.png

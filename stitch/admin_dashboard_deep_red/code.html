@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neon Cinema Admin Dashboard - Crimson Edition</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Space_Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#CC0000",
+              "primary-container": "#4D0000",
+              "outline-variant": "#302828",
+              "on-secondary-fixed-variant": "#004d4d",
+              "surface-container-highest": "#281a1a",
+              "on-surface-variant": "#b09898",
+              "surface-container-low": "#110a0a",
+              "error-container": "#3d0f0f",
+              "on-surface": "#f0e0e0",
+              "on-tertiary-fixed": "#1a1000",
+              "surface-container": "#140a0a",
+              "background": "#0E0E0E",
+              "primary-fixed": "#ffdad4",
+              "on-primary-container": "#ffdad4",
+              "tertiary-fixed-dim": "#ffe04a",
+              "surface-dim": "#0f0a0a",
+              "surface-tint": "#CC0000",
+              "on-background": "#f0e0e0",
+              "secondary": "#00ffcc",
+              "error": "#ff4444",
+              "on-primary-fixed-variant": "#8c0000",
+              "secondary-fixed-dim": "#00e6b8",
+              "surface-container-lowest": "#0a0a0a",
+              "on-secondary": "#001a1a",
+              "primary-fixed-dim": "#ffb4a8",
+              "on-tertiary-container": "#fff0c0",
+              "inverse-surface": "#f0e0e0",
+              "on-primary": "#ffffff",
+              "on-tertiary-fixed-variant": "#665200",
+              "on-secondary-container": "#c0fff4",
+              "surface-bright": "#1a0f0f",
+              "inverse-on-surface": "#0a0a0a",
+              "tertiary-fixed": "#fff0c0",
+              "on-secondary-fixed": "#001a1a",
+              "secondary-container": "#004d3d",
+              "tertiary-container": "#665200",
+              "surface-container-high": "#1e1111",
+              "inverse-primary": "#8c0000",
+              "tertiary": "#ffe04a",
+              "surface-variant": "#1e1111",
+              "secondary-fixed": "#c0fff4",
+              "outline": "#685050",
+              "on-error-container": "#ffa0a0",
+              "on-primary-fixed": "#3d0000",
+              "surface": "#0f0a0a",
+              "on-tertiary": "#1a1000",
+              "on-error": "#1a0000"
+            },
+            fontFamily: {
+              "headline": ["Sora"],
+              "body": ["Inter"],
+              "label": ["Space Grotesk"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .inner-glow-red-sm {
+            box-shadow: inset 0 0 12px rgba(204, 0, 0, 0.15);
+        }
+        .neon-text-glow {
+            text-shadow: 0 0 10px rgba(204, 0, 0, 0.7);
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(204, 0, 0, 0.05) 50%);
+            background-size: 100% 4px;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary/30">
+<!-- NavigationDrawer (from COMPONENTS_29) -->
+<aside class="fixed left-0 top-0 h-full w-72 flex flex-col pt-8 bg-[#0E0E0E] border-r border-[#CC0000]/20 font-['Space_Grotesk'] font-bold z-40 transition-all duration-200">
+<div class="px-6 mb-8">
+<h1 class="text-[#CC0000] font-black tracking-tighter text-2xl drop-shadow-[0_0_8px_rgba(204,0,0,0.8)]">ADMIN PORTAL</h1>
+</div>
+<!-- Profile Mini -->
+<div class="flex flex-col px-6 py-6 gap-3 border-b border-[#CC0000]/10 mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border border-primary/50 overflow-hidden">
+<img alt="Admin Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvS-a5Zf2tMwWdTXW3pIMkTcf1_BYKi9Pa8YzulpQ8e_bWYGF-PcDJXrIyt1EV9nf-ETom18Q5EJXPE4hbIbfNoiprW7LA7ngv5IJgjVdADclbKtaQ2vhMjgkNZHPcliKicKPtJDCYQyItS5ADxVA2TzOekLQkfPU1d_c6DbXbphxmYpkORKRm7mpyD4gteyI3KHzgGdfUrkr0muXThxBibz8TNI-1A8ynCmAUYzWXKHp7AwPgsr3GetGkxbGdZqDye1K0JEOSnYw"/>
+</div>
+<div class="flex flex-col">
+<span class="text-on-surface text-sm font-bold">System Admin</span>
+<span class="text-slate-500 text-xs">Level 4 Access</span>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-secondary font-label">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+            Online
+        </div>
+</div>
+<nav class="flex-1 overflow-y-auto">
+<div class="space-y-1">
+<a class="bg-gradient-to-r from-[#CC0000] to-[#8F0F07] text-[#131313] font-bold px-4 py-3 flex items-center gap-3 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="text-[#E5E2E1] px-4 py-3 flex items-center gap-3 hover:bg-[#2A2A2A] hover:pl-6 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="movie">movie</span>
+<span>Movies</span>
+</a>
+<a class="text-[#E5E2E1] px-4 py-3 flex items-center gap-3 hover:bg-[#2A2A2A] hover:pl-6 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="event_seat">event_seat</span>
+<span>Bookings</span>
+</a>
+<a class="text-[#E5E2E1] px-4 py-3 flex items-center gap-3 hover:bg-[#2A2A2A] hover:pl-6 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Users</span>
+</a>
+<a class="text-[#E5E2E1] px-4 py-3 flex items-center gap-3 hover:bg-[#2A2A2A] hover:pl-6 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</nav>
+</aside>
+<!-- Main Content Wrapper -->
+<main class="ml-72 min-h-screen relative pb-20">
+<!-- TopAppBar (from COMPONENTS_29) -->
+<header class="fixed top-0 left-72 right-0 z-50 flex justify-between items-center px-6 h-16 bg-[#0E0E0E] border-b border-[#5E3F3A]/15 shadow-[0_4_20px_rgba(204,0,0,0.2)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#E5E2E1] hover:text-[#CC0000] transition-colors cursor-pointer" data-icon="search">search</span>
+<h2 class="font-['Space_Grotesk'] uppercase tracking-[0.1em] text-xl text-[#FFB4A8]">Dashboard Overview</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-[#E5E2E1] hover:text-[#CC0000] transition-colors cursor-pointer" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-[#E5E2E1] hover:text-[#CC0000] transition-colors cursor-pointer" data-icon="mail">mail</span>
+</div>
+<div class="h-8 w-8 rounded-full border-2 border-[#CC0000]/30 p-0.5 active:scale-95 transition-transform cursor-pointer">
+<img alt="User profile" class="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP0xQb2CEr_F6WtgnYH5AQDbUWuIuHJ1q3_cFRw3-eyY-cddXIzl_n6gjvOD9sndLP_QvxlqsDI0fNxGBPelxpI4z1J6CCCseDPLMA2Lw9PSgrYa-VZ7X2x2e59txnRTm3NSfXLK-g3Eom6LwveMkDnn7f9KhV4irxSqWuLOZjGtXeod4g3JI3z-1tqBUpvJSw2OWBg0QEfgLFHwSbArE8EFMDFGMgRTS4pkfEiYuwmpZgwbyJCoRan1rBzxDHNUoZ3Qa7nUAkXCQ"/>
+</div>
+</div>
+</header>
+<div class="p-8 pt-24 space-y-8">
+<!-- Stats Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Total Revenue -->
+<div class="bg-surface-container border border-primary/20 p-6 rounded-xl inner-glow-red-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary" data-icon="payments">payments</span>
+</div>
+<p class="font-label text-xs uppercase tracking-widest text-slate-400 mb-2">Total Revenue</p>
+<div class="flex items-end justify-between">
+<div>
+<h3 class="font-headline text-3xl font-bold text-on-surface neon-text-glow">$124,592</h3>
+<p class="text-secondary text-xs font-medium flex items-center mt-1">
+<span class="material-symbols-outlined text-sm mr-1" data-icon="trending_up">trending_up</span>
+                            +12.5% from last month
+                        </p>
+</div>
+<div class="h-12 w-24 flex items-end gap-1">
+<div class="bg-primary/20 w-2 h-[40%] rounded-t-sm"></div>
+<div class="bg-primary/40 w-2 h-[60%] rounded-t-sm"></div>
+<div class="bg-primary/30 w-2 h-[50%] rounded-t-sm"></div>
+<div class="bg-primary/60 w-2 h-[80%] rounded-t-sm"></div>
+<div class="bg-primary w-2 h-[100%] rounded-t-sm shadow-[0_0_10px_#CC0000]"></div>
+</div>
+</div>
+</div>
+<!-- Tickets Sold -->
+<div class="bg-surface-container border border-primary/20 p-6 rounded-xl inner-glow-red-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary" data-icon="confirmation_number">confirmation_number</span>
+</div>
+<p class="font-label text-xs uppercase tracking-widest text-slate-400 mb-2">Tickets Sold</p>
+<div class="flex items-end justify-between">
+<div>
+<h3 class="font-headline text-3xl font-bold text-on-surface neon-text-glow">18,245</h3>
+<p class="text-secondary text-xs font-medium flex items-center mt-1">
+<span class="material-symbols-outlined text-sm mr-1" data-icon="trending_up">trending_up</span>
+                            +8.2% from last month
+                        </p>
+</div>
+<div class="h-12 w-24 flex items-end gap-1">
+<div class="bg-primary/30 w-2 h-[50%] rounded-t-sm"></div>
+<div class="bg-primary/50 w-2 h-[70%] rounded-t-sm"></div>
+<div class="bg-primary/40 w-2 h-[60%] rounded-t-sm"></div>
+<div class="bg-primary/70 w-2 h-[90%] rounded-t-sm"></div>
+<div class="bg-primary w-2 h-[100%] rounded-t-sm shadow-[0_0_10px_#CC0000]"></div>
+</div>
+</div>
+</div>
+<!-- New Users -->
+<div class="bg-surface-container border border-primary/20 p-6 rounded-xl inner-glow-red-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary" data-icon="person_add">person_add</span>
+</div>
+<p class="font-label text-xs uppercase tracking-widest text-slate-400 mb-2">New Users</p>
+<div class="flex items-end justify-between">
+<div>
+<h3 class="font-headline text-3xl font-bold text-on-surface neon-text-glow">1,402</h3>
+<p class="text-error text-xs font-medium flex items-center mt-1">
+<span class="material-symbols-outlined text-sm mr-1" data-icon="trending_down">trending_down</span>
+                            -2.4% from last month
+                        </p>
+</div>
+<div class="h-12 w-24 flex items-end gap-1">
+<div class="bg-primary/60 w-2 h-[90%] rounded-t-sm"></div>
+<div class="bg-primary/50 w-2 h-[80%] rounded-t-sm"></div>
+<div class="bg-primary/40 w-2 h-[60%] rounded-t-sm"></div>
+<div class="bg-primary/30 w-2 h-[40%] rounded-t-sm"></div>
+<div class="bg-primary/20 w-2 h-[30%] rounded-t-sm shadow-[0_0_10px_#CC0000]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Middle Section: Bar Chart & Recent Transactions -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Bar Chart: Top Revenue Movies -->
+<div class="lg:col-span-2 bg-surface-container border border-primary/10 rounded-xl p-6 inner-glow-red-sm">
+<div class="flex items-center justify-between mb-8">
+<h4 class="font-headline font-bold text-on-surface">Top Revenue Movies</h4>
+<select class="bg-background border border-primary/30 text-xs text-slate-400 rounded px-2 py-1 outline-none focus:border-primary">
+<option>This Week</option>
+<option>This Month</option>
+</select>
+</div>
+<div class="space-y-6">
+<!-- Chart Item -->
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-label">
+<span class="text-on-surface">CYBERPUNK REDEMPTION</span>
+<span class="text-primary font-bold">$42,000</span>
+</div>
+<div class="w-full bg-surface-container-high h-3 rounded-full overflow-hidden">
+<div class="bg-gradient-to-r from-primary to-[#8F0F07] h-full w-[85%] shadow-[0_0_10px_rgba(204,0,0,0.4)]"></div>
+</div>
+</div>
+<!-- Chart Item -->
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-label">
+<span class="text-on-surface">NEON NIGHTS II</span>
+<span class="text-primary font-bold">$38,500</span>
+</div>
+<div class="w-full bg-surface-container-high h-3 rounded-full overflow-hidden">
+<div class="bg-gradient-to-r from-primary to-[#8F0F07] h-full w-[72%] shadow-[0_0_10px_rgba(204,0,0,0.4)]"></div>
+</div>
+</div>
+<!-- Chart Item -->
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-label">
+<span class="text-on-surface">THE LAST DATA DRIVE</span>
+<span class="text-primary font-bold">$29,100</span>
+</div>
+<div class="w-full bg-surface-container-high h-3 rounded-full overflow-hidden">
+<div class="bg-gradient-to-r from-primary to-[#8F0F07] h-full w-[55%] shadow-[0_0_10px_rgba(204,0,0,0.4)]"></div>
+</div>
+</div>
+<!-- Chart Item -->
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-label">
+<span class="text-on-surface">SYNTHWAVE DREAMS</span>
+<span class="text-primary font-bold">$15,400</span>
+</div>
+<div class="w-full bg-surface-container-high h-3 rounded-full overflow-hidden">
+<div class="bg-gradient-to-r from-primary to-[#8F0F07] h-full w-[30%] shadow-[0_0_10px_rgba(204,0,0,0.4)]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Transactions -->
+<div class="bg-surface-container border border-primary/10 rounded-xl p-6 inner-glow-red-sm overflow-hidden flex flex-col">
+<h4 class="font-headline font-bold text-on-surface mb-6">Recent Transactions</h4>
+<div class="space-y-4 flex-1">
+<div class="flex items-center gap-4 p-3 rounded bg-surface-container-high/50 border border-white/5">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-semibold text-on-surface truncate">Alex Rivera</p>
+<p class="text-[10px] text-slate-500 uppercase font-label">2x Cyberpunk Redemption</p>
+</div>
+<p class="text-primary font-bold text-sm">$28.00</p>
+</div>
+<div class="flex items-center gap-4 p-3 rounded bg-surface-container-high/50 border border-white/5">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-semibold text-on-surface truncate">Sarah Connor</p>
+<p class="text-[10px] text-slate-500 uppercase font-label">1x Neon Nights II</p>
+</div>
+<p class="text-primary font-bold text-sm">$14.50</p>
+</div>
+<div class="flex items-center gap-4 p-3 rounded bg-surface-container-high/50 border border-white/5">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-semibold text-on-surface truncate">Deckard V.</p>
+<p class="text-[10px] text-slate-500 uppercase font-label">4x The Last Data Drive</p>
+</div>
+<p class="text-primary font-bold text-sm">$56.00</p>
+</div>
+</div>
+<button class="w-full mt-6 py-2 border border-primary/30 text-primary font-label text-xs uppercase tracking-widest hover:bg-primary/10 transition-colors">View All History</button>
+</div>
+</section>
+<!-- Bottom Section: Quick Actions & Movie Preview -->
+<section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+<!-- Movie Highlight -->
+<div class="lg:col-span-3 h-64 rounded-xl relative overflow-hidden group border border-primary/30">
+<img alt="Cyberpunk City" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGMOi5vnpZ3eqyGbHnnyq9OHfoTaQk3pkAwCbjAcWyt31wd8UbRZ3OEq_Ag7Ezx_c-UAlAumN9vfXkJ5jt_mlyVe86ian-PbOspcJX-huKwGpWzxpa22yLVEFdW7brN0S6RYgpNRLZmlCBgXapALYQsGaQZPDc3DO_2KksTM_G77FkfY-3BYv58x_MwoDwQIzQcdcc5K2VQ1n6SLO8qKDrB3uHYdFbr9Km_oVqU_shZTQ4FIv1Mwz7mKePb0voVOt2Liyn6z3_1VY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0E0E0E] via-[#0E0E0E]/40 to-transparent"></div>
+<div class="absolute inset-0 scanline opacity-30"></div>
+<div class="absolute bottom-0 left-0 p-8 space-y-2">
+<span class="px-2 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-widest">Featured Release</span>
+<h3 class="text-3xl font-headline font-extrabold text-white tracking-tighter neon-text-glow">BLADE RUNNER: GENESIS</h3>
+<p class="text-slate-300 max-w-lg text-sm line-clamp-2">In a world where memories are traded on the dark web, one data-runner discovers the truth about his own past.</p>
+</div>
+<div class="absolute top-0 right-0 p-8">
+<button class="bg-primary/20 backdrop-blur-sm border border-primary text-primary font-label text-xs uppercase px-4 py-2 hover:bg-primary hover:text-white transition-all">Edit Movie Details</button>
+</div>
+</div>
+<!-- Quick Action Buttons -->
+<div class="grid grid-cols-2 lg:grid-cols-1 gap-4">
+<button class="flex flex-col items-center justify-center gap-2 bg-surface-container border border-primary/20 rounded-xl hover:border-primary hover:bg-primary/5 transition-all group p-4">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform" data-icon="add_circle">add_circle</span>
+<span class="font-label text-xs uppercase tracking-widest text-slate-300">New Movie</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 bg-surface-container border border-secondary/20 rounded-xl hover:border-secondary hover:bg-secondary/5 transition-all group p-4">
+<span class="material-symbols-outlined text-secondary group-hover:scale-110 transition-transform" data-icon="local_activity">local_activity</span>
+<span class="font-label text-xs uppercase tracking-widest text-slate-300">Create Ticket</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 bg-surface-container border border-primary/20 rounded-xl hover:border-primary hover:bg-primary/5 transition-all group p-4">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform" data-icon="analytics">analytics</span>
+<span class="font-label text-xs uppercase tracking-widest text-slate-300">Generate Report</span>
+</button>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (from COMPONENTS_29) - Mobile Only -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center h-20 bg-[#131313]/90 backdrop-blur-xl pb-safe border-t border-[#CC0000]/20">
+<a class="flex flex-col items-center justify-center text-[#FFB4A8] drop-shadow-[0_0_8px_rgba(204,0,0,0.8)] active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="confirmation_number">confirmation_number</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Tickets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neon Cinema - Admin Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500&amp;family=Space_Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#CC0000",
+              "primary-container": "#4d0000",
+              "on-primary": "#ffffff",
+              "secondary": "#00ffcc",
+              "tertiary": "#ffe04a",
+              "background": "#0a0a12",
+              "surface": "#0f0f1a",
+              "surface-container": "#141422",
+              "surface-container-low": "#111118",
+              "surface-container-high": "#1e1e30",
+              "surface-container-highest": "#28283e",
+              "on-surface": "#e8e0f0",
+              "on-surface-variant": "#a098b0",
+              "outline": "#5a5068",
+              "outline-variant": "#302840"
+            },
+            fontFamily: {
+              "headline": ["Sora"],
+              "body": ["Inter"],
+              "label": ["Space_Grotesk"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .neon-glow-text {
+        text-shadow: 0 0 8px rgba(204, 0, 0, 0.8);
+      }
+      .neon-border-glow {
+        box-shadow: inset 0 0 12px rgba(204, 0, 0, 0.1), 0 0 16px rgba(204, 0, 0, 0.05);
+      }
+      .scanline-bg {
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        background-size: 100% 2px, 3px 100%;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary selection:text-white">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0E0E0E] border-b border-[#5E3F3A]/15 shadow-[0_4_20px_rgba(204,0,0,0.2)]">
+<div class="flex items-center gap-4">
+<button class="text-[#CC0000] scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">search</span>
+</button>
+<h1 class="text-xl font-black tracking-[0.1em] text-[#CC0000] drop-shadow-[0_0_15px_rgba(204,0,0,0.6)] font-['Space_Grotesk'] uppercase">NEON CINEMA</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label text-xs text-secondary tracking-widest hidden md:block uppercase">System Operational</span>
+<div class="w-10 h-10 rounded-full border border-[#CC0000]/50 overflow-hidden shadow-[0_0_10px_rgba(204,0,0,0.3)]">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAR0LI9bBZR9OslFp6DnJjTg2zvi8MUvbf6axnDOX7iQEQj_OPVKsf7Xcq5jBbx5uAZn7bEPFmP36ApXpMqUJem09MjShUaiQ5dJatacX2li4lKwDQpGmwrqQR-M31JonHU8YjJIep4BuOWC9r-AiJVDn6-9ozilyhyPchZuvEYDh4RRjDbWMJg3DBY2HcI7Py5Ayj4RnoE81a78GauYXXVd9Sxg8KzlKtm9tMAyE8zCEmXBBkpW99MLx0MQAIzKJ8dQ9hTFQrWyhM"/>
+</div>
+</div>
+</header>
+<!-- NavigationDrawer -->
+<aside class="fixed left-0 top-0 h-full w-72 bg-[#0E0E0E] z-40 hidden lg:flex flex-col pt-24 border-r border-[#5E3F3A]/15">
+<div class="px-8 mb-8">
+<h2 class="font-['Space_Grotesk'] font-black tracking-tighter text-[#CC0000] text-xl">ADMIN PORTAL</h2>
+<div class="flex items-center gap-2 mt-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label text-[10px] text-slate-400 uppercase tracking-widest">Level 4 Access</span>
+</div>
+</div>
+<nav class="flex-1">
+<a class="bg-gradient-to-r from-[#CC0000] to-[#8F0F07] text-[#131313] font-bold px-4 py-3 flex items-center gap-3 font-['Space_Grotesk']" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="text-[#E5E2E1] px-4 py-3 flex items-center gap-3 hover:bg-[#2A2A2A] hover:pl-6 transition-all duration-300 font-['Space_Grotesk'] font-bold" href="#">
+<span class="material-symbols-outlined">movie</span>
+<span>Movies</span>
+</a>
+<a class="text-[#E5E2E1] px-4 py-3 flex items-center gap-3 hover:bg-[#2A2A2A] hover:pl-6 transition-all duration-300 font-['Space_Grotesk'] font-bold" href="#">
+<span class="material-symbols-outlined">event_seat</span>
+<span>Bookings</span>
+</a>
+<a class="text-[#E5E2E1] px-4 py-3 flex items-center gap-3 hover:bg-[#2A2A2A] hover:pl-6 transition-all duration-300 font-['Space_Grotesk'] font-bold" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Users</span>
+</a>
+<a class="text-[#E5E2E1] px-4 py-3 flex items-center gap-3 hover:bg-[#2A2A2A] hover:pl-6 transition-all duration-300 font-['Space_Grotesk'] font-bold" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="p-4 mt-auto">
+<div class="rounded-xl bg-[#131313] border border-white/5 p-4">
+<h4 class="font-label text-[10px] uppercase text-slate-500 mb-1">Terminal</h4>
+<p class="text-xs font-mono text-on-surface">10.0.4.122 · 14:22</p>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="lg:ml-72 pt-24 pb-32 px-6 min-h-screen relative">
+<div class="absolute inset-0 scanline-bg pointer-events-none opacity-20"></div>
+<div class="max-w-6xl mx-auto relative z-10">
+<!-- Header Section -->
+<div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-3xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight neon-glow-text mb-2">Admin Management</h2>
+<p class="text-on-surface-variant max-w-md font-body">Centralized control for the Neon Cinema ecosystem. Manage entities, assets, and system architecture.</p>
+</div>
+<div class="flex gap-2">
+<div class="px-4 py-2 bg-surface-container border border-primary/20 rounded-lg flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-sm">bolt</span>
+<span class="font-label text-xs uppercase tracking-tighter text-on-surface">Uptime: 99.9%</span>
+</div>
+</div>
+</div>
+<!-- Bento Grid Management Menu -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- User Management -->
+<button class="group relative flex flex-col items-start p-8 rounded-2xl bg-surface-container-low border border-primary/30 hover:border-primary transition-all duration-300 neon-border-glow hover:shadow-[0_0_20px_rgba(204,0,0,0.15)] overflow-hidden text-left">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-[120px]">manage_accounts</span>
+</div>
+<div class="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 border border-primary/40 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl text-primary group-hover:text-white transition-colors">group</span>
+</div>
+<h3 class="font-headline font-bold text-xl text-on-surface mb-2">User Management</h3>
+<p class="text-on-surface-variant text-sm font-body mb-6">Profiles, permissions, and security logs for customers and staff.</p>
+<div class="mt-auto flex items-center gap-2 text-primary font-label text-xs uppercase tracking-widest font-bold">
+                    Access Module <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- Movie Catalog -->
+<button class="group relative flex flex-col items-start p-8 rounded-2xl bg-surface-container-low border border-secondary/30 hover:border-secondary transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,204,0.15)] overflow-hidden text-left">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-[120px]">movie</span>
+</div>
+<div class="w-14 h-14 rounded-xl bg-secondary/10 flex items-center justify-center mb-6 border border-secondary/40 group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+<span class="material-symbols-outlined text-3xl text-secondary group-hover:text-on-secondary transition-colors">movie_filter</span>
+</div>
+<h3 class="font-headline font-bold text-xl text-on-surface mb-2">Movie Catalog</h3>
+<p class="text-on-surface-variant text-sm font-body mb-6">Update screenings, trailers, metadata, and showtime schedules.</p>
+<div class="mt-auto flex items-center gap-2 text-secondary font-label text-xs uppercase tracking-widest font-bold">
+                    Manage Assets <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- Theater Setup -->
+<button class="group relative flex flex-col items-start p-8 rounded-2xl bg-surface-container-low border border-tertiary/30 hover:border-tertiary transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,224,74,0.15)] overflow-hidden text-left">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-[120px]">meeting_room</span>
+</div>
+<div class="w-14 h-14 rounded-xl bg-tertiary/10 flex items-center justify-center mb-6 border border-tertiary/40 group-hover:bg-tertiary group-hover:text-on-tertiary transition-colors">
+<span class="material-symbols-outlined text-3xl text-tertiary group-hover:text-on-tertiary transition-colors">chair</span>
+</div>
+<h3 class="font-headline font-bold text-xl text-on-surface mb-2">Theater Setup</h3>
+<p class="text-on-surface-variant text-sm font-body mb-6">Seat mapping, technical specs, and hardware health monitoring.</p>
+<div class="mt-auto flex items-center gap-2 text-tertiary font-label text-xs uppercase tracking-widest font-bold">
+                    Configure <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- F&B Menu -->
+<button class="group relative flex flex-col items-start p-8 rounded-2xl bg-surface-container-low border border-primary/30 hover:border-primary transition-all duration-300 neon-border-glow hover:shadow-[0_0_20px_rgba(204,0,0,0.15)] overflow-hidden text-left">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-[120px]">restaurant</span>
+</div>
+<div class="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 border border-primary/40 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl text-primary group-hover:text-white transition-colors">fastfood</span>
+</div>
+<h3 class="font-headline font-bold text-xl text-on-surface mb-2">F&amp;B Menu</h3>
+<p class="text-on-surface-variant text-sm font-body mb-6">Inventory tracking, digital menu updates, and pricing controls.</p>
+<div class="mt-auto flex items-center gap-2 text-primary font-label text-xs uppercase tracking-widest font-bold">
+                    Edit Menu <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- Revenue Reports -->
+<button class="group relative flex flex-col items-start p-8 rounded-2xl bg-surface-container-low border border-secondary/30 hover:border-secondary transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,204,0.15)] overflow-hidden text-left">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-[120px]">monitoring</span>
+</div>
+<div class="w-14 h-14 rounded-xl bg-secondary/10 flex items-center justify-center mb-6 border border-secondary/40 group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+<span class="material-symbols-outlined text-3xl text-secondary group-hover:text-on-secondary transition-colors">analytics</span>
+</div>
+<h3 class="font-headline font-bold text-xl text-on-surface mb-2">Revenue Reports</h3>
+<p class="text-on-surface-variant text-sm font-body mb-6">Financial data, sales trends, and tax reconciliation exports.</p>
+<div class="mt-auto flex items-center gap-2 text-secondary font-label text-xs uppercase tracking-widest font-bold">
+                    View Data <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+<!-- Promotion Banners -->
+<button class="group relative flex flex-col items-start p-8 rounded-2xl bg-surface-container-low border border-tertiary/30 hover:border-tertiary transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,224,74,0.15)] overflow-hidden text-left">
+<div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-[120px]">ad_units</span>
+</div>
+<div class="w-14 h-14 rounded-xl bg-tertiary/10 flex items-center justify-center mb-6 border border-tertiary/40 group-hover:bg-tertiary group-hover:text-on-tertiary transition-colors">
+<span class="material-symbols-outlined text-3xl text-tertiary group-hover:text-on-tertiary transition-colors">campaign</span>
+</div>
+<h3 class="font-headline font-bold text-xl text-on-surface mb-2">Promotion Banners</h3>
+<p class="text-on-surface-variant text-sm font-body mb-6">Design campaigns, manage coupons, and update screen ads.</p>
+<div class="mt-auto flex items-center gap-2 text-tertiary font-label text-xs uppercase tracking-widest font-bold">
+                    Campaigns <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</button>
+</div>
+<!-- Footer Status Cards -->
+<div class="mt-12 grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="p-4 rounded-xl bg-[#0a0a12] border border-white/5 flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div>
+<p class="text-[10px] font-label uppercase text-slate-500">Servers</p>
+<p class="text-sm font-headline font-bold text-on-surface">NOMINAL</p>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-[#0a0a12] border border-white/5 flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div>
+<p class="text-[10px] font-label uppercase text-slate-500">Security</p>
+<p class="text-sm font-headline font-bold text-on-surface">ENCRYPTED</p>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-[#0a0a12] border border-white/5 flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<div>
+<p class="text-[10px] font-label uppercase text-slate-500">Version</p>
+<p class="text-sm font-headline font-bold text-on-surface">V.4.2.0-STABLE</p>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-[#0a0a12] border border-white/5 flex items-center gap-4">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<div>
+<p class="text-[10px] font-label uppercase text-slate-500">Database</p>
+<p class="text-sm font-headline font-bold text-on-surface">SYNCED</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-20 pb-safe bg-[#131313]/90 backdrop-blur-xl md:hidden">
+<a class="flex flex-col items-center justify-center text-[#FFB4A8] drop-shadow-[0_0_8px_rgba(204,0,0,0.8)]" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all" href="#">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Tickets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEON CINEMA | F&amp;B Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Space_Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#CC0000",
+              "primary-container": "#4D0000",
+              "outline-variant": "#331111",
+              "surface-container-highest": "#241818",
+              "on-surface-variant": "#C5B4B4",
+              "surface-container-low": "#0E0E0E",
+              "error-container": "#3d0f0f",
+              "on-surface": "#E5E2E1",
+              "surface-container": "#131313",
+              "background": "#0A0A0A",
+              "surface-dim": "#0E0E0E",
+              "surface-tint": "#CC0000",
+              "on-background": "#E5E2E1",
+              "secondary": "#00FFCC",
+              "error": "#FF4444",
+              "on-secondary": "#001A1A",
+              "inverse-surface": "#E5E2E1",
+              "on-primary": "#FFFFFF",
+              "surface-bright": "#1A1414",
+              "inverse-on-surface": "#0A0A0A",
+              "surface-container-high": "#1C1414",
+              "outline": "#5E3F3A"
+            },
+            fontFamily: {
+              "headline": ["Sora"],
+              "body": ["Inter"],
+              "label": ["Space Grotesk"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .neon-glow-red {
+        text-shadow: 0 0 12px #CC0000;
+      }
+      .neon-border-red {
+        border: 1px solid rgba(204, 0, 0, 0.3);
+        box-shadow: inset 0 0 12px rgba(204, 0, 0, 0.1);
+      }
+      .scanline {
+        background: linear-gradient(to bottom, transparent 50%, rgba(204, 0, 0, 0.02) 50%);
+        background-size: 100% 4px;
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary/30">
+<!-- TopAppBar from COMPONENTS_29 -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#131313] dark:bg-[#0E0E0E] border-b border-[#5E3F3A]/15 shadow-[0_4_20px_rgba(204,0,0,0.2)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#CC0000] cursor-pointer active:scale-95 transition-transform">search</span>
+<h1 class="font-['Space_Grotesk'] uppercase tracking-[0.1em] text-xl font-black text-[#CC0000] drop-shadow-[0_0_15px_rgba(204,0,0,0.6)]">NEON CINEMA</h1>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-8">
+<a class="font-['Space_Grotesk'] text-[10px] uppercase tracking-widest text-[#FFB4A8] hover:text-[#CC0000] transition-colors" href="#">Dashboard</a>
+<a class="font-['Space_Grotesk'] text-[10px] uppercase tracking-widest text-[#CC0000] drop-shadow-[0_0_5px_rgba(204,0,0,0.6)]" href="#">Inventory</a>
+<a class="font-['Space_Grotesk'] text-[10px] uppercase tracking-widest text-[#E5E2E1] hover:text-[#CC0000] transition-colors" href="#">Sales</a>
+</nav>
+<div class="w-10 h-10 rounded-full border border-[#CC0000]/50 overflow-hidden active:scale-95 transition-transform cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjQfAmPHJX2vjDz6cdD7m3a6zrhnIv8sb9ioQTl923cq4TCGolQ0KDO2p5J1G6NqAwDmW0jTnBw7ZRstopdtotFBMVeReUz63aMlk5ohBcSxkoiYJ2i8sJf6Y1NyjTX7TxOGgYdiFSOL1C7BS1wO603jdaL_pq1yNzYoHofN3rSRcGJkPAVsiYDtd-KR4_Cpe61KgR3x1CICkPDiyz57RGZ9FB0gR2yZjM_aGLsi3YK5e6dv9le-Yp0oplQvgGQfSjW3O4cDWE0GM"/>
+</div>
+</div>
+</header>
+<!-- NavigationDrawer from COMPONENTS_29 -->
+<aside class="fixed left-0 top-0 h-full w-72 bg-[#0E0E0E] hidden md:flex flex-col pt-8 z-40 border-r border-[#5E3F3A]/20">
+<div class="px-8 mb-10">
+<h2 class="font-['Space_Grotesk'] font-black tracking-tighter text-[#CC0000] text-2xl">ADMIN PORTAL</h2>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="text-[#E5E2E1] px-8 py-3 flex items-center gap-4 font-['Space_Grotesk'] font-bold hover:pl-10 hover:bg-[#2A2A2A] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="text-[#E5E2E1] px-8 py-3 flex items-center gap-4 font-['Space_Grotesk'] font-bold hover:pl-10 hover:bg-[#2A2A2A] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">movie</span>
+<span>Movies</span>
+</a>
+<a class="bg-gradient-to-r from-[#CC0000] to-[#8F0F07] text-[#131313] px-8 py-3 flex items-center gap-4 font-['Space_Grotesk'] font-bold border-r-4 border-[#CC0000]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span>F&amp;B Management</span>
+</a>
+<a class="text-[#E5E2E1] px-8 py-3 flex items-center gap-4 font-['Space_Grotesk'] font-bold hover:pl-10 hover:bg-[#2A2A2A] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Users</span>
+</a>
+<a class="text-[#E5E2E1] px-8 py-3 flex items-center gap-4 font-['Space_Grotesk'] font-bold hover:pl-10 hover:bg-[#2A2A2A] transition-all duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="p-6 bg-[#131313]">
+<div class="flex items-center gap-2 text-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-['Space_Grotesk'] text-[10px] uppercase tracking-widest">System Secure</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="md:ml-72 pt-24 pb-32 px-6 min-h-screen scanline">
+<div class="max-w-6xl mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+<div>
+<h2 class="font-headline font-extrabold text-4xl text-white tracking-tight mb-2 uppercase">F&amp;B <span class="text-primary neon-glow-red">INVENTORY</span></h2>
+<p class="text-on-surface-variant font-body max-w-md">Manage cinema concessions, update pricing, and monitor stock levels for the night shift.</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 rounded border border-outline text-on-surface font-label text-xs uppercase tracking-widest hover:bg-white/5 transition-colors">
+                        Export Report
+                    </button>
+<button class="px-6 py-2 rounded bg-primary/10 border border-primary text-primary font-label text-xs uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-[0_0_16px_rgba(204,0,0,0.3)]">
+                        Restock All
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout for F&B Items -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Item: Popcorn -->
+<div class="surface-container rounded-xl neon-border-red p-1 group overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+<div class="relative h-48 rounded-t-lg overflow-hidden">
+<img alt="Classic Cinema Popcorn" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDycyRGf53aBeG6ahLaLMKgAGoMgFLS-P6WV83BvRH0zzUXrE33Z16X5afDguz6ueaYC04qf5PSDxvxXi-a6KsNWWO5ldays6z4qs5KwXFYCyOFJS_eZEhogxZDXoh3pzcW0phF5sxwdtAZZvNZblz3NI46fOwCOIhvn4uSVAgNXK1AZVqCowMQaG98-b9Ho6NF2ro0aUlo6Zdrc0IWJKxoCHGH4JFeceyVyCsSbZwO6PPpM9ZhkT9yLw60TFckLiJP__KYQipWrXM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+<div class="absolute top-4 right-4 bg-secondary text-on-secondary px-3 py-1 rounded-full font-label text-[10px] font-bold uppercase tracking-wider">
+                            Best Seller
+                        </div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-headline font-bold text-xl text-white">Neon Popcorn</h3>
+<p class="text-secondary font-label text-[10px] uppercase">Category: Concessions</p>
+</div>
+<span class="text-primary font-headline font-bold text-lg">$12.50</span>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-white/5">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-container-high border border-outline-variant text-slate-400 hover:text-primary hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-container-high border border-outline-variant text-slate-400 hover:text-error hover:border-error transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+<div class="text-right">
+<p class="text-slate-500 font-label text-[9px] uppercase">Stock Level</p>
+<div class="w-24 h-1.5 bg-surface-container-highest rounded-full mt-1 overflow-hidden">
+<div class="bg-secondary h-full w-[85%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Item: Pepsi -->
+<div class="surface-container rounded-xl neon-border-red p-1 group overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+<div class="relative h-48 rounded-t-lg overflow-hidden">
+<img alt="Soft Drink" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAaFjwwX1ffME3HgyH8n7YjLBa6K8R62oIg29yZ5AypeKPuSYQhVrc7KBBdzpbypvjuYdERdPx-stRN1ewFnM8PbXqCYahHVaCCoG77l3lVDoKAS-VG3PIkNLHjoKXn8R_zLnYzrKO2HQvY7-OUA3sLrzelW410WpyqejpKwS5FasAMWL2LJsEBriCjOYEIbvsPf2iyauoDSp3JG4F742otnrsRiQHrZY7wAhX809_wXPGWrAtVU3Njnsq4XwDX7jKQxLYAE0t475g"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-headline font-bold text-xl text-white">Electric Pepsi</h3>
+<p class="text-secondary font-label text-[10px] uppercase">Category: Beverages</p>
+</div>
+<span class="text-primary font-headline font-bold text-lg">$6.00</span>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-white/5">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-container-high border border-outline-variant text-slate-400 hover:text-primary hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-container-high border border-outline-variant text-slate-400 hover:text-error hover:border-error transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+<div class="text-right">
+<p class="text-slate-500 font-label text-[9px] uppercase">Stock Level</p>
+<div class="w-24 h-1.5 bg-surface-container-highest rounded-full mt-1 overflow-hidden">
+<div class="bg-primary h-full w-[40%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Item: Combo -->
+<div class="surface-container rounded-xl neon-border-red p-1 group overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+<div class="relative h-48 rounded-t-lg overflow-hidden">
+<img alt="Combo Meal" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5yVSPZFuAJW-LHXqPQ8kSaDck9Rjqiu1QdaVkIPn-8JI07YsBNS3Nn1tzDUWas3hmPuIbXIoJ_J9WR2iSZlIXxycGHICMpre8rqOVmLfMrSsakesiHOCyaoToKjjCb62SDqI3cpSqYb7L8kDshvw68cG0BnkD0WW9XSM2duzQDGXyXnORt3TnK7aW-GlvcdBF-H2OXGXYR7zuIMjXKA21jSfQcyxx5dr9h_bsL3QBff_ZUW4FL83v2a2G_2TUeOdcptCjTyyOlAQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+<div class="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-full font-label text-[10px] font-bold uppercase tracking-wider shadow-[0_0_10px_#CC0000]">
+                            Hot Deal
+                        </div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-headline font-bold text-xl text-white">Cyber Combo</h3>
+<p class="text-secondary font-label text-[10px] uppercase">Category: Bundles</p>
+</div>
+<span class="text-primary font-headline font-bold text-lg">$16.99</span>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-white/5">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-container-high border border-outline-variant text-slate-400 hover:text-primary hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-container-high border border-outline-variant text-slate-400 hover:text-error hover:border-error transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+<div class="text-right">
+<p class="text-slate-500 font-label text-[9px] uppercase">Stock Level</p>
+<div class="w-24 h-1.5 bg-surface-container-highest rounded-full mt-1 overflow-hidden">
+<div class="bg-secondary h-full w-[95%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Item: Nachos -->
+<div class="surface-container rounded-xl neon-border-red p-1 group overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+<div class="relative h-48 rounded-t-lg overflow-hidden">
+<img alt="Nachos" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1vNL_opLSzNHwen02WYP0p_73e9Mj2murcDSU_71GzGAFdKxc3IywsJiFDRGv3FxFoIMa_JjrWlhRX7GGP8ndK76DF545XXKwu8bk9YtAHrrjaDnOkIS2g8wqVFMHGnHDxGFxU5ArxRTWFsa-Y4RSDj5zW5_RycDBbwRuq8kbsI0WW09zkZdyYRJ1_gFh5COgaI-mMWHOkw28gF2paHKP2J-iCYYRv236kqDYg4KT5wLFcEvAGAcT4H4bnP9ukbvN97e3_HtsRPY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-headline font-bold text-xl text-white">Neon Nachos</h3>
+<p class="text-secondary font-label text-[10px] uppercase">Category: Concessions</p>
+</div>
+<span class="text-primary font-headline font-bold text-lg">$9.50</span>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-white/5">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-container-high border border-outline-variant text-slate-400 hover:text-primary hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-container-high border border-outline-variant text-slate-400 hover:text-error hover:border-error transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+<div class="text-right">
+<p class="text-slate-500 font-label text-[9px] uppercase">Stock Level</p>
+<div class="w-24 h-1.5 bg-surface-container-highest rounded-full mt-1 overflow-hidden">
+<div class="bg-error h-full w-[15%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed right-8 bottom-28 md:bottom-12 z-50 w-16 h-16 rounded-full bg-[#CC0000] text-white flex items-center justify-center shadow-[0_0_24px_rgba(204,0,0,0.6)] hover:scale-110 active:scale-90 transition-all group">
+<span class="material-symbols-outlined text-3xl font-bold group-hover:rotate-90 transition-transform">add</span>
+</button>
+<!-- BottomNavBar from COMPONENTS_29 -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center h-20 pb-safe bg-[#131313]/90 backdrop-blur-xl border-t border-[#CC0000]/10">
+<button class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90 px-4 py-2 rounded-lg">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90 px-4 py-2 rounded-lg">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Explore</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#FFB4A8] drop-shadow-[0_0_8px_rgba(204,0,0,0.8)] px-4 py-2 rounded-lg">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Tickets</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all active:scale-90 px-4 py-2 rounded-lg">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase mt-1">Profile</span>
+</button>
+</nav>
+</body></html>

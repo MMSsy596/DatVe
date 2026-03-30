@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neon Cinema - Explore</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Inter:wght@400;500&amp;family=Space_Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-container": "#4d0000",
+                        "outline-variant": "#302828",
+                        "on-secondary-fixed-variant": "#004d4d",
+                        "surface-container-highest": "#1e1e1e",
+                        "on-surface-variant": "#b09898",
+                        "surface-container-low": "#0a0a0a",
+                        "error-container": "#3d0f0f",
+                        "on-surface": "#f0e0e0",
+                        "on-tertiary-fixed": "#1a1000",
+                        "surface-container": "#0e0e0e",
+                        "background": "#000000",
+                        "primary-fixed": "#ffe0e0",
+                        "on-primary-container": "#ffe0e0",
+                        "tertiary-fixed-dim": "#ffe04a",
+                        "surface-dim": "#0a0a0a",
+                        "surface-tint": "#CC0000",
+                        "on-background": "#f0e0e0",
+                        "secondary": "#00ffcc",
+                        "error": "#ff4444",
+                        "on-primary-fixed-variant": "#8c0000",
+                        "secondary-fixed-dim": "#00e6b8",
+                        "surface-container-lowest": "#000000",
+                        "on-secondary": "#001a1a",
+                        "primary-fixed-dim": "#ff8080",
+                        "on-tertiary-container": "#fff0c0",
+                        "inverse-surface": "#f0e0e0",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#665200",
+                        "on-secondary-container": "#c0fff4",
+                        "surface-bright": "#1a1a1a",
+                        "inverse-on-surface": "#000000",
+                        "tertiary-fixed": "#fff0c0",
+                        "on-secondary-fixed": "#001a1a",
+                        "secondary-container": "#004d3d",
+                        "tertiary-container": "#665200",
+                        "surface-container-high": "#131313",
+                        "inverse-primary": "#8c0000",
+                        "primary": "#CC0000",
+                        "tertiary": "#ffe04a",
+                        "surface-variant": "#131313",
+                        "secondary-fixed": "#c0fff4",
+                        "outline": "#5a5050",
+                        "on-error-container": "#ffa0a0",
+                        "on-primary-fixed": "#3d0000",
+                        "surface": "#0a0a0a",
+                        "on-tertiary": "#1a1000",
+                        "on-error": "#1a0000"
+                    },
+                    fontFamily: {
+                        "headline": ["Sora"],
+                        "body": ["Inter"],
+                        "label": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .neon-glow-text {
+            text-shadow: 0 0 8px rgba(204, 0, 0, 0.8);
+        }
+        .neon-glow-cyan {
+            text-shadow: 0 0 8px rgba(0, 255, 204, 0.8);
+        }
+        .scanline-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.98); }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s ease-in-out infinite;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-primary selection:text-white">
+<!-- TopAppBar Shell (using shared components style) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0E0E0E] border-b border-[#5E3F3A]/15 shadow-[0_4_20px_rgba(204,0,0,0.2)]">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#CC0000] active:scale-95 transition-transform cursor-pointer" data-icon="search">search</span>
+<h1 class="font-['Space_Grotesk'] font-black uppercase tracking-[0.1em] text-xl text-[#CC0000] drop-shadow-[0_0_15px_rgba(204,0,0,0.6)]">NEON CINEMA</h1>
+</div>
+<div class="h-10 w-10 rounded-full border border-[#CC0000]/30 overflow-hidden active:scale-95 transition-transform cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBzueI9LzyTruEyACO1SUaFj83vjyIt_AJRZ-HBO4IVwy3aC6odVaOLUxq7fq3oxHnpq_66IwesSD3q2cOwPkshPf-QPi5qwcLfNfTkIck-HsM7w9n3MmLXPvgLWp9dHTX1X18aLW_HIcuNZ1QnAVwjPGoL9VxH_UHxxopRODt6DaIvlGGULSmrZilCxsCEvHkeWUCRpktONqnXpeeR8nFicIXQnfwMN_xxYOg0WRPg3CgbVdSLM3OXFs5FW3UR0zEggGpN6OzakY"/>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-7xl mx-auto">
+<!-- Search Hero Section -->
+<section class="mb-12">
+<div class="relative group">
+<input class="w-full bg-surface-container-low border-b-2 border-outline focus:border-primary outline-none py-4 px-12 font-headline text-lg transition-all duration-300 placeholder:text-slate-600 focus:shadow-[0_4px_20px_rgba(204,0,0,0.15)]" placeholder="Search for films, actors, or directors..." type="text"/>
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" data-icon="search">search</span>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-secondary cursor-pointer" data-icon="mic">mic</span>
+</div>
+<!-- Category Chips -->
+<div class="flex gap-3 mt-6 overflow-x-auto pb-2 no-scrollbar">
+<button class="flex-shrink-0 px-6 py-2 rounded-full border border-primary text-primary font-label text-xs uppercase tracking-widest bg-primary/10 shadow-[0_0_10px_rgba(204,0,0,0.2)]">Trending</button>
+<button class="flex-shrink-0 px-6 py-2 rounded-full border border-white/10 text-slate-400 font-label text-xs uppercase tracking-widest hover:border-secondary hover:text-secondary transition-colors">Action</button>
+<button class="flex-shrink-0 px-6 py-2 rounded-full border border-white/10 text-slate-400 font-label text-xs uppercase tracking-widest hover:border-secondary hover:text-secondary transition-colors">Cyberpunk</button>
+<button class="flex-shrink-0 px-6 py-2 rounded-full border border-white/10 text-slate-400 font-label text-xs uppercase tracking-widest hover:border-secondary hover:text-secondary transition-colors">Sci-Fi</button>
+<button class="flex-shrink-0 px-6 py-2 rounded-full border border-white/10 text-slate-400 font-label text-xs uppercase tracking-widest hover:border-secondary hover:text-secondary transition-colors">Thriller</button>
+<button class="flex-shrink-0 px-6 py-2 rounded-full border border-white/10 text-slate-400 font-label text-xs uppercase tracking-widest hover:border-secondary hover:text-secondary transition-colors">Anime</button>
+</div>
+</section>
+<!-- Bento Grid Movie Results -->
+<section class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+<!-- Large Feature Card -->
+<div class="col-span-2 row-span-2 group relative overflow-hidden rounded-xl border border-white/10 bg-surface-container transition-all hover:border-primary/50">
+<div class="aspect-[4/5] relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="cinematic shot of a futuristic neon-lit city street at night with glowing pink and blue billboards and wet reflections" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBjub-xwkN_0VWM5G_5o99SB-3C0XBSBAEzCRD-L212cKEKpzyrt9Bvpdy914oHTk1IQi1doniZf5qIfDffq2fMBc7F6YArf3Fkv7T5XvrNeKT4Vjkwy73-V6nV5aRH7rGc8HBQhL2ihAnLI0h3Z5xQjJeK4LlHzdM-HkZj8FmKvPDCBPVVfwBilGM8PMGt1popQRwNvzPNEN2hL3CGuFseANDs7qlvkNMd7KnDydWxaB71xtoh1Qrl3YcI5XoQ-kO99BB4_9u6c4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
+<div class="absolute top-4 right-4 bg-primary text-on-primary font-label px-3 py-1 rounded-sm text-sm font-bold shadow-lg">9.8</div>
+<div class="absolute bottom-6 left-6 right-6">
+<span class="text-secondary font-label text-xs uppercase tracking-tighter mb-2 block neon-glow-cyan">Featured Original</span>
+<h3 class="font-headline text-2xl font-bold leading-tight mb-2">NEON DREAMS: 2049</h3>
+<p class="text-slate-400 text-sm line-clamp-2">A rogue artificial intelligence navigates the underworld of Neo-Shinjuku to find its creator.</p>
+</div>
+</div>
+</div>
+<!-- Standard Movie Cards -->
+<div class="group relative overflow-hidden rounded-xl border border-white/10 bg-surface-container transition-all hover:border-primary/50">
+<div class="aspect-[2/3] relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="abstract digital art showing glowing purple and pink geometric lines converging into a dark void with high contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGz-Y6dszrjwnEgrFj6UiJgfTgjeLmz6Y-msJ2UJ-xdVpSjzA0KBNi9dqSsjF3Z2Cn8RXl0cy49KIYwZquZ5SmenYHLc-s5nL8JVNDlZxscK6fdkqzXKNBir6IBRCi5BZQGWY0MA__qF-Vq1p43jbwtcVFFQC5n1NXdRwjjESe-qx6_xEhP0IHy_In_itfyYDcx_m5rYGwPvEwXaxy6mtykAGr7JphFPnmY3q8BFh5_w6IWnk6AfMw7rhvvMuog9Z7PVR2bI1sCIg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
+<div class="absolute top-3 right-3 bg-background/80 backdrop-blur-md text-tertiary font-label px-2 py-1 rounded text-xs border border-tertiary/30">8.4</div>
+<div class="absolute bottom-4 left-4">
+<h4 class="font-headline text-sm font-bold">VOID RUNNER</h4>
+<span class="text-slate-500 text-xs font-label">Sci-Fi • 2h 15m</span>
+</div>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl border border-white/10 bg-surface-container transition-all hover:border-primary/50">
+<div class="aspect-[2/3] relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="dark movie poster aesthetic showing a lone figure walking down a foggy alleyway illuminated by a single flickering red light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBYTXLZ73T1rnJlIuQqnVK3Re9gCjVE6GFQ2fu7AybYtYbTM6C9WnkImS-0rS2P_cJLb8ra4IxxZDZO7rMJ9EksMvsI6-MPZxhVfvslVxL26jhb_B86Zb5DDxTx_iLt_jcvIUgS7L1wQZBzsMbMFVVlcQShe55mwQc83oruJONlQw2-cVTV9NuTUht_wLQ1A2duwCK0RarXqnie-dqFSEq5EC0zmYXV8Cv8tMfl0BbVykZ5QzIDpcELUt1wTQQcspKBRY6PDTWxS8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
+<div class="absolute top-3 right-3 bg-background/80 backdrop-blur-md text-tertiary font-label px-2 py-1 rounded text-xs border border-tertiary/30">7.9</div>
+<div class="absolute bottom-4 left-4">
+<h4 class="font-headline text-sm font-bold">SILENT PROTOCOL</h4>
+<span class="text-slate-500 text-xs font-label">Thriller • 1h 50m</span>
+</div>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl border border-white/10 bg-surface-container transition-all hover:border-primary/50">
+<div class="aspect-[2/3] relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="overhead view of high-tech computer circuit boards with glowing blue and red power traces flowing through the architecture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuOW98YkN0fMtJ-lopINTVIVCxvn6tZc4PD9wgpHGVI9Vhq-l8ldN6H01yPXcg3ZCg0h_jESyiKm80sV6RKM3upWR0XXLsSHJCMw9kH3_EL64rbtdtvGtMGhRfsPXqpPPE2Y4DUbvqZl_X8fyLwuUajP3zbjV47Z_JDzuw7eOShVqeWIPrFgxtw4UXyGtn_amjaszUBP7Yt8BHZGP_JdbP8hiRoJ_gvPug1R5yr9ERbuWG3kRrMcUM_VHrE08nVaSJNUZ6Y136zE8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
+<div class="absolute top-3 right-3 bg-background/80 backdrop-blur-md text-tertiary font-label px-2 py-1 rounded text-xs border border-tertiary/30">9.2</div>
+<div class="absolute bottom-4 left-4">
+<h4 class="font-headline text-sm font-bold">CIRCUIT BREAKER</h4>
+<span class="text-slate-500 text-xs font-label">Action • 2h 05m</span>
+</div>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl border border-white/10 bg-surface-container transition-all hover:border-primary/50">
+<div class="aspect-[2/3] relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="vibrant street art of a futuristic warrior painted on a dark brick wall illuminated by a pink neon shop sign" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkM0SVlglGSUrAcGnVB9pDkoWoc5q1Tm_Fn-vsByokFNoV6JCsa9biWoWClXkmWCnKO3Hv2FPAv4Hylc8N7InAkUS_5QY1ilIleRpH6HINJXlMsTgmrSNHdYHQXNRQHgZblCxtspZtSeUoZLIrtZXF4G5n4Fy-KEJJxTX1J-WeR7xmxVqEmcsqItGykuwuFmeSAUsSW-hjAcn8SxC1bvI662J3njhX8iEBxSW-kJ0eNldd566YCR6vJ3Ff96ZpJQpqLH1ZNx76mxk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
+<div class="absolute top-3 right-3 bg-background/80 backdrop-blur-md text-tertiary font-label px-2 py-1 rounded text-xs border border-tertiary/30">8.1</div>
+<div class="absolute bottom-4 left-4">
+<h4 class="font-headline text-sm font-bold">REBEL SOUL</h4>
+<span class="text-slate-500 text-xs font-label">Anime • 1h 42m</span>
+</div>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl border border-white/10 bg-surface-container transition-all hover:border-primary/50">
+<div class="aspect-[2/3] relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="dramatic wide angle shot of a massive futuristic industrial complex at twilight with glowing yellow and orange furnace lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZNuSXj_OLON2cQ7DtZ03vHdEWM5PfTLRvS8r22ue3WMAuZS_Hmywy5tqKGI1QdGHSMVtI6DjXJdIzy2lEvY-Ci3DZVoCvTNApGg5z4CXBhXiJpMt6aPysQ_rNldgKbiwO8gseuyR9d18QBiJsjqa7FGVPOfKcHCt7fnI8WtHXsRfTqHyqMLi-EdszqbgrUgHHtvJYJGw9c4Dz62SlRChPkyomqlUfMSn-3Fk2wgl99eRVB7J833muVA2zPBj3DFsGXueV_gHY9aA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
+<div class="absolute top-3 right-3 bg-background/80 backdrop-blur-md text-tertiary font-label px-2 py-1 rounded text-xs border border-tertiary/30">7.5</div>
+<div class="absolute bottom-4 left-4">
+<h4 class="font-headline text-sm font-bold">IRON HEIGHTS</h4>
+<span class="text-slate-500 text-xs font-label">Drama • 2h 30m</span>
+</div>
+</div>
+</div>
+<!-- Landscape Card for Variety -->
+<div class="col-span-2 group relative overflow-hidden rounded-xl border border-white/10 bg-surface-container transition-all hover:border-primary/50">
+<div class="aspect-[16/9] relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="cinematic close up of a glowing blue holographic interface being manipulated by fingers in a dark technical environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-tOaKsGJxT6_4WfRJMIMKH70-1CKNHiH2pJ4feAbz94pbydaGWSL09Z_7P3DkZOepZacVlNiQwJ9vIkGRvzhVRm7wq-i07UHvnf31Nkr7IEpCRDO8KNUKUsRvWTFS--DgvHpBN0Mtxxj6grCYQI5Oj4-oMHEQ8HP4HJJwMf6Qmp3kxAfrGiaJR4uJmAEW2Qbu_kBx0BU5ow-AR5cdbXSGcZENyQY0ylyJdWYMddNc62ltYqQZZzEQJVNBH0aX-wbe1u1vkcYybbw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent"></div>
+<div class="absolute bottom-6 left-6">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 bg-secondary/20 text-secondary text-[10px] font-label uppercase border border-secondary/30">Trending Now</span>
+</div>
+<h4 class="font-headline text-xl font-bold">DIGITAL FRONTIER</h4>
+<p class="text-slate-400 text-xs">Explore the documentary on the rise of the metaverse.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Shell (using shared components style) -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-20 pb-safe bg-[#131313]/90 backdrop-blur-xl border-t border-[#CC0000]/20">
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#FFB4A8] drop-shadow-[0_0_8px_rgba(204,0,0,0.8)] animate-pulse-subtle" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="explore">explore</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="confirmation_number">confirmation_number</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase">Tickets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#E5E2E1]/50 hover:bg-[#2A2A2A] transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-['Space_Grotesk'] text-[10px] tracking-widest uppercase">Profile</span>
+</a>
+</nav>
+<!-- Screen Scanline Overlay -->
+<div class="scanline-overlay fixed inset-0 z-[100] opacity-10 pointer-events-none"></div>
+</body></html>
