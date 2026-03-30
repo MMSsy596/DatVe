@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Monorepo app dat ve xem phim: mobile, admin va api",
   "private": true,
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "start": "npm run start --workspace api",
     "build": "npm run build --workspace api",
