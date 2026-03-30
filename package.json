@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "Monorepo app dat ve xem phim: mobile, admin va api",
   "private": true,
-  "main": "apps/mobile/index.ts",
   "scripts": {
+    "start": "npm run start --workspace api",
+    "build": "npm run build --workspace api",
     "mobile": "npm run start --workspace mobile",
     "mobile:android": "npm run android --workspace mobile",
     "admin": "npm run dev --workspace admin",
