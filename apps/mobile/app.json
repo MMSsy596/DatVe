@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DatVe",
+    "name": "Đặt Vé",
     "slug": "datve",
     "scheme": "datve",
     "entryPoint": "./index.ts",

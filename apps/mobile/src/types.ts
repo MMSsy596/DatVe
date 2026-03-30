@@ -3,6 +3,15 @@ import React from "react";
 export type TabId = "home" | "explore" | "tickets" | "profile";
 export type ScreenId = "tabs" | "movie" | "seats" | "checkout" | "ticket";
 export type PaymentProvider = "MOMO" | "ZALOPAY" | "VNPAY";
+export type ToastTone = "info" | "success" | "error";
+export type ToastKind = "ticket" | "favorite" | "seat" | "payment" | "reminder" | "auth" | "system";
+export type ToastPayload = {
+  id: number;
+  message: string;
+  tone: ToastTone;
+  kind: ToastKind;
+  closing: boolean;
+};
 
 export type Movie = {
   id: number;
