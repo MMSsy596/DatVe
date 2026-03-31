@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import fsp from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,23 +15,39 @@ const standaloneCandidates = [
 const standaloneServer = standaloneCandidates.find((candidate) => fs.existsSync(candidate));
 
 if (!standaloneServer) {
-  throw new Error("Không tìm thấy Next standalone server. Hãy chạy `npm run build` trong apps/api trước.");
+  throw new Error("Khong tim thay Next standalone server. Hay chay `npm run build` trong apps/api truoc.");
 }
 
-const child = spawn(
-  process.execPath,
-  [standaloneServer],
-  {
-    stdio: "inherit",
-    shell: false,
-    cwd: appDir,
-    env: {
-      ...process.env,
-      PORT: port,
-      HOSTNAME: hostname,
-    },
+async function copyDirIfExists(sourceDir, targetDir) {
+  if (!fs.existsSync(sourceDir)) {
+    return;
   }
-);
+  await fsp.mkdir(path.dirname(targetDir), { recursive: true });
+  await fsp.cp(sourceDir, targetDir, { recursive: true, force: true });
+}
+
+async function prepareStandaloneAssets() {
+  const standaloneAppDir = path.dirname(standaloneServer);
+  const standaloneRoot = standaloneAppDir.endsWith(path.join("apps", "api"))
+    ? path.dirname(path.dirname(standaloneAppDir))
+    : path.dirname(standaloneAppDir);
+
+  await copyDirIfExists(path.join(appDir, "public"), path.join(standaloneAppDir, "public"));
+  await copyDirIfExists(path.join(appDir, ".next", "static"), path.join(standaloneRoot, ".next", "static"));
+}
+
+await prepareStandaloneAssets();
+
+const child = spawn(process.execPath, [standaloneServer], {
+  stdio: "inherit",
+  shell: false,
+  cwd: appDir,
+  env: {
+    ...process.env,
+    PORT: port,
+    HOSTNAME: hostname,
+  },
+});
 
 child.on("exit", (code, signal) => {
   if (signal) {

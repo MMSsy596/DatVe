@@ -3,13 +3,35 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { ActivityIndicator, Animated, Easing, Image, ImageBackground, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { SvgUri } from "react-native-svg";
 import { WebView } from "react-native-webview";
 import { palette, styles } from "./theme";
 import { Banner, ComboItem, Movie, PaymentProvider, ProfileData, ReminderItem, SeatMapRow, SeatSelection, Setter, SessionUser, ShowtimeItem, TicketDetail, TicketItem, ToastKind, ToastTone, Voucher } from "./types";
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
+
+function isSvgAsset(uri?: string | null) {
+  return Boolean(uri && /\.svg(?:\?|#|$)/i.test(uri));
+}
+
+function MediaAsset({ uri, style, resizeMode = "cover" }: { uri?: string | null; style: any; resizeMode?: "cover" | "contain" | "stretch" | "center" }) {
+  if (!uri) return null;
+  if (isSvgAsset(uri)) {
+    return <SvgUri uri={uri} width="100%" height="100%" style={style} />;
+  }
+  return <Image source={{ uri }} style={style} resizeMode={resizeMode} />;
+}
+
+function MediaBackground({ uri, style, mediaStyle, children }: { uri?: string | null; style: any; mediaStyle?: any; children?: React.ReactNode }) {
+  return (
+    <View style={style}>
+      {uri ? <MediaAsset uri={uri} style={[mediaStyle, { position: "absolute", inset: 0 }]} /> : null}
+      {children}
+    </View>
+  );
+}
 
 const formatDateTime = (value: string) => {
   const date = new Date(value);
@@ -266,7 +288,7 @@ function TrailerPlayer({ url, posterUrl, title }: { url: string | null; posterUr
   if (!started) {
     return (
       <Pressable style={styles.trailerPosterPreview} onPress={() => setStarted(true)}>
-        {posterUrl ? <Image source={{ uri: posterUrl }} style={styles.trailerPosterImage} resizeMode="cover" /> : null}
+        <MediaAsset uri={posterUrl} style={styles.trailerPosterImage} />
         <LinearGradient
           colors={["rgba(5,5,7,0.08)", "rgba(5,5,7,0.62)", "rgba(5,5,7,0.9)"]}
           start={{ x: 0.5, y: 0 }}
@@ -758,7 +780,7 @@ export function HomeScreen(props: {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={[styles.heroCard, { backgroundColor: heroMovie.tone }]}>
-        {heroMovie.bannerUrl ? <Image source={{ uri: heroMovie.bannerUrl }} style={styles.heroImage} resizeMode="cover" /> : null}
+        <MediaAsset uri={heroMovie.bannerUrl} style={styles.heroImage} />
         <View style={styles.heroOverlay} />
         <View style={styles.heroTopLine}>
           <Text style={styles.eyebrow}>ĐẶT VÉ ĐIỆN ẢNH</Text>
@@ -807,16 +829,12 @@ export function HomeScreen(props: {
       </View>
 
       {featuredBanner ? (
-        <ImageBackground
-          source={featuredBanner.imageUrl ? { uri: featuredBanner.imageUrl } : undefined}
-          imageStyle={styles.bannerImage}
-          style={[styles.bannerCard, { backgroundColor: featuredBanner.accent }]}
-        >
+        <MediaBackground uri={featuredBanner.imageUrl} mediaStyle={styles.bannerImage} style={[styles.bannerCard, { backgroundColor: featuredBanner.accent }]}>
           <View style={styles.bannerOverlay} />
           <Text style={styles.bannerEyebrow}>{featuredBanner.eyebrow}</Text>
           <Text style={styles.bannerTitle}>{featuredBanner.title}</Text>
           <Text style={styles.bannerText}>{featuredBanner.text}</Text>
-        </ImageBackground>
+        </MediaBackground>
       ) : null}
 
       <SectionHeader title="Đang chiếu" action="Chọn phim" />
@@ -826,13 +844,13 @@ export function HomeScreen(props: {
           const isInWatchlist = watchlistMovieIds.includes(movie.id);
           return (
           <Pressable key={movie.id} style={[styles.movieCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
-            <ImageBackground source={movie.posterUrl ? { uri: movie.posterUrl } : undefined} imageStyle={styles.posterImage} style={[styles.poster, { backgroundColor: movie.tone }]}>
+            <MediaBackground uri={movie.posterUrl} mediaStyle={styles.posterImage} style={[styles.poster, { backgroundColor: movie.tone }]}>
               <View style={styles.posterScrim} />
               <View style={styles.posterTopRow}>
                 <Text style={styles.posterBadge}>{movie.badge}</Text>
                 <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
               </View>
-            </ImageBackground>
+            </MediaBackground>
             <Text style={styles.movieTitle}>{movie.title}</Text>
             <Text style={styles.movieMeta}>{movie.genre} • {movie.runtime}</Text>
             <View style={styles.movieFooter}>
@@ -853,7 +871,7 @@ export function HomeScreen(props: {
               return (
               <Pressable key={`extended-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
                 <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
-                  {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
+                  <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{movie.title}</Text>
@@ -877,7 +895,7 @@ export function HomeScreen(props: {
               return (
               <Pressable key={`hot-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onSeatPress(movie)} disabled={loadingSeatMovieId === movie.id}>
                 <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
-                  {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
+                  <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{`#${index + 1} ${movie.title}`}</Text>
@@ -900,17 +918,13 @@ export function HomeScreen(props: {
               const isInWatchlist = watchlistMovieIds.includes(movie.id);
               return (
               <Pressable key={`genre-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
-                <ImageBackground
-                  source={movie.posterUrl ? { uri: movie.posterUrl } : undefined}
-                  imageStyle={styles.posterImage}
-                  style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}
-                >
+                <MediaBackground uri={movie.posterUrl} mediaStyle={styles.posterImage} style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}>
                   <View style={styles.posterScrim} />
                   <View style={styles.posterTopRow}>
                     <Text style={styles.posterBadge}>{movie.badge}</Text>
                     <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                   </View>
-                </ImageBackground>
+                </MediaBackground>
                 <View style={styles.homeGridBody}>
                   <Text style={styles.homeGridTitle}>{movie.title}</Text>
                   <Text style={styles.homeGridMeta}>{movie.genre}</Text>
@@ -936,7 +950,7 @@ export function HomeScreen(props: {
               return (
               <Pressable key={`coming-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
                 <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
-                  {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
+                  <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{movie.title}</Text>
@@ -1052,7 +1066,7 @@ export function ExploreScreen(props: {
         return (
         <Pressable key={`explore-${movie.id}`} style={[styles.exploreCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
           <View style={[styles.explorePoster, { backgroundColor: movie.tone }]}>
-            {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
+            <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
             <View style={styles.explorePosterOverlay}>
               <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
             </View>
@@ -1266,7 +1280,7 @@ export function ProfileScreen(props: {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={styles.profileHero}>
-        {profile?.avatarUrl ? <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} /> : <View style={styles.avatar} />}
+        {profile?.avatarUrl ? <MediaAsset uri={profile.avatarUrl} style={styles.avatar} /> : <View style={styles.avatar} />}
         <View style={styles.profileMetaBlock}>
           <Text style={styles.profileName}>{profile?.fullName ?? sessionUser?.fullName ?? "Khách"}</Text>
           <Text style={styles.profileMail}>{profile?.email ?? sessionUser?.email ?? "Chưa đăng nhập"}</Text>
@@ -1366,7 +1380,7 @@ export function UserMovieListScreen(props: {
             return (
             <Pressable key={`grid-${title}-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
               <View style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}>
-                {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.homeGridPosterImage} resizeMode="cover" /> : null}
+                <MediaAsset uri={movie.posterUrl} style={styles.homeGridPosterImage} />
                 <View style={styles.posterTopRow}>
                   <Text style={styles.posterBadge}>{movie.badge}</Text>
                   <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
@@ -1497,7 +1511,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
 
       <View style={styles.detailHeaderRow}>
         <View style={styles.detailThumbWrap}>
-          {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.detailThumbImage} resizeMode="cover" /> : <View style={[styles.detailThumbImage, { backgroundColor: movie.tone }]} />}
+          {movie.posterUrl ? <MediaAsset uri={movie.posterUrl} style={styles.detailThumbImage} /> : <View style={[styles.detailThumbImage, { backgroundColor: movie.tone }]} />}
         </View>
         <View style={styles.detailHeaderMeta}>
           <Text style={styles.detailHeaderTitle}>{movie.title}</Text>
@@ -1510,7 +1524,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
       </View>
 
       <View style={[styles.detailPoster, { backgroundColor: movie.tone }]}>
-        {movie.bannerUrl ? <Image source={{ uri: movie.bannerUrl }} style={styles.detailPosterImage} resizeMode="cover" /> : null}
+        <MediaAsset uri={movie.bannerUrl} style={styles.detailPosterImage} />
         <View style={styles.detailPosterScrim} />
         <Text style={styles.posterBadge}>{movie.badge}</Text>
         <View style={styles.detailOverlayMeta}>
