@@ -596,7 +596,8 @@ export default function App() {
   );
 
   React.useEffect(() => {
-    const subscription = Linking.addEventListener("url", ({ url }) => {
+    const handlePaymentUrl = (url: string | null | undefined) => {
+      if (!url) return;
       const normalized = url.replace("phimbook://", "https://phimbook.local/").replace("datve://", "https://phimbook.local/");
       const parsed = new URL(normalized);
       if (parsed.pathname.replace(/^\//, "") !== "payment-result") return;
@@ -606,6 +607,11 @@ export default function App() {
       else if (status) showToast(`${provider} trả về trạng thái ${status}.`, "error", "payment");
       resetNavigation({ screen: "tabs", tab: "tickets" });
       loadRemoteData();
+    };
+
+    Linking.getInitialURL().then(handlePaymentUrl).catch(() => null);
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      handlePaymentUrl(url);
     });
     return () => subscription.remove();
   }, [loadRemoteData, resetNavigation, showToast]);

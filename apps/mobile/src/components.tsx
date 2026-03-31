@@ -19,7 +19,15 @@ function isSvgAsset(uri?: string | null) {
 function MediaAsset({ uri, style, resizeMode = "cover" }: { uri?: string | null; style: any; resizeMode?: "cover" | "contain" | "stretch" | "center" }) {
   if (!uri) return null;
   if (isSvgAsset(uri)) {
-    return <SvgUri uri={uri} width="100%" height="100%" style={style} />;
+    return (
+      <SvgUri
+        uri={uri}
+        width="100%"
+        height="100%"
+        preserveAspectRatio={resizeMode === "contain" ? "xMidYMid meet" : "xMidYMid slice"}
+        style={style}
+      />
+    );
   }
   return <Image source={{ uri }} style={style} resizeMode={resizeMode} />;
 }
@@ -1716,21 +1724,43 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
 
 export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seats: SeatSelection[]) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
   const layout = React.useMemo(
-    () =>
-      [...seatMapRows]
-        .sort((left, right) => left.rowLabel.localeCompare(right.rowLabel, "vi"))
-        .map((row) => {
-          const seen = new Set<string>();
-          const seats = row.seats.filter((seat) => {
-            const dedupeKey = `${seat.seatCode}-${seat.seatType}-${String(seat.columnIndex ?? "x")}`;
-            if (seen.has(dedupeKey)) {
-              return false;
+    () => {
+      const rowMap = new Map<string, SeatMapRow["seats"]>();
+      const statusPriority: Record<string, number> = { AVAILABLE: 3, HELD: 2, SOLD: 1 };
+
+      for (const row of seatMapRows) {
+        const existing = rowMap.get(row.rowLabel) ?? [];
+        rowMap.set(row.rowLabel, [...existing, ...row.seats]);
+      }
+
+      return [...rowMap.entries()]
+        .sort((left, right) => left[0].localeCompare(right[0], "vi"))
+        .map(([rowLabel, seats]) => {
+          const seatMap = new Map<string, SeatMapRow["seats"][number]>();
+          for (const seat of seats) {
+            const key = String(seat.seatCode).trim().toUpperCase();
+            const current = seatMap.get(key);
+            if (!current) {
+              seatMap.set(key, { ...seat, seatCode: key, rowLabel });
+              continue;
             }
-            seen.add(dedupeKey);
-            return true;
-          });
-          return { ...row, seats };
-        }),
+
+            const currentPriority = statusPriority[String(current.status ?? "").toUpperCase()] ?? 0;
+            const nextPriority = statusPriority[String(seat.status ?? "").toUpperCase()] ?? 0;
+            const currentColumn = Number(current.columnIndex ?? Number.MAX_SAFE_INTEGER);
+            const nextColumn = Number(seat.columnIndex ?? Number.MAX_SAFE_INTEGER);
+
+            if (nextPriority > currentPriority || (nextPriority === currentPriority && nextColumn < currentColumn)) {
+              seatMap.set(key, { ...seat, seatCode: key, rowLabel });
+            }
+          }
+
+          return {
+            rowLabel,
+            seats: [...seatMap.values()].sort((left, right) => Number(left.columnIndex ?? 0) - Number(right.columnIndex ?? 0)),
+          };
+        });
+    },
     [seatMapRows]
   );
   const scrollY = React.useRef(new Animated.Value(0)).current;
