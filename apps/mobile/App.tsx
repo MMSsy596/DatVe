@@ -6,7 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { ActivityIndicator, Animated, BackHandler, Linking, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
+import { ActivityIndicator, Animated, BackHandler, Image, Linking, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
 import {
   CheckoutScreen,
   ExploreScreen,
@@ -44,7 +44,7 @@ import {
 
 const DEFAULT_API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || "https://datve.up.railway.app/api/v1";
-const SESSION_STORAGE_KEY = "datve.mobile.session";
+const SESSION_STORAGE_KEY = "phimbook.mobile.session";
 const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 const APP_DISPLAY_NAME = "PhimBook";
 const TOAST_HIDE_BUFFER_MS = 260;
@@ -131,7 +131,7 @@ export default function App() {
   const [authToken, setAuthToken] = React.useState<string | null>(null);
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
   const [authName, setAuthName] = React.useState("Nguyễn Văn A");
-  const [authEmail, setAuthEmail] = React.useState("user@datve.local");
+  const [authEmail, setAuthEmail] = React.useState("user@phimbook.local");
   const [authPhone, setAuthPhone] = React.useState("0900000002");
   const [authPassword, setAuthPassword] = React.useState("User@123");
   const [authLoading, setAuthLoading] = React.useState(false);
@@ -151,6 +151,8 @@ export default function App() {
   const [exploreCinemaFilter, setExploreCinemaFilter] = React.useState("ALL");
   const [exploreGenreFilter, setExploreGenreFilter] = React.useState("ALL");
   const [exploreHourFilter, setExploreHourFilter] = React.useState("ALL");
+  const [exploreFavoriteFilter, setExploreFavoriteFilter] = React.useState<"ALL" | "ONLY">("ALL");
+  const [exploreWatchlistFilter, setExploreWatchlistFilter] = React.useState<"ALL" | "ONLY">("ALL");
   const [holding, setHolding] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const [favoriteSubmitting, setFavoriteSubmitting] = React.useState(false);
@@ -164,7 +166,7 @@ export default function App() {
   const [selectedPaymentProvider, setSelectedPaymentProvider] = React.useState<PaymentProvider>("MOMO");
   const [selectedPaymentGatewayMode, setSelectedPaymentGatewayMode] = React.useState<"SANDBOX" | "REAL">("SANDBOX");
   const [customerName, setCustomerName] = React.useState("Nguyễn Văn A");
-  const [customerEmail, setCustomerEmail] = React.useState("user@datve.local");
+  const [customerEmail, setCustomerEmail] = React.useState("user@phimbook.local");
   const [customerPhone, setCustomerPhone] = React.useState("0900000002");
   const [bottomBarWidth, setBottomBarWidth] = React.useState(0);
   const [authGateMessage, setAuthGateMessage] = React.useState<string | null>(null);
@@ -595,7 +597,7 @@ export default function App() {
 
   React.useEffect(() => {
     const subscription = Linking.addEventListener("url", ({ url }) => {
-      const normalized = url.replace("datve://", "https://datve.local/");
+      const normalized = url.replace("phimbook://", "https://phimbook.local/").replace("datve://", "https://phimbook.local/");
       const parsed = new URL(normalized);
       if (parsed.pathname.replace(/^\//, "") !== "payment-result") return;
       const status = String(parsed.searchParams.get("status") ?? "");
@@ -615,11 +617,11 @@ export default function App() {
       const rows = await fetchSeatMap(selectedShowtime.id, true);
       if (!rows) return;
       const availableSeats = new Set(
-        rows.flatMap((row) => row.seats.filter((seat) => seat.status === "AVAILABLE").map((seat) => seat.seatCode))
+        rows.flatMap((row) => row.seats.filter((seat) => seat.status === "AVAILABLE").map((seat) => `${seat.seatCode}:${seat.seatType}`))
       );
 
       setSelectedSeats((prev) => {
-        const next = prev.filter((seat) => availableSeats.has(seat.seatCode));
+        const next = prev.filter((seat) => availableSeats.has(`${seat.seatCode}:${seat.seatType}`));
         if (next.length !== prev.length) {
           showToast("Có ghế vừa được giữ ở thiết bị khác. Danh sách ghế đã được làm mới.", "info", "seat");
         }
@@ -801,8 +803,8 @@ export default function App() {
 
   const toggleSeat = React.useCallback((seat: SeatSelection) => {
     setSelectedSeats((prev) =>
-      prev.some((item) => item.seatCode === seat.seatCode)
-        ? prev.filter((item) => item.seatCode !== seat.seatCode)
+      prev.some((item) => item.seatCode === seat.seatCode && item.seatType === seat.seatType)
+        ? prev.filter((item) => !(item.seatCode === seat.seatCode && item.seatType === seat.seatType))
         : [...prev, seat]
     );
   }, []);
@@ -868,7 +870,7 @@ export default function App() {
         body: JSON.stringify({
           bookingId: json.id,
           provider: selectedPaymentProvider,
-          returnUrl: "datve://payment-result",
+          returnUrl: "phimbook://payment-result",
           gatewayMode: selectedPaymentGatewayMode,
         }),
       });
@@ -996,7 +998,10 @@ export default function App() {
   );
 
   const exploreMovies = React.useMemo(() => {
-    return moviesData.filter((movie) => {
+    const favoriteSet = new Set(favoriteMovieIds);
+    const watchlistSet = new Set(watchlistMovieIds);
+    return moviesData
+    .filter((movie) => {
       const matchesStatus = exploreStatusFilter === "ALL" ? true : movie.status === exploreStatusFilter;
       const movieGenres = String(movie.genre)
         .split(",")
@@ -1012,9 +1017,19 @@ export default function App() {
         exploreHourFilter === "ALL"
           ? true
           : movieShowtimes.some((showtime) => hourBucket(showtime.startTime) === exploreHourFilter);
-      return matchesStatus && matchesGenre && matchesCinema && matchesHour;
+      const matchesFavorite = exploreFavoriteFilter === "ONLY" ? favoriteSet.has(movie.id) : true;
+      const matchesWatchlist = exploreWatchlistFilter === "ONLY" ? watchlistSet.has(movie.id) : true;
+      return matchesStatus && matchesGenre && matchesCinema && matchesHour && matchesFavorite && matchesWatchlist;
+    })
+    .sort((left, right) => {
+      const leftScore = (favoriteSet.has(left.id) ? 2 : 0) + (watchlistSet.has(left.id) ? 1 : 0);
+      const rightScore = (favoriteSet.has(right.id) ? 2 : 0) + (watchlistSet.has(right.id) ? 1 : 0);
+      if (leftScore !== rightScore) {
+        return rightScore - leftScore;
+      }
+      return left.id - right.id;
     });
-  }, [exploreCinemaFilter, exploreGenreFilter, exploreHourFilter, exploreStatusFilter, moviesData, showtimesData]);
+  }, [exploreCinemaFilter, exploreFavoriteFilter, exploreGenreFilter, exploreHourFilter, exploreStatusFilter, exploreWatchlistFilter, favoriteMovieIds, moviesData, showtimesData, watchlistMovieIds]);
 
   let content: React.ReactNode = null;
   const activePillWidth = bottomBarWidth > 0 ? (bottomBarWidth - 24) / tabItems.length : 0;
@@ -1161,6 +1176,10 @@ export default function App() {
         setGenreFilter={setExploreGenreFilter}
         hourFilter={exploreHourFilter}
         setHourFilter={setExploreHourFilter}
+        favoriteFilter={exploreFavoriteFilter}
+        setFavoriteFilter={setExploreFavoriteFilter}
+        watchlistFilter={exploreWatchlistFilter}
+        setWatchlistFilter={setExploreWatchlistFilter}
         cinemaOptions={cinemaOptions}
         genreOptions={genreOptions}
         favoriteMovieIds={favoriteMovieIds}
@@ -1224,10 +1243,10 @@ export default function App() {
       <View style={[styles.topBar, { paddingTop: 14 + androidTopInset }]}>
         <View style={styles.brandWrap}>
           <View style={styles.brandLogo}>
-            <MaterialCommunityIcons name="play" size={16} color="#fff7f3" />
+            <Image source={require("./assets/brand-mark.png")} style={styles.brandLogoImage} resizeMode="contain" />
           </View>
           <View style={styles.brandMeta}>
-            <Text style={styles.brandCaption}>MOVIE BOOKING</Text>
+            <Text style={styles.brandCaption}>NEON CINEMA</Text>
             <Text style={styles.brand}>{APP_DISPLAY_NAME}</Text>
           </View>
         </View>

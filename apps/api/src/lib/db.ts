@@ -2,8 +2,8 @@ import { RowDataPacket } from "mysql2";
 import mysql, { Pool } from "mysql2/promise";
 
 declare global {
-  var __datvePool: Pool | undefined;
-  var __datveSchemaReady: Promise<void> | undefined;
+  var __phimbookPool: Pool | undefined;
+  var __phimbookSchemaReady: Promise<void> | undefined;
 }
 
 export function getPool() {
@@ -11,15 +11,15 @@ export function getPool() {
     throw new Error("DATABASE_URL chưa được cấu hình");
   }
 
-  if (!global.__datvePool) {
-    global.__datvePool = mysql.createPool({
+  if (!global.__phimbookPool) {
+    global.__phimbookPool = mysql.createPool({
       uri: process.env.DATABASE_URL,
       waitForConnections: true,
       connectionLimit: 10,
     });
   }
 
-  return global.__datvePool;
+  return global.__phimbookPool;
 }
 
 async function hasTable(pool: Pool, tableName: string) {
@@ -47,8 +47,8 @@ async function hasColumn(pool: Pool, tableName: string, columnName: string) {
 }
 
 export async function ensureRuntimeSchema() {
-  if (!global.__datveSchemaReady) {
-    global.__datveSchemaReady = (async () => {
+  if (!global.__phimbookSchemaReady) {
+    global.__phimbookSchemaReady = (async () => {
       const pool = getPool();
 
       if (!(await hasColumn(pool, "users", "password_updated_at"))) {
@@ -124,5 +124,5 @@ export async function ensureRuntimeSchema() {
     })();
   }
 
-  await global.__datveSchemaReady;
+  await global.__phimbookSchemaReady;
 }

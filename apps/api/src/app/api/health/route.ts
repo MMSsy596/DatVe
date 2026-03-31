@@ -6,7 +6,7 @@ export async function GET() {
   await pool.query("SELECT 1");
 
   return NextResponse.json({
-    service: "datve-api",
+    service: "phimbook-api",
     status: "ok",
     timestamp: new Date().toISOString(),
   });

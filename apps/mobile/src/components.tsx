@@ -61,11 +61,42 @@ const formatShowtimeWeekday = (value: string) => {
   return date.toLocaleDateString("vi-VN", { weekday: "short" });
 };
 
+const formatRelativeShowtimeLabel = (value: string, now: number) => {
+  const date = new Date(value);
+  const today = new Date(now);
+  if (Number.isNaN(date.getTime()) || Number.isNaN(today.getTime())) {
+    return "Lịch chiếu";
+  }
+
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const diffDays = Math.round((startOfDate - startOfToday) / 86400000);
+
+  if (diffDays === 0) return "Hôm nay";
+  if (diffDays === 1) return "Ngày mai";
+  return "Lịch chiếu";
+};
+
 const showtimeBucketLabel = (startTime: string) => {
   const hour = Number(String(startTime).slice(11, 13));
   if (hour < 12) return "Sáng";
   if (hour < 18) return "Chiều";
   return "Tối";
+};
+
+const getSeatAvailabilityMeta = (availableSeats: number, totalSeats: number) => {
+  if (totalSeats <= 0 || availableSeats <= 0) {
+    return { label: "Gần kín", tone: "critical" as const };
+  }
+
+  const ratio = availableSeats / totalSeats;
+  if (ratio <= 0.2) {
+    return { label: "Gần kín", tone: "critical" as const };
+  }
+  if (ratio <= 0.45) {
+    return { label: "Sắp hết", tone: "warning" as const };
+  }
+  return { label: "Còn nhiều", tone: "good" as const };
 };
 
 const mapBookingStatus = (status: string) => {
@@ -659,6 +690,32 @@ function MovieStateBadges({ isFavorite, isInWatchlist, compact = false }: { isFa
   );
 }
 
+function prioritizeSavedMovies(movies: Movie[], favoriteMovieIds: number[], watchlistMovieIds: number[]) {
+  const favoriteSet = new Set(favoriteMovieIds);
+  const watchlistSet = new Set(watchlistMovieIds);
+  return [...movies].sort((left, right) => {
+    const leftScore = (favoriteSet.has(left.id) ? 2 : 0) + (watchlistSet.has(left.id) ? 1 : 0);
+    const rightScore = (favoriteSet.has(right.id) ? 2 : 0) + (watchlistSet.has(right.id) ? 1 : 0);
+    if (leftScore !== rightScore) {
+      return rightScore - leftScore;
+    }
+    return left.id - right.id;
+  });
+}
+
+function getSavedMovieCardStyle(isFavorite: boolean, isInWatchlist: boolean) {
+  if (isFavorite && isInWatchlist) {
+    return styles.savedMovieCardBoth;
+  }
+  if (isFavorite) {
+    return styles.savedMovieCardFavorite;
+  }
+  if (isInWatchlist) {
+    return styles.savedMovieCardWatchlist;
+  }
+  return null;
+}
+
 export function HomeScreen(props: {
   onMoviePress: (movie: Movie) => void;
   onSeatPress: (movie: Movie) => void;
@@ -672,12 +729,12 @@ export function HomeScreen(props: {
 }) {
   const { onMoviePress, onSeatPress, bannersData, moviesData, loading, fallbackMovie, loadingSeatMovieId = null, favoriteMovieIds = [], watchlistMovieIds = [] } = props;
   const heroMovie = moviesData[0] ?? fallbackMovie;
-  const nowShowing = moviesData.filter((movie) => movie.status !== "COMING_SOON");
+  const nowShowing = prioritizeSavedMovies(moviesData.filter((movie) => movie.status !== "COMING_SOON"), favoriteMovieIds, watchlistMovieIds);
   const nowShowingFeatured = nowShowing.slice(0, 12);
   const nowShowingExtended = nowShowing.slice(12);
-  const comingSoon = moviesData.filter((movie) => movie.status === "COMING_SOON").slice(0, 10);
+  const comingSoon = prioritizeSavedMovies(moviesData.filter((movie) => movie.status === "COMING_SOON"), favoriteMovieIds, watchlistMovieIds).slice(0, 10);
   const hotToday = nowShowing.slice(0, 5);
-  const genrePicks = moviesData.reduce<Movie[]>((acc, movie) => {
+  const genrePicks = prioritizeSavedMovies(moviesData, favoriteMovieIds, watchlistMovieIds).reduce<Movie[]>((acc, movie) => {
     const mainGenre = movie.genre.split(",")[0]?.trim().toLowerCase();
     if (!mainGenre || acc.some((item) => item.genre.split(",")[0]?.trim().toLowerCase() === mainGenre)) {
       return acc;
@@ -763,13 +820,16 @@ export function HomeScreen(props: {
 
       <SectionHeader title="Đang chiếu" action="Chọn phim" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {nowShowingFeatured.map((movie) => (
-          <Pressable key={movie.id} style={styles.movieCard} onPress={() => onMoviePress(movie)}>
+        {nowShowingFeatured.map((movie) => {
+          const isFavorite = favoriteMovieIds.includes(movie.id);
+          const isInWatchlist = watchlistMovieIds.includes(movie.id);
+          return (
+          <Pressable key={movie.id} style={[styles.movieCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
             <ImageBackground source={movie.posterUrl ? { uri: movie.posterUrl } : undefined} imageStyle={styles.posterImage} style={[styles.poster, { backgroundColor: movie.tone }]}>
               <View style={styles.posterScrim} />
               <View style={styles.posterTopRow}>
                 <Text style={styles.posterBadge}>{movie.badge}</Text>
-                <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+                <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
               </View>
             </ImageBackground>
             <Text style={styles.movieTitle}>{movie.title}</Text>
@@ -779,26 +839,29 @@ export function HomeScreen(props: {
               <Text style={styles.movieAction}>Chi tiết</Text>
             </View>
           </Pressable>
-        ))}
+        )})}
       </ScrollView>
 
       {nowShowingExtended.length > 0 ? (
         <>
           <SectionHeader title="Lướt thêm" action={`${nowShowing.length} phim`} />
           <View style={styles.rankingWrap}>
-            {nowShowingExtended.map((movie) => (
-              <Pressable key={`extended-${movie.id}`} style={styles.rankingRow} onPress={() => onMoviePress(movie)}>
+            {nowShowingExtended.map((movie) => {
+              const isFavorite = favoriteMovieIds.includes(movie.id);
+              const isInWatchlist = watchlistMovieIds.includes(movie.id);
+              return (
+              <Pressable key={`extended-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
                 <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
                   {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{movie.title}</Text>
-                  <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+                  <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                   <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
                 </View>
                 <Text style={styles.rankActionText}>Mở</Text>
               </Pressable>
-            ))}
+            )})}
           </View>
         </>
       ) : null}
@@ -807,19 +870,22 @@ export function HomeScreen(props: {
         <>
           <SectionHeader title="Top đặt nhiều hôm nay" action="Ưu tiên ghế đẹp" />
           <View style={styles.rankingWrap}>
-            {hotToday.map((movie, index) => (
-              <Pressable key={`hot-${movie.id}`} style={styles.rankingRow} onPress={() => onSeatPress(movie)} disabled={loadingSeatMovieId === movie.id}>
+            {hotToday.map((movie, index) => {
+              const isFavorite = favoriteMovieIds.includes(movie.id);
+              const isInWatchlist = watchlistMovieIds.includes(movie.id);
+              return (
+              <Pressable key={`hot-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onSeatPress(movie)} disabled={loadingSeatMovieId === movie.id}>
                 <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
                   {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{`#${index + 1} ${movie.title}`}</Text>
-                  <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+                  <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                   <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
                 </View>
                 {loadingSeatMovieId === movie.id ? <ActivityIndicator size="small" color={palette.cyan} /> : <Text style={styles.rankActionText}>Đặt</Text>}
               </Pressable>
-            ))}
+            )})}
           </View>
         </>
       ) : null}
@@ -828,8 +894,11 @@ export function HomeScreen(props: {
         <>
           <SectionHeader title="Phim theo gu" action="Grid 2 cột" />
           <View style={styles.homeGrid}>
-            {genrePicks.map((movie) => (
-              <Pressable key={`genre-${movie.id}`} style={styles.homeGridCard} onPress={() => onMoviePress(movie)}>
+            {genrePicks.map((movie) => {
+              const isFavorite = favoriteMovieIds.includes(movie.id);
+              const isInWatchlist = watchlistMovieIds.includes(movie.id);
+              return (
+              <Pressable key={`genre-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
                 <ImageBackground
                   source={movie.posterUrl ? { uri: movie.posterUrl } : undefined}
                   imageStyle={styles.posterImage}
@@ -838,7 +907,7 @@ export function HomeScreen(props: {
                   <View style={styles.posterScrim} />
                   <View style={styles.posterTopRow}>
                     <Text style={styles.posterBadge}>{movie.badge}</Text>
-                    <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+                    <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                   </View>
                 </ImageBackground>
                 <View style={styles.homeGridBody}>
@@ -851,7 +920,7 @@ export function HomeScreen(props: {
                   </View>
                 </View>
               </Pressable>
-            ))}
+            )})}
           </View>
         </>
       ) : null}
@@ -860,19 +929,22 @@ export function HomeScreen(props: {
         <>
           <SectionHeader title="Sắp chiếu" action="Theo dõi" />
           <View style={styles.rankingWrap}>
-            {comingSoon.map((movie) => (
-              <Pressable key={`coming-${movie.id}`} style={styles.rankingRow} onPress={() => onMoviePress(movie)}>
+            {comingSoon.map((movie) => {
+              const isFavorite = favoriteMovieIds.includes(movie.id);
+              const isInWatchlist = watchlistMovieIds.includes(movie.id);
+              return (
+              <Pressable key={`coming-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
                 <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
                   {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{movie.title}</Text>
-                  <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+                  <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                   <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime}</Text>
                 </View>
                 <Text style={styles.rankActionText}>Xem</Text>
               </Pressable>
-            ))}
+            )})}
           </View>
         </>
       ) : null}
@@ -892,12 +964,16 @@ export function ExploreScreen(props: {
   setGenreFilter: Setter<string>;
   hourFilter: string;
   setHourFilter: Setter<string>;
+  favoriteFilter: "ALL" | "ONLY";
+  setFavoriteFilter: Setter<"ALL" | "ONLY">;
+  watchlistFilter: "ALL" | "ONLY";
+  setWatchlistFilter: Setter<"ALL" | "ONLY">;
   cinemaOptions: string[];
   genreOptions: string[];
   favoriteMovieIds?: number[];
   watchlistMovieIds?: number[];
 }) {
-  const { onMoviePress, moviesData, loading, statusFilter, setStatusFilter, cinemaFilter, setCinemaFilter, genreFilter, setGenreFilter, hourFilter, setHourFilter, cinemaOptions, genreOptions, favoriteMovieIds = [], watchlistMovieIds = [] } = props;
+  const { onMoviePress, moviesData, loading, statusFilter, setStatusFilter, cinemaFilter, setCinemaFilter, genreFilter, setGenreFilter, hourFilter, setHourFilter, favoriteFilter, setFavoriteFilter, watchlistFilter, setWatchlistFilter, cinemaOptions, genreOptions, favoriteMovieIds = [], watchlistMovieIds = [] } = props;
 
   if (loading && moviesData.length === 0) {
     return (
@@ -949,6 +1025,19 @@ export function ExploreScreen(props: {
         ))}
       </ScrollView>
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        {[["ALL", "Tất cả phim"], ["ONLY", "Đã yêu thích"]].map(([id, label]) => (
+          <Pressable key={`favorite-${id}`} style={[styles.paymentMethod, favoriteFilter === id && styles.paymentMethodActive]} onPress={() => setFavoriteFilter(id as "ALL" | "ONLY")}>
+            <Text style={[styles.paymentMethodText, favoriteFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
+          </Pressable>
+        ))}
+        {[["ALL", "Tất cả lưu"], ["ONLY", "Đã lưu xem sau"]].map(([id, label]) => (
+          <Pressable key={`watchlist-${id}`} style={[styles.paymentMethod, watchlistFilter === id && styles.paymentMethodActive]} onPress={() => setWatchlistFilter(id as "ALL" | "ONLY")}>
+            <Text style={[styles.paymentMethodText, watchlistFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
       {moviesData.length === 0 ? (
         <View style={styles.accountRow}>
           <Text style={styles.accountTitle}>Không có phim phù hợp</Text>
@@ -956,12 +1045,15 @@ export function ExploreScreen(props: {
         </View>
       ) : null}
 
-      {moviesData.map((movie) => (
-        <Pressable key={`explore-${movie.id}`} style={styles.exploreCard} onPress={() => onMoviePress(movie)}>
+      {moviesData.map((movie) => {
+        const isFavorite = favoriteMovieIds.includes(movie.id);
+        const isInWatchlist = watchlistMovieIds.includes(movie.id);
+        return (
+        <Pressable key={`explore-${movie.id}`} style={[styles.exploreCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
           <View style={[styles.explorePoster, { backgroundColor: movie.tone }]}>
             {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
             <View style={styles.explorePosterOverlay}>
-              <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+              <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
             </View>
           </View>
           <View style={styles.exploreBody}>
@@ -971,7 +1063,7 @@ export function ExploreScreen(props: {
             <Text style={styles.exploreDescription}>{movie.description}</Text>
           </View>
         </Pressable>
-      ))}
+      )})}
     </ScrollView>
   );
 }
@@ -1150,7 +1242,7 @@ export function AuthScreen(props: {
             {authMode === "register" ? <TextInput value={authPhone} onChangeText={setAuthPhone} placeholder="Số điện thoại" placeholderTextColor={palette.muted} style={styles.input} /> : null}
             <TextInput value={authPassword} onChangeText={setAuthPassword} placeholder="Mật khẩu" placeholderTextColor={palette.muted} style={styles.input} secureTextEntry />
             <NeonButton label={authMode === "login" ? "Vào ứng dụng" : "Tạo tài khoản"} onPress={onSubmitAuth} loading={authLoading} />
-            <Text style={styles.accountDetail}>Tài khoản mẫu: `admin@datve.local / Admin@123`, `user@datve.local / User@123`.</Text>
+            <Text style={styles.accountDetail}>Tài khoản mẫu: `admin@phimbook.local / Admin@123`, `user@phimbook.local / User@123`.</Text>
           </View>
 
         </>
@@ -1267,13 +1359,16 @@ export function UserMovieListScreen(props: {
 
       {movies.length > 0 ? (
         <View style={styles.homeGrid}>
-          {movies.map((movie) => (
-            <Pressable key={`grid-${title}-${movie.id}`} style={styles.homeGridCard} onPress={() => onMoviePress(movie)}>
+          {movies.map((movie) => {
+            const isFavorite = title === "Yêu thích";
+            const isInWatchlist = title === "Xem sau";
+            return (
+            <Pressable key={`grid-${title}-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
               <View style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}>
                 {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.homeGridPosterImage} resizeMode="cover" /> : null}
                 <View style={styles.posterTopRow}>
                   <Text style={styles.posterBadge}>{movie.badge}</Text>
-                  <MovieStateBadges isFavorite={title === "Yêu thích"} isInWatchlist={title === "Xem sau"} compact />
+                  <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                 </View>
               </View>
               <View style={styles.homeGridBody}>
@@ -1285,7 +1380,7 @@ export function UserMovieListScreen(props: {
                 </View>
               </View>
             </Pressable>
-          ))}
+          )})}
         </View>
       ) : null}
     </ScrollView>
@@ -1296,6 +1391,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
   const { movie, onBack, onBook, showtimesData, isFavorite, isInWatchlist, onToggleFavorite, onToggleWatchlist, favoriteLoading = false, watchlistLoading = false, bookingLoadingMovieId = null, bookingLoadingShowtimeId = null } = props;
   const now = useMinuteNow();
   const [trailerVisible, setTrailerVisible] = React.useState(false);
+  const dateScrollRef = React.useRef<ScrollView | null>(null);
   const movieShowtimes = showtimesData.filter((item) => item.movieId === movie.id);
   const cinemaOptions = React.useMemo(
     () => Array.from(new Set(movieShowtimes.map((item) => item.cinemaName))).sort((a, b) => a.localeCompare(b, "vi")),
@@ -1375,6 +1471,21 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
       setSelectedShowtimeId(primaryShowtime.id);
     }
   }, [filteredShowtimes, primaryShowtime, selectedShowtimeId]);
+
+  React.useEffect(() => {
+    if (!effectiveDateKey || dateOptions.length <= 1) {
+      return;
+    }
+    const selectedIndex = dateOptions.findIndex((item) => item === effectiveDateKey);
+    if (selectedIndex < 0) {
+      return;
+    }
+    const estimatedCardWidth = 94;
+    dateScrollRef.current?.scrollTo({
+      x: Math.max(0, selectedIndex * estimatedCardWidth - 20),
+      animated: true,
+    });
+  }, [dateOptions, effectiveDateKey]);
 
   return (
     <>
@@ -1465,9 +1576,10 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
 
       <View style={styles.accountRow}>
         <Text style={styles.accountTitle}>2. Chọn ngày</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        <ScrollView ref={dateScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateMiniRow}>
           {dateOptions.map((dateKey) => (
             <Pressable key={dateKey} style={[styles.dateMiniCard, effectiveDateKey === dateKey && styles.dateMiniCardActive]} onPress={() => setSelectedDateKey(dateKey)}>
+              <Text style={[styles.dateMiniLabel, effectiveDateKey === dateKey && styles.dateMiniLabelActive]}>{formatRelativeShowtimeLabel(dateKey, now)}</Text>
               <Text style={[styles.dateMiniWeekday, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeWeekday(dateKey)}</Text>
               <Text style={[styles.dateMiniDay, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeDayNumber(dateKey)}</Text>
               <Text style={[styles.dateMiniMonth, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeDateLabel(dateKey)}</Text>
@@ -1497,6 +1609,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
               const countdownLevel = getCountdownLevel(item.startTime, now);
               const availableSeats = Number(item.availableSeats ?? 0);
               const totalSeats = Number(item.totalSeats ?? item.seatLayout.flat().length ?? 0);
+              const availabilityMeta = getSeatAvailabilityMeta(availableSeats, totalSeats);
               return (
                 <Pressable
                   key={`${item.id}-${item.roomName}`}
@@ -1513,7 +1626,22 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
                   <Text style={styles.showtimeInfo}>{item.roomName}</Text>
                   <View style={styles.showtimeMetaStack}>
                     <Text style={[styles.showtimePrice, isDisabled && styles.showtimePriceDisabled]}>Từ {formatCurrency(item.basePrice)}</Text>
-                    <Text style={styles.showtimeSeatsLeft}>{availableSeats > 0 ? `Còn ${availableSeats}/${totalSeats} ghế` : "Đã kín chỗ"}</Text>
+                    <View style={styles.showtimeSeatsMetaRow}>
+                      <Text
+                        style={[
+                          styles.showtimeSeatLevel,
+                          availabilityMeta.tone === "good" && styles.showtimeSeatLevelGood,
+                          availabilityMeta.tone === "warning" && styles.showtimeSeatLevelWarning,
+                          availabilityMeta.tone === "critical" && styles.showtimeSeatLevelCritical,
+                          isDisabled && styles.showtimeSeatLevelDisabled,
+                        ]}
+                      >
+                        {availabilityMeta.label}
+                      </Text>
+                      <Text style={[styles.showtimeSeatsLeft, isDisabled && styles.showtimeSeatsLeftDisabled]}>
+                        {availableSeats > 0 ? `Còn ${availableSeats}/${totalSeats} ghế` : "Đã kín chỗ"}
+                      </Text>
+                    </View>
                   </View>
                   <View style={styles.showtimeFooterRow}>
                     {bookingLoadingShowtimeId === item.id ? (
@@ -1574,18 +1702,24 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
 export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seat: SeatSelection) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
   const layout = seatMapRows;
   const scrollY = React.useRef(new Animated.Value(0)).current;
-  const standardRows = layout.filter((row) => row.seats.some((seat) => seat.seatType === "STANDARD"));
-  const vipRows = layout.filter((row) => row.seats.some((seat) => seat.seatType === "VIP"));
-  const coupleRows = layout.filter((row) => row.seats.some((seat) => seat.seatType === "COUPLE"));
+  const standardRows = layout
+    .map((row) => ({ ...row, seats: row.seats.filter((seat) => seat.seatType === "STANDARD") }))
+    .filter((row) => row.seats.length > 0);
+  const vipRows = layout
+    .map((row) => ({ ...row, seats: row.seats.filter((seat) => seat.seatType === "VIP") }))
+    .filter((row) => row.seats.length > 0);
+  const coupleRows = layout
+    .map((row) => ({ ...row, seats: row.seats.filter((seat) => seat.seatType === "COUPLE") }))
+    .filter((row) => row.seats.length > 0);
   const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0);
 
   const renderSeatRow = (row: SeatMapRow, accent: "standard" | "vip" | "couple" = "standard") => (
     <View key={row.rowLabel} style={styles.seatRow}>
       <Text style={[styles.seatRowLabel, accent === "vip" && styles.seatRowLabelVip, accent === "couple" && styles.seatRowLabelCouple]}>{row.rowLabel}</Text>
       {row.seats.map((seat, index) => {
-        const active = selectedSeats.some((item) => item.seatCode === seat.seatCode);
+        const active = selectedSeats.some((item) => item.seatCode === seat.seatCode && item.seatType === seat.seatType);
         const disabled = seat.status !== "AVAILABLE";
-        const backgroundColor =
+        const seatTone =
           seat.status === "SOLD"
             ? palette.sold
             : seat.status === "HELD"
@@ -1598,13 +1732,39 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         const needsAisleGap = row.seats.length >= 8 && index == Math.floor(row.seats.length / 2) - 1;
 
         return (
-          <React.Fragment key={seat.seatCode}>
+          <React.Fragment key={`${row.rowLabel}-${seat.seatCode}-${seat.seatType}`}>
             <Pressable
               disabled={disabled}
               onPress={() => onToggleSeat({ seatCode: seat.seatCode, seatType: seat.seatType as "STANDARD" | "VIP" | "COUPLE", price: seat.price })}
-              style={[styles.seatCell, seat.seatType === "COUPLE" && styles.coupleSeatCell, active && styles.seatActive, { backgroundColor }]}
+              style={[styles.seatCell, seat.seatType === "COUPLE" && styles.coupleSeatCell, active && styles.seatActive, disabled && styles.seatDisabled]}
             >
-              <Text style={styles.seatCellText}>{seat.seatCode.replace(row.rowLabel, "")}</Text>
+              <View
+                style={[
+                  styles.seatShell,
+                  seat.seatType === "VIP" && styles.seatShellVip,
+                  seat.seatType === "COUPLE" && styles.seatShellCouple,
+                  active && styles.seatShellActive,
+                  disabled && styles.seatShellDisabled,
+                  { borderColor: seatTone, shadowColor: seatTone },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.seatBack,
+                    seat.seatType === "COUPLE" && styles.seatBackCouple,
+                    { backgroundColor: seatTone },
+                  ]}
+                />
+                <View style={styles.seatArmRow}>
+                  <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
+                  <View style={[styles.seatCushion, seat.seatType === "COUPLE" && styles.seatCushionCouple, { backgroundColor: seatTone }]} />
+                  <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
+                </View>
+                <View style={[styles.seatLeg, { backgroundColor: active ? "#fff7f0" : seatTone }]} />
+              </View>
+              <Text style={[styles.seatCellText, active && styles.seatCellTextActive, disabled && styles.seatCellTextDisabled]}>
+                {seat.seatCode.replace(row.rowLabel, "")}
+              </Text>
             </Pressable>
             {needsAisleGap ? <View style={styles.seatAisleGap} /> : null}
           </React.Fragment>
@@ -1673,9 +1833,9 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         </View>
 
         <View style={styles.legendGrid}>
-          {[["Ghế thường", palette.seat], ["Ghế VIP", palette.vip], ["Ghế đôi", palette.couple], ["Đã bán", palette.sold], ["Đang giữ", palette.held]].map(([label, color]) => (
+          {[["Ghế thường", palette.seat], ["Ghế VIP", palette.vip], ["Ghế đôi", palette.couple], ["Đã chọn", "#ffffff"], ["Đã bán", palette.sold], ["Đang giữ", palette.held]].map(([label, color]) => (
             <View key={label} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: color }]} />
+              <View style={[styles.legendDot, label === "Đã chọn" ? styles.legendDotSelected : null, { backgroundColor: color }]} />
               <Text style={styles.legendText}>{label}</Text>
             </View>
           ))}
