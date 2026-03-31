@@ -1705,6 +1705,9 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0);
   const [seatTapHint, setSeatTapHint] = React.useState<{ anchorKey: string; label: string; detail: string; price: number } | null>(null);
+  const [lastSelectedAnchorKey, setLastSelectedAnchorKey] = React.useState<string | null>(null);
+  const hotGlowAnim = React.useRef(new Animated.Value(0.9)).current;
+  const seatPulseAnim = React.useRef(new Animated.Value(0)).current;
   const hotSeats = layout.flatMap((row) => row.seats.filter((seat) => seat.isHot && typeof seat.columnIndex === "number").map((seat) => ({ rowLabel: row.rowLabel, columnIndex: Number(seat.columnIndex) })));
   const hotBounds = React.useMemo(() => {
     if (hotSeats.length === 0) {
@@ -1725,6 +1728,28 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
       }
     );
   }, [hotSeats]);
+
+  React.useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(hotGlowAnim, { toValue: 1.05, duration: 1800, useNativeDriver: true }),
+        Animated.timing(hotGlowAnim, { toValue: 0.92, duration: 1800, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [hotGlowAnim]);
+
+  React.useEffect(() => {
+    if (!lastSelectedAnchorKey) {
+      return;
+    }
+    seatPulseAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(seatPulseAnim, { toValue: 1, duration: 190, useNativeDriver: true }),
+      Animated.timing(seatPulseAnim, { toValue: 0, duration: 240, useNativeDriver: true }),
+    ]).start();
+  }, [lastSelectedAnchorKey, seatPulseAnim]);
   const getSeatSelectionUnit = React.useCallback((row: SeatMapRow, seat: SeatMapRow["seats"][number]) => {
     if (seat.seatType !== "COUPLE") {
       return [{ seatCode: seat.seatCode, seatType: seat.seatType as "STANDARD" | "VIP" | "COUPLE", price: seat.price }];
@@ -1799,6 +1824,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         onPress={() => {
           onToggleSeat(selectionUnit);
           setSeatTapHint({ anchorKey, label, detail, price: totalPrice });
+          setLastSelectedAnchorKey(anchorKey);
         }}
         style={[styles.seatCell, seat.seatType === "COUPLE" && styles.coupleSeatCell, active && styles.seatActive, disabled && styles.seatDisabled]}
       >
@@ -1808,35 +1834,75 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
             <Text style={styles.seatInlineHintMeta}>{seatTapHint.detail}</Text>
           </View>
         ) : null}
-        <View
+        <Animated.View
           style={[
-            styles.seatShell,
-            seat.seatType === "VIP" && styles.seatShellVip,
-            seat.seatType === "COUPLE" && styles.seatShellCouple,
-            isHot && styles.seatShellHot,
-            isTopHotEdge && styles.seatHotEdgeTop,
-            isBottomHotEdge && styles.seatHotEdgeBottom,
-            isLeftHotEdge && styles.seatHotEdgeLeft,
-            isRightHotEdge && styles.seatHotEdgeRight,
-            active && styles.seatShellActive,
-            disabled && styles.seatShellDisabled,
-            { borderColor: seatTone, shadowColor: seatTone },
+            active && lastSelectedAnchorKey === anchorKey
+              ? {
+                  transform: [
+                    {
+                      scale: seatPulseAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.08],
+                      }),
+                    },
+                  ],
+                }
+              : null,
           ]}
         >
-          <View style={[styles.seatBack, seat.seatType === "COUPLE" && styles.seatBackCouple, { backgroundColor: seatTone }]} />
-          <View style={styles.seatArmRow}>
-            <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
-            <View style={[styles.seatCushion, seat.seatType === "COUPLE" && styles.seatCushionCouple, { backgroundColor: seatTone }]} />
-            <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
+          {active && lastSelectedAnchorKey === anchorKey ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.seatPulseRing,
+                seat.seatType === "COUPLE" && styles.seatPulseRingCouple,
+                {
+                  opacity: seatPulseAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 0.45],
+                  }),
+                  transform: [
+                    {
+                      scale: seatPulseAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.88, 1.24],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          ) : null}
+          <View
+            style={[
+              styles.seatShell,
+              seat.seatType === "VIP" && styles.seatShellVip,
+              seat.seatType === "COUPLE" && styles.seatShellCouple,
+              isHot && styles.seatShellHot,
+              isTopHotEdge && styles.seatHotEdgeTop,
+              isBottomHotEdge && styles.seatHotEdgeBottom,
+              isLeftHotEdge && styles.seatHotEdgeLeft,
+              isRightHotEdge && styles.seatHotEdgeRight,
+              active && styles.seatShellActive,
+              disabled && styles.seatShellDisabled,
+              { borderColor: seatTone, shadowColor: seatTone },
+            ]}
+          >
+            <View style={[styles.seatBack, seat.seatType === "COUPLE" && styles.seatBackCouple, { backgroundColor: seatTone }]} />
+            <View style={styles.seatArmRow}>
+              <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
+              <View style={[styles.seatCushion, seat.seatType === "COUPLE" && styles.seatCushionCouple, { backgroundColor: seatTone }]} />
+              <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
+            </View>
+            <View style={[styles.seatLeg, { backgroundColor: active ? "#fff7f0" : seatTone }]} />
           </View>
-          <View style={[styles.seatLeg, { backgroundColor: active ? "#fff7f0" : seatTone }]} />
-        </View>
+        </Animated.View>
         <Text style={[styles.seatCellText, active && styles.seatCellTextActive, disabled && styles.seatCellTextDisabled]}>
           {selectionUnit.length > 1 ? label.replace(`${row.rowLabel}`, "").replace(" - ", "/") : seat.seatCode.replace(row.rowLabel, "")}
         </Text>
       </Pressable>
     );
-  }, [getSeatSelectionUnit, hotBounds, onToggleSeat, selectedSeats]);
+  }, [getSeatSelectionUnit, hotBounds, lastSelectedAnchorKey, onToggleSeat, seatPulseAnim, selectedSeats]);
 
   const renderSeatGroup = React.useCallback((row: SeatMapRow, seats: SeatMapRow["seats"]) => (
     <View style={styles.seatGroup}>
@@ -1884,7 +1950,16 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
                 hotBounds && row.rowLabel === hotBounds.topRow && row.rowLabel === hotBounds.bottomRow && styles.seatHotOutlineSingleRow,
               ]}
             >
-              <View pointerEvents="none" style={styles.seatHotGlow} />
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.seatHotGlow,
+                  {
+                    opacity: hotGlowAnim.interpolate({ inputRange: [0.9, 1.05], outputRange: [0.22, 0.38] }),
+                    transform: [{ scale: hotGlowAnim }],
+                  },
+                ]}
+              />
               {hotBounds && row.rowLabel === hotBounds.topRow ? (
                 <View style={styles.seatHotZoneLabelWrap}>
                   <Text style={styles.seatHotZoneLabel}>HOT ZONE</Text>
@@ -1902,7 +1977,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
     );
   };
 
-  const renderColumnHeader = React.useCallback(() => {
+  const renderColumnHeader = React.useCallback((position: "top" | "bottom") => {
     const anchorRow = layout.find((row) => row.seats.length > 0) ?? layout[0];
     if (!anchorRow) {
       return null;
@@ -1933,9 +2008,9 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
     );
 
     return (
-      <View style={styles.seatColumnRow}>
+      <View style={[styles.seatColumnRow, position === "bottom" && styles.seatColumnRowBottom]}>
         <View style={styles.seatRowRail}>
-          <Text style={styles.seatColumnSideLabel}>ROW</Text>
+          <Text style={styles.seatColumnSideLabel}>{position === "top" ? "ROW" : "COL"}</Text>
         </View>
         <View style={styles.seatRowContent}>
           {groups.left.length > 0 ? renderColumnGroup(groups.left) : <View style={styles.seatGroupPlaceholder} />}
@@ -1950,8 +2025,17 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
                 anchorRow.rowLabel === hotBounds?.topRow && anchorRow.rowLabel === hotBounds?.bottomRow && styles.seatHotOutlineSingleRow,
               ]}
             >
-              <View pointerEvents="none" style={styles.seatHotGlow} />
-              <View style={styles.seatHotZoneLabelWrap}>
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.seatHotGlow,
+                  {
+                    opacity: hotGlowAnim.interpolate({ inputRange: [0.9, 1.05], outputRange: [0.22, 0.38] }),
+                    transform: [{ scale: hotGlowAnim }],
+                  },
+                ]}
+              />
+              <View style={[styles.seatHotZoneLabelWrap, position === "bottom" && styles.seatHotZoneLabelWrapBottom]}>
                 <Text style={styles.seatHotZoneLabel}>HOT ZONE</Text>
               </View>
               {renderColumnGroup(centerHotSeats)}
@@ -1964,7 +2048,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         <View style={styles.seatRowRailMirror} />
       </View>
     );
-  }, [hotBounds, layout, renderAisleGuide, splitSeatGroups]);
+  }, [hotBounds, hotGlowAnim, layout, renderAisleGuide, splitSeatGroups]);
 
   return (
     <View style={styles.screenShell}>
@@ -2014,10 +2098,11 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
               <Text style={styles.seatHotBadgeText}>Vùng Hot: vị trí đẹp, đặt nhiều, phụ thu +20.000đ</Text>
             </View>
           ) : null}
-          {renderColumnHeader()}
+          {renderColumnHeader("top")}
           <View style={styles.seatSection}>
             {layout.map((row) => renderSeatRow(row))}
           </View>
+          {renderColumnHeader("bottom")}
         </View>
 
         <View style={styles.legendGrid}>

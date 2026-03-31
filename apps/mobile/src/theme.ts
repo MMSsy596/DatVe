@@ -370,6 +370,7 @@ export const styles = StyleSheet.create({
   seatRowRailMirror: { width: 28 },
   seatRowContent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 0, flex: 1 },
   seatColumnRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8, paddingBottom: 6 },
+  seatColumnRowBottom: { paddingTop: 6, paddingBottom: 0 },
   seatColumnSideLabel: { color: "rgba(255,255,255,0.32)", fontSize: 8, textAlign: "center", fontWeight: "900", letterSpacing: 1.2 },
   seatColumnGroup: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
   seatColumnLabel: { width: 34, color: "rgba(255,255,255,0.44)", fontSize: 10, textAlign: "center", fontWeight: "800" },
@@ -389,6 +390,8 @@ export const styles = StyleSheet.create({
   seatCell: { width: 34, alignItems: "center", justifyContent: "flex-start", gap: 4, paddingVertical: 2, position: "relative" },
   coupleSeatCell: { width: 62 },
   seatDisabled: { opacity: 0.72 },
+  seatPulseRing: { position: "absolute", top: -4, left: -4, right: -4, bottom: -4, borderRadius: 14, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.92)", backgroundColor: "rgba(255,255,255,0.08)" },
+  seatPulseRingCouple: { borderRadius: 18 },
   seatShell: {
     width: 28,
     height: 28,
@@ -415,6 +418,7 @@ export const styles = StyleSheet.create({
   seatHotOutlineSingleRow: { borderRadius: 16 },
   seatHotGlow: { position: "absolute", left: -4, right: -4, top: -4, bottom: -4, borderRadius: 18, backgroundColor: "rgba(127,228,201,0.1)" },
   seatHotZoneLabelWrap: { position: "absolute", top: -10, alignSelf: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: "#7fe4c9", borderWidth: 1, borderColor: "rgba(255,255,255,0.22)", zIndex: 3, shadowColor: "#7fe4c9", shadowOpacity: 0.28, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
+  seatHotZoneLabelWrapBottom: { top: undefined, bottom: -10 },
   seatHotZoneLabel: { color: "#06251d", fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
   seatShellActive: {
     backgroundColor: "rgba(255,255,255,0.18)",
