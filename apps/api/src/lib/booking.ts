@@ -59,7 +59,7 @@ export async function holdSeats(payload: HoldPayload) {
     );
 
     if (!showtime) {
-      throw new Error("Khong tim thay suat chieu.");
+      throw new Error("Không tìm thấy suất chiếu.");
     }
 
     const normalizedSeats: Array<{ seatCode: string; seatType: "STANDARD" | "VIP" | "COUPLE"; price: number }> = [];
@@ -74,7 +74,7 @@ export async function holdSeats(payload: HoldPayload) {
       );
 
       if (!roomSeat) {
-        throw new Error(`Ghe ${seat.seatCode} khong hop le.`);
+        throw new Error(`Ghế ${seat.seatCode} không hợp lệ.`);
       }
 
       const [conflicts] = await connection.query<RowDataPacket[]>(
@@ -93,7 +93,7 @@ export async function holdSeats(payload: HoldPayload) {
       );
 
       if (conflicts.length > 0) {
-        throw new Error(`Ghe ${seat.seatCode} da duoc giu hoac thanh toan.`);
+        throw new Error(`Ghế ${seat.seatCode} đã được giữ hoặc thanh toán.`);
       }
 
       normalizedSeats.push({
@@ -158,15 +158,15 @@ export async function finalizeBooking(payload: FinalizePayload) {
     );
 
     if (!booking) {
-      throw new Error("Khong tim thay booking.");
+      throw new Error("Không tìm thấy đơn đặt vé.");
     }
 
     if (booking.status === "EXPIRED") {
-      throw new Error("Booking da het han giu ghe.");
+      throw new Error("Đơn giữ ghế đã hết hạn.");
     }
 
     if (booking.status === "HELD" && Number(booking.is_not_expired) !== 1) {
-      throw new Error("Booking da het han giu ghe.");
+      throw new Error("Đơn giữ ghế đã hết hạn.");
     }
 
     await connection.execute("DELETE FROM booking_items WHERE booking_id = ?", [payload.bookingId]);
@@ -200,7 +200,7 @@ export async function finalizeBooking(payload: FinalizePayload) {
       };
       discountAmount = calculateVoucherDiscount(voucher, originalTotal);
       if (discountAmount <= 0) {
-        throw new Error("Don hang chua du dieu kien ap voucher.");
+        throw new Error("Đơn hàng chưa đủ điều kiện áp voucher.");
       }
       voucherCode = String(voucher.code).trim().toUpperCase();
     }

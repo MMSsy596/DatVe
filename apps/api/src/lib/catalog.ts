@@ -21,6 +21,7 @@ type MovieRow = RowDataPacket & {
   badge: string | null;
   poster_url: string | null;
   banner_url: string | null;
+  trailer_url: string | null;
   highlight_color: string | null;
   status: string;
   is_featured: number;
@@ -61,7 +62,7 @@ export async function getCatalogData() {
   );
 
   const [movies] = await pool.query<MovieRow[]>(
-    `SELECT id, slug, title, subtitle, genre, duration_minutes, rating, badge, poster_url, banner_url, highlight_color, status, is_featured, box_office_rank
+    `SELECT id, slug, title, subtitle, genre, duration_minutes, rating, badge, poster_url, banner_url, trailer_url, highlight_color, status, is_featured, box_office_rank
      FROM movies
      ORDER BY is_featured DESC, box_office_rank ASC, id ASC`
   );
@@ -102,6 +103,7 @@ export async function getCatalogData() {
       badge: item.badge,
       posterUrl: item.poster_url,
       bannerUrl: item.banner_url,
+      trailerUrl: item.trailer_url,
       highlightColor: item.highlight_color,
       status: item.status.toLowerCase(),
       isFeatured: Boolean(item.is_featured),

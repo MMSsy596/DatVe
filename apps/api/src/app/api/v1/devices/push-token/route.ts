@@ -12,20 +12,20 @@ export async function POST(request: Request) {
       !expoPushToken.startsWith("ExponentPushToken[") &&
       !expoPushToken.startsWith("ExpoPushToken[")
     ) {
-      throw new Error("Expo push token khong hop le.");
+      throw new Error("Expo push token không hợp lệ.");
     }
 
     await registerPushToken({
       userId: user.id,
       expoPushToken,
-      deviceId: v.optionalString(body.deviceId, "Device ID", { max: 120 }),
-      platform: v.optionalString(body.platform, "Platform", { max: 20 }),
-      appVersion: v.optionalString(body.appVersion, "App version", { max: 40 }),
+      deviceId: v.optionalString(body.deviceId, "Mã thiết bị", { max: 120 }),
+      platform: v.optionalString(body.platform, "Nền tảng", { max: 20 }),
+      appVersion: v.optionalString(body.appVersion, "Phiên bản ứng dụng", { max: 40 }),
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Khong the dang ky push token" },
+      { error: error instanceof Error ? error.message : "Không thể đăng ký push token" },
       { status: 400 }
     );
   }

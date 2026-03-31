@@ -33,7 +33,7 @@ export async function reviewPayment(input: {
       [input.providerTxnRef]
     );
     if (!payment) {
-      throw new Error("Khong tim thay payment.");
+      throw new Error("Không tìm thấy giao dịch.");
     }
     const paymentStatus = input.reviewStatus === "APPROVED" ? "SUCCESS" : "FAILED";
     const bookingStatus = input.reviewStatus === "APPROVED" ? "PAID" : "CANCELLED";
@@ -69,10 +69,10 @@ export async function checkInByQr(qrRaw: string, staffId: number) {
     [qr, qr, qr]
   );
   if (!booking) {
-    throw new Error("Khong tim thay ve can check-in.");
+    throw new Error("Không tìm thấy vé cần check-in.");
   }
   if (booking.status !== "PAID") {
-    throw new Error("Chi duoc check-in cho ve da thanh toan.");
+    throw new Error("Chỉ được check-in cho vé đã thanh toán.");
   }
   if (booking.check_in_status === "CHECKED_IN") {
     return {
@@ -135,18 +135,18 @@ export async function upsertReminder(bookingId: number, userId: number, remindAt
     [bookingId, userId]
   );
   if (!booking) {
-    throw new Error("Khong tim thay booking hop le de dat reminder.");
+    throw new Error("Không tìm thấy đơn hợp lệ để đặt nhắc lịch.");
   }
   if (booking.status !== "PAID") {
-    throw new Error("Chi dat reminder cho booking da thanh toan.");
+    throw new Error("Chỉ đặt nhắc lịch cho đơn đã thanh toán.");
   }
   const remindDate = new Date(remindAt.replace(" ", "T"));
   const showtimeDate = new Date(String(booking.start_time).replace(" ", "T"));
   if (Number.isNaN(remindDate.getTime())) {
-    throw new Error("Thoi gian reminder khong hop le.");
+    throw new Error("Thời gian nhắc lịch không hợp lệ.");
   }
   if (remindDate.getTime() >= showtimeDate.getTime()) {
-    throw new Error("Reminder phai som hon gio chieu.");
+    throw new Error("Nhắc lịch phải sớm hơn giờ chiếu.");
   }
 
   await pool.execute(

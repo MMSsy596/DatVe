@@ -1,14 +1,11 @@
-import React from "react";
+﻿import React from "react";
 import * as SecureStore from "expo-secure-store";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import * as AuthSession from "expo-auth-session";
-import * as Google from "expo-auth-session/providers/google";
 import { BlurView } from "expo-blur";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import * as WebBrowser from "expo-web-browser";
 import { ActivityIndicator, Animated, BackHandler, Linking, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
 import {
   CheckoutScreen,
@@ -47,10 +44,11 @@ import {
 const DEFAULT_API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || "https://datve.up.railway.app/api/v1";
 const SESSION_STORAGE_KEY = "datve.mobile.session";
-const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID?.trim() || "";
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || "";
+const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 
-WebBrowser.maybeCompleteAuthSession();
+function demoMediaUrl(path: string) {
+  return path.startsWith("/") ? `${DEFAULT_API_ORIGIN}${path}` : `${DEFAULT_API_ORIGIN}/${path}`;
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -61,51 +59,18 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const movieVisualFallbacks: Record<string, { posterUrl: string; bannerUrl: string }> = {
-  "lat-mat-8": {
-    posterUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuB2rgvSMbSgPRWHVJWKZboWP7oto9WeojcVcyjYezog7C3XhtiPT6_rAhybbWDbdYPbt1owampZ_Ib-4P7Ch_vv-cdChZn6cwQta_O0wHiFHLZwtU7ciPddOJxd2Gy00T-l72O7BDNUsTWL3NpChbctdkTmfjFxqLllkjHRCHzKxUgTYe77p2Kqwo2BLwGnPx_sgJDeFewRPA4hAlndAr_ZcMVvSubAs0egLzxiXsdOzFVxsC6uy4cTu05wtCeZbTbDynAjXmFPgKk",
-    bannerUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAQ8A5NMTxAb-_Bmu89IP7-hrig8B8KEnr61OpIx37EiMlPgN1MJpk90-IUH4dqfw8IzzpRuNTDnHbOjf64qCLguwNRYWCekMG3Xdvm6Iuk0qyIgUZrox2AqBG8AvIG7xcwlDH5Xjh64sBHTSH-Kh2BUmx-tLE5lZJPGocbH_-ajI1DSXNEXSmi0s0NwSi7WgFesgpzN2HUdabSpDIFuAVw9urQKAhUmIere9Xshsbesr44WOZ4x2QkQwaH6ybS09KPnv1UZkHQDRY",
-  },
-  "the-last-voyage": {
-    posterUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAuTMSOq4aEHNAsE8301be9PAkR5xaLhg-cVWO6ilEI_IBpXdQsJWYkEyV4sqBVsYFN_SScdsTOC5deQsrLpUOgDWEMUN-VVmoKXpBBjHEM_gO_A9P2vTl5nVqjpf3VUACSDEAOjYB6uK9aDjtde60WT319bo7erZnOLD5XwYnVLE9MJ9j366sCd1N4373rrEuF4BR3FZi6tDOJlFYhh2_wu4gHu0g06m8rzz_fYYDgzOHhfK7QU8Dbd1UsgLhHn7hpcguL3OiLOMk",
-    bannerUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDBjub-xwkN_0VWM5G_5o99SB-3C0XBSBAEzCRD-L212cKEKpzyrt9Bvpdy914oHTk1IQi1doniZf5qIfDffq2fMBc7F6YArf3Fkv7T5XvrNeKT4Vjkwy73-V6nV5aRH7rGc8HBQhL2ihAnLI0h3Z5xQjJeK4LlHzdM-HkZj8FmKvPDCBPVVfwBilGM8PMGt1popQRwNvzPNEN2hL3CGuFseANDs7qlvkNMd7KnDydWxaB71xtoh1Qrl3YcI5XoQ-kO99BB4_9u6c4",
-  },
-  "mua-he-truoc-cua-em": {
-    posterUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAaJMeybDDt7q8vRHoP8KkRjyc_QejMjd6SMASxAcqGII27A73dR89dcNe_ykEmHiOX-g1X6PrT9RJx0xGRN5OFjl7gpRHuOBUaFrmhB8zD12m-_8SXRQLEhVaBGwMIXo8hUT34yAW-E5fSmHufA6FBGgwmdEeor93WqFaO6jfYOLmwt6HYsmH-g8l8fn-f9VFvVLBLIQME_Ap92MLbA3LtAK_bvKovfE2MulJOswvjHadJIHkML2TLNXlH_NSHKXaT-7bugwovvrw",
-    bannerUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuC-tOaKsGJxT6_4WfRJMIMKH70-1CKNHiH2pJ4feAbz94pbydaGWSL09Z_7P3DkZOepZacVlNiQwJ9vIkGRvzhVRm7wq-i07UHvnf31Nkr7IEpCRDO8KNUKUsRvWTFS--DgvHpBN0Mtxxj6grCYQI5Oj4-oMHEQ8HP4HJJwMf6Qmp3kxAfrGiaJR4uJmAEW2Qbu_kBx0BU5ow-AR5cdbXSGcZENyQY0ylyJdWYMddNc62ltYqQZZzEQJVNBH0aX-wbe1u1vkcYybbw",
-  },
-};
-
-const bannerVisualFallbacks: Record<number, string> = {
-  1: "https://lh3.googleusercontent.com/aida-public/AB6AXuAQ8A5NMTxAb-_Bmu89IP7-hrig8B8KEnr61OpIx37EiMlPgN1MJpk90-IUH4dqfw8IzzpRuNTDnHbOjf64qCLguwNRYWCekMG3Xdvm6Iuk0qyIgUZrox2AqBG8AvIG7xcwlDH5Xjh64sBHTSH-Kh2BUmx-tLE5lZJPGocbH_-ajI1DSXNEXSmi0s0NwSi7WgFesgpzN2HUdabSpDIFuAVw9urQKAhUmIere9Xshsbesr44WOZ4x2QkQwaH6ybS09KPnv1UZkHQDRY",
-  2: "https://lh3.googleusercontent.com/aida-public/AB6AXuC-tOaKsGJxT6_4WfRJMIMKH70-1CKNHiH2pJ4feAbz94pbydaGWSL09Z_7P3DkZOepZacVlNiQwJ9vIkGRvzhVRm7wq-i07UHvnf31Nkr7IEpCRDO8KNUKUsRvWTFS--DgvHpBN0Mtxxj6grCYQI5Oj4-oMHEQ8HP4HJJwMf6Qmp3kxAfrGiaJR4uJmAEW2Qbu_kBx0BU5ow-AR5cdbXSGcZENyQY0ylyJdWYMddNc62ltYqQZZzEQJVNBH0aX-wbe1u1vkcYybbw",
-};
-
-function applyMovieVisualFallback(movie: Movie): Movie {
-  const visual = movieVisualFallbacks[movie.slug];
-  if (!visual) return movie;
-  return {
-    ...movie,
-    posterUrl: movie.posterUrl ?? visual.posterUrl,
-    bannerUrl: movie.bannerUrl ?? visual.bannerUrl,
-  };
-}
-
 const fallbackBanners: Banner[] = [
-  { id: 1, eyebrow: "Khuyến mại toàn hệ thống", title: "Tuần lễ điện ảnh", text: "Mua 2 vé tặng 1 combo mini trong khung giờ vàng.", accent: "#1f2f73" },
-  { id: 2, eyebrow: "Suất chiếu sớm", title: "Đêm công chiếu", text: "Đặt trước phim hot và nhận ưu đãi hội viên.", accent: "#5a1826" },
+  { id: 1, eyebrow: "Khuyến mại toàn hệ thống", title: "Tuần lễ điện ảnh", text: "Mua 2 vé tặng 1 combo mini trong khung giờ vàng.", accent: "#1f2f73", imageUrl: demoMediaUrl("/demo-media/promos/banner-1.svg") },
+  { id: 2, eyebrow: "Suất chiếu sớm", title: "Đêm công chiếu", text: "Đặt trước phim hot và nhận ưu đãi hội viên.", accent: "#5a1826", imageUrl: demoMediaUrl("/demo-media/promos/banner-2.svg") },
 ];
 
 const fallbackMovies: Movie[] = [
-  applyMovieVisualFallback({ id: 1, slug: "lat-mat-8", title: "Lật Mặt 8", subtitle: "Trên đường đua doanh thu", genre: "Hành động", runtime: "128 phút", score: "9.1", badge: "Nổi bật", tone: "#6d28d9", description: "Phim đang có lượng đặt vé buổi tối cao, phù hợp làm màn hình chủ lực cho trải nghiệm đặt vé.", status: "NOW_SHOWING" }),
-  applyMovieVisualFallback({ id: 2, slug: "the-last-voyage", title: "The Last Voyage", subtitle: "Không gian, bí ẩn và sinh tồn", genre: "Viễn tưởng", runtime: "142 phút", score: "8.9", badge: "Đặt nhiều", tone: "#0f766e", description: "Tác phẩm có nhu cầu ghế VIP cao, thích hợp cho luồng chọn ghế và thanh toán thực tế.", status: "TRENDING" }),
-  applyMovieVisualFallback({ id: 3, slug: "mua-he-truoc-cua-em", title: "Mùa Hè Trước Cửa Em", subtitle: "Tình cảm, dễ tiếp cận", genre: "Tình cảm", runtime: "115 phút", score: "8.6", badge: "Sắp chiếu", tone: "#9333ea", description: "Nội dung nhẹ, phù hợp nhóm người dùng trẻ và tính năng lưu xem sau.", status: "COMING_SOON" }),
+  { id: 1, slug: "lat-mat-8", title: "Lật Mặt 8", subtitle: "Trên đường đua doanh thu", genre: "Hành động", runtime: "118 phút", score: "7.6", badge: "Nổi bật", tone: "#6d28d9", description: "Chuyện gia đình với nhiều tình huống bất ngờ, hài hước và cảm xúc.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/lat-mat-8.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/lat-mat-8.svg"), trailerUrl: "https://www.youtube.com/embed/EXeTwQWrcwY?playsinline=1" },
+  { id: 2, slug: "nguoi-nhen-da-vu-tru", title: "Người Nhện Đa Vũ Trụ", subtitle: "Cuộc đua vá lại đa vũ trụ", genre: "Hành động, Viễn tưởng", runtime: "142 phút", score: "8.7", badge: "Đặt nhiều", tone: "#0f766e", description: "Peter và các đồng đội phải vá lại vết nứt đa vũ trụ trước khi mọi thực tại sụp đổ.", status: "TRENDING", posterUrl: demoMediaUrl("/demo-media/posters/nguoi-nhen-da-vu-tru.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/nguoi-nhen-da-vu-tru.svg"), trailerUrl: "https://www.youtube.com/embed/TcMBFSGVi1c?playsinline=1" },
+  { id: 3, slug: "mat-ma-bien-dem", title: "Mật Mã Biển Đêm", subtitle: "Truy đuổi xuyên biên giới", genre: "Hành động, Tội phạm", runtime: "123 phút", score: "8.2", badge: "Hot", tone: "#9333ea", description: "Đội điều tra truy đuổi đường dây rửa tiền xuyên quốc gia.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/mat-ma-bien-dem.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/mat-ma-bien-dem.svg"), trailerUrl: "https://www.youtube.com/embed/8ugaeA-nMTc?playsinline=1" },
+  { id: 4, slug: "hanh-tinh-thu-chin", title: "Hành Tinh Thứ Chín", subtitle: "Bí mật ngoài Hệ Mặt Trời", genre: "Viễn tưởng, Khoa học", runtime: "131 phút", score: "8.1", badge: "Nổi bật", tone: "#c41010", description: "Chuyến bay thăm dò xa nhất loài người mở ra bí mật ngoài Hệ Mặt Trời.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/hanh-tinh-thu-chin.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/hanh-tinh-thu-chin.svg"), trailerUrl: "https://www.youtube.com/embed/hA6hldpSTF8?playsinline=1" },
+  { id: 5, slug: "chien-tuyen-do", title: "Chiến Tuyến Đỏ", subtitle: "Nhiệm vụ sát biên giới", genre: "Chiến tranh, Chính kịch", runtime: "133 phút", score: "7.4", badge: "Sắp chiếu", tone: "#0f4c81", description: "Tiểu đội đặc nhiệm nhận nhiệm vụ không tưởng ở biên giới.", status: "COMING_SOON", posterUrl: demoMediaUrl("/demo-media/posters/chien-tuyen-do.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/chien-tuyen-do.svg"), trailerUrl: "https://www.youtube.com/embed/qSqVVswa420?playsinline=1" },
+  { id: 6, slug: "mua-he-cua-chung-ta", title: "Mùa Hè Của Chúng Ta", subtitle: "Thanh xuân gặp lại", genre: "Thanh xuân, Tình cảm", runtime: "113 phút", score: "7.8", badge: "Theo dõi", tone: "#8a1f3d", description: "Nhóm bạn cũ gặp lại sau 10 năm trong chuyến đi cuối hè.", status: "COMING_SOON", posterUrl: demoMediaUrl("/demo-media/posters/mua-he-cua-chung-ta.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/mua-he-cua-chung-ta.svg"), trailerUrl: "https://www.youtube.com/embed/6ZfuNTqbHE8?playsinline=1" },
 ];
 
 const fallbackShowtimes: ShowtimeItem[] = [
@@ -183,25 +148,13 @@ export default function App() {
   const [customerEmail, setCustomerEmail] = React.useState("user@datve.local");
   const [customerPhone, setCustomerPhone] = React.useState("0900000002");
   const [bottomBarWidth, setBottomBarWidth] = React.useState(0);
+  const [authGateMessage, setAuthGateMessage] = React.useState<string | null>(null);
+  const [authReturnRoute, setAuthReturnRoute] = React.useState<RouteState | null>(null);
   const historyRef = React.useRef<RouteState[]>([]);
   const toastCloseTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastHideTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabHighlightX = React.useRef(new Animated.Value(0)).current;
   const tabPressScales = React.useRef(tabItems.map(() => new Animated.Value(1))).current;
-  const redirectUri = React.useMemo(
-    () =>
-      AuthSession.makeRedirectUri({
-        scheme: "datve",
-        path: "auth",
-      }),
-    []
-  );
-  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
-    webClientId: GOOGLE_WEB_CLIENT_ID || undefined,
-    redirectUri,
-  });
-
   const persistSession = React.useCallback(
     async (nextToken: string | null, nextUser: SessionUser | null) => {
       if (!nextToken || !nextUser) {
@@ -264,6 +217,26 @@ export default function App() {
     return true;
   }, [applyRoute]);
 
+  const promptAuth = React.useCallback(
+    (message: string, returnRoute?: RouteState) => {
+      const nextReturnRoute = returnRoute ?? { screen, tab: activeTab };
+      setAuthGateMessage(message);
+      setAuthReturnRoute(nextReturnRoute);
+      navigate({ screen: "auth", tab: nextReturnRoute.tab });
+    },
+    [activeTab, navigate, screen]
+  );
+
+  const finishAuthGate = React.useCallback(() => {
+    const nextRoute =
+      authReturnRoute && authReturnRoute.screen !== "auth"
+        ? authReturnRoute
+        : { screen: "tabs" as ScreenId, tab: activeTab };
+    setAuthGateMessage(null);
+    setAuthReturnRoute(null);
+    resetNavigation(nextRoute);
+  }, [activeTab, authReturnRoute, resetNavigation]);
+
   const apiHeaders = React.useCallback(
     (extra?: Record<string, string>) => ({
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -325,23 +298,22 @@ export default function App() {
       ]);
       setSessionUser(meJson?.user ?? null);
 
-      const remoteMovies: Movie[] = (catalog.featuredMovies ?? []).map((item: any) =>
-        applyMovieVisualFallback({
-          id: item.id,
-          slug: item.slug,
-          title: item.title,
-          subtitle: item.subtitle ?? "",
-          genre: item.genre,
-          runtime: `${item.durationMinutes} phút`,
-          score: String(item.rating),
-          badge: item.badge ?? "Đang chiếu",
-          tone: item.highlightColor ?? "#c41010",
-          description: item.subtitle ?? "Phim đang được quản lý từ backend Đặt Vé.",
-          status: String(item.status ?? "NOW_SHOWING").toUpperCase(),
-          posterUrl: absolutizeAssetUrl(item.posterUrl),
-          bannerUrl: absolutizeAssetUrl(item.bannerUrl),
-        })
-      );
+      const remoteMovies: Movie[] = (catalog.featuredMovies ?? []).map((item: any) => ({
+        id: item.id,
+        slug: item.slug,
+        title: item.title,
+        subtitle: item.subtitle ?? "",
+        genre: item.genre,
+        runtime: `${item.durationMinutes} phút`,
+        score: String(item.rating),
+        badge: item.badge ?? "Đang chiếu",
+        tone: item.highlightColor ?? "#c41010",
+        description: item.subtitle ?? "Phim đang được quản lý từ backend Đặt Vé.",
+        status: String(item.status ?? "NOW_SHOWING").toUpperCase(),
+        posterUrl: absolutizeAssetUrl(item.posterUrl),
+        bannerUrl: absolutizeAssetUrl(item.bannerUrl),
+        trailerUrl: absolutizeAssetUrl(item.trailerUrl),
+      }));
 
       setBannersData(
         ((catalog.banners ?? []).length > 0 ? catalog.banners : fallbackBanners).map((item: any) => ({
@@ -350,7 +322,7 @@ export default function App() {
           title: item.title,
           text: item.subtitle ?? item.text ?? "Ưu đãi mới dành cho thành viên Đặt Vé.",
           accent: item.accentColor ?? item.accent ?? "#1f2f73",
-          imageUrl: absolutizeAssetUrl(item.imageUrl) ?? bannerVisualFallbacks[item.id] ?? null,
+          imageUrl: absolutizeAssetUrl(item.imageUrl) ?? null,
         }))
       );
       setMoviesData(remoteMovies.length > 0 ? remoteMovies : fallbackMovies);
@@ -471,7 +443,7 @@ export default function App() {
         return rows;
       } catch (error) {
         if (!silent) {
-          showToast(error instanceof Error ? error.message : "Kh?ng th? t?i s? ?? gh?", "error", "seat");
+          showToast(error instanceof Error ? error.message : "Không thể tải sơ đồ ghế", "error", "seat");
         }
         setSeatMapRows([]);
         return null;
@@ -562,8 +534,8 @@ export default function App() {
       if (parsed.pathname.replace(/^\//, "") !== "payment-result") return;
       const status = String(parsed.searchParams.get("status") ?? "");
       const provider = String(parsed.searchParams.get("provider") ?? "");
-      if (status === "SUCCESS") showToast(`${provider} ?? c?p nh?t v? c?a b?n sang ?? thanh to?n.`, "success", "payment");
-      else if (status) showToast(`${provider} tr? v? tr?ng th?i ${status}.`, "error", "payment");
+      if (status === "SUCCESS") showToast(`${provider} đã cập nhật vé của bạn sang trạng thái đã thanh toán.`, "success", "payment");
+      else if (status) showToast(`${provider} trả về trạng thái ${status}.`, "error", "payment");
       resetNavigation({ screen: "tabs", tab: "tickets" });
       loadRemoteData();
     });
@@ -583,7 +555,7 @@ export default function App() {
       setSelectedSeats((prev) => {
         const next = prev.filter((seat) => availableSeats.has(seat.seatCode));
         if (next.length !== prev.length) {
-          showToast("C? gh? v?a ???c gi? ? thi?t b? kh?c. Danh s?ch gh? ?? ???c l?m m?i.", "info", "seat");
+          showToast("Có ghế vừa được giữ ở thiết bị khác. Danh sách ghế đã được làm mới.", "info", "seat");
         }
         return next;
       });
@@ -599,6 +571,10 @@ export default function App() {
 
   const openSeats = React.useCallback(
     async (movie: Movie, showtime?: ShowtimeItem) => {
+      if (!sessionUser) {
+        promptAuth("Hãy đăng nhập để đặt vé và giữ ghế.", { screen, tab: activeTab });
+        return;
+      }
       const nextShowtime = showtime ?? showtimesData.find((item) => item.movieId === movie.id) ?? fallbackShowtimes[0];
       setSelectedMovie(movie);
       setSelectedShowtime(nextShowtime);
@@ -610,20 +586,24 @@ export default function App() {
       await fetchSeatMap(nextShowtime.id);
       navigate({ screen: "seats", tab: activeTab });
     },
-    [activeTab, fetchSeatMap, navigate, showtimesData]
+    [activeTab, fetchSeatMap, navigate, promptAuth, screen, sessionUser, showtimesData]
   );
 
   const openTicketDetail = React.useCallback(
     async (ticket: TicketItem) => {
+      if (!sessionUser) {
+        promptAuth("Hãy đăng nhập để xem vé của bạn.", { screen: "tabs", tab: activeTab });
+        return;
+      }
       try {
         const json = await requestJson(`/bookings/${ticket.bookingId}`);
         setSelectedTicketDetail(json);
         navigate({ screen: "ticket", tab: activeTab });
       } catch (error) {
-        showToast(error instanceof Error ? error.message : "Kh?ng th? t?i chi ti?t v?", "error", "ticket");
+        showToast(error instanceof Error ? error.message : "Không thể tải chi tiết vé", "error", "ticket");
       }
     },
-    [activeTab, navigate, requestJson, showToast]
+    [activeTab, navigate, promptAuth, requestJson, sessionUser, showToast]
   );
 
   const syncMovieListToggle = React.useCallback(
@@ -659,96 +639,18 @@ export default function App() {
       setCustomerName(json.user.fullName);
       setCustomerEmail(json.user.email);
       setCustomerPhone(json.user.phone ?? "");
-      showToast(authMode === "login" ? "??ng nh?p th?nh c?ng." : "??ng k? th?nh c?ng.", "success", "auth");
+      showToast(authMode === "login" ? "Đăng nhập thành công." : "Đăng ký thành công.", "success", "auth");
+      finishAuthGate();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Kh?ng th? x?c th?c t?i kho?n", "error", "auth");
+      showToast(error instanceof Error ? error.message : "Không thể xác thực tài khoản", "error", "auth");
     } finally {
       setAuthLoading(false);
     }
   };
 
   const continueWithGoogle = React.useCallback(() => {
-    if (!GOOGLE_ANDROID_CLIENT_ID || !GOOGLE_WEB_CLIENT_ID) {
-      showToast("Chưa cấu hình Google Client ID cho Android/Web.", "error", "auth");
-      return;
-    }
-    if (!googleRequest) {
-      showToast("Đang chuẩn bị Google Sign-In, thử lại sau một chút.", "info", "auth");
-      return;
-    }
-    setAuthLoading(true);
-    promptGoogleAsync().catch((error) => {
-      setAuthLoading(false);
-      showToast(error instanceof Error ? error.message : "Không thể mở Google Sign-In", "error", "auth");
-    });
-  }, [googleRequest, promptGoogleAsync, showToast]);
-
-  React.useEffect(() => {
-    if (!googleResponse) {
-      return;
-    }
-    if (googleResponse.type === "dismiss" || googleResponse.type === "cancel") {
-      setAuthLoading(false);
-      return;
-    }
-    if (googleResponse.type !== "success") {
-      setAuthLoading(false);
-      showToast("Đăng nhập Google thất bại.", "error", "auth");
-      return;
-    }
-
-    const idToken =
-      (typeof googleResponse.params?.id_token === "string" ? googleResponse.params.id_token : null) ??
-      googleResponse.authentication?.idToken ??
-      null;
-
-    if (!idToken) {
-      setAuthLoading(false);
-      showToast("Google không trả về id_token hợp lệ.", "error", "auth");
-      return;
-    }
-
-    let disposed = false;
-    const run = async () => {
-      try {
-        const json = await requestJson("/auth/google", {
-          method: "POST",
-          body: JSON.stringify({
-            idToken,
-            deviceName: Device.deviceName || "Thiết bị Android",
-          }),
-        });
-        if (disposed) {
-          return;
-        }
-        setAuthToken(json.token);
-        setSessionUser(json.user);
-        setCustomerName(json.user.fullName);
-        setCustomerEmail(json.user.email);
-        setCustomerPhone(json.user.phone ?? "");
-        showToast("Đăng nhập Google thành công.", "success", "auth");
-      } catch (error) {
-        if (disposed) {
-          return;
-        }
-        showToast(
-          error instanceof Error ? error.message : "Không thể hoàn tất đăng nhập Google",
-          "error",
-          "auth"
-        );
-      } finally {
-        if (!disposed) {
-          setAuthLoading(false);
-        }
-      }
-    };
-
-    void run();
-
-    return () => {
-      disposed = true;
-    };
-  }, [googleResponse, requestJson, showToast]);
+    showToast("Đăng nhập Google đang được tạm tắt để ổn định bản Android mới.", "info", "auth");
+  }, [showToast]);
 
   const logout = async () => {
     try {
@@ -765,33 +667,44 @@ export default function App() {
       setFavoriteMovieIds([]);
       setWatchlistMovieIds([]);
       setRemindersData([]);
-      showToast("?? ??ng xu?t.", "info", "auth");
+      setAuthGateMessage(null);
+      setAuthReturnRoute(null);
+      resetNavigation({ screen: "tabs", tab: "home" });
+      showToast("Đã đăng xuất.", "info", "auth");
     }
   };
 
   const toggleFavorite = async () => {
+    if (!sessionUser) {
+      promptAuth("Hãy đăng nhập để thêm phim vào yêu thích.", { screen, tab: activeTab });
+      return;
+    }
     const enabled = !favoriteMovieIds.includes(selectedMovie.id);
     try {
       await syncMovieListToggle("favorites", selectedMovie.id, enabled);
       setFavoriteMovieIds((prev) =>
         enabled ? [...prev, selectedMovie.id] : prev.filter((id) => id !== selectedMovie.id)
       );
-      showToast(enabled ? "?? th?m v?o y?u th?ch." : "?? b? kh?i y?u th?ch.", "success", "favorite");
+      showToast(enabled ? "Đã thêm vào yêu thích." : "Đã bỏ khỏi yêu thích.", "success", "favorite");
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Kh?ng th? c?p nh?t y?u th?ch", "error", "favorite");
+      showToast(error instanceof Error ? error.message : "Không thể cập nhật yêu thích", "error", "favorite");
     }
   };
 
   const toggleWatchlist = async () => {
+    if (!sessionUser) {
+      promptAuth("Hãy đăng nhập để lưu phim vào xem sau.", { screen, tab: activeTab });
+      return;
+    }
     const enabled = !watchlistMovieIds.includes(selectedMovie.id);
     try {
       await syncMovieListToggle("watchlist", selectedMovie.id, enabled);
       setWatchlistMovieIds((prev) =>
         enabled ? [...prev, selectedMovie.id] : prev.filter((id) => id !== selectedMovie.id)
       );
-      showToast(enabled ? "?? th?m v?o xem sau." : "?? b? kh?i xem sau.", "success", "favorite");
+      showToast(enabled ? "Đã thêm vào xem sau." : "Đã bỏ khỏi xem sau.", "success", "favorite");
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Kh?ng th? c?p nh?t xem sau", "error", "favorite");
+      showToast(error instanceof Error ? error.message : "Không thể cập nhật xem sau", "error", "favorite");
     }
   };
 
@@ -804,9 +717,13 @@ export default function App() {
   }, []);
 
   const holdCurrentSeats = async () => {
-    if (selectedSeats.length === 0) return showToast("H?y ch?n ?t nh?t 1 gh? tr??c khi ti?p t?c.", "error", "seat");
+    if (!sessionUser) {
+      promptAuth("Hãy đăng nhập để tiếp tục đặt vé.", { screen: "seats", tab: activeTab });
+      return;
+    }
+    if (selectedSeats.length === 0) return showToast("Hãy chọn ít nhất 1 ghế trước khi tiếp tục.", "error", "seat");
     const showtime = selectedShowtime ?? showtimesData.find((item) => item.movieId === selectedMovie.id);
-    if (!showtime) return showToast("Hi?n ch?a c? su?t chi?u ph? h?p cho phim n?y.", "error", "seat");
+    if (!showtime) return showToast("Hiện chưa có suất chiếu phù hợp cho phim này.", "error", "seat");
     setHolding(true);
     try {
       const response = await fetch(`${apiBaseUrl}/bookings/hold`, {
@@ -819,7 +736,7 @@ export default function App() {
       setHeldBookingId(json.id);
       navigate({ screen: "checkout", tab: activeTab });
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Kh?ng th? gi? gh?", "error", "seat");
+      showToast(error instanceof Error ? error.message : "Không thể giữ ghế", "error", "seat");
       await fetchSeatMap(showtime.id);
     } finally {
       setHolding(false);
@@ -827,7 +744,11 @@ export default function App() {
   };
 
   const confirmBooking = async () => {
-    if (!heldBookingId) return showToast("C?n gi? gh? tr??c khi t?o booking.", "error", "seat");
+    if (!sessionUser) {
+      promptAuth("Hãy đăng nhập để thanh toán vé.", { screen: "checkout", tab: activeTab });
+      return;
+    }
+    if (!heldBookingId) return showToast("Cần giữ ghế trước khi tạo booking.", "error", "seat");
     setConfirming(true);
     try {
       const response = await fetch(`${apiBaseUrl}/bookings`, {
@@ -875,7 +796,7 @@ export default function App() {
         },
         ...prev,
       ]);
-      showToast(`M? v? ${json.bookingCode} ?? ???c t?o. ?ang m? ${selectedPaymentProvider}.`, "success", "payment");
+      showToast(`Mã vé ${json.bookingCode} đã được tạo. Đang mở ${selectedPaymentProvider}.`, "success", "payment");
       await Linking.openURL(paymentJson.checkoutUrl);
       resetNavigation({ screen: "tabs", tab: "tickets" });
       setSelectedSeats([]);
@@ -884,13 +805,17 @@ export default function App() {
       setHeldBookingId(null);
       await loadRemoteData();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Kh?ng th? t?o booking", "error", "payment");
+      showToast(error instanceof Error ? error.message : "Không thể tạo booking", "error", "payment");
     } finally {
       setConfirming(false);
     }
   };
 
   const scheduleReminder = async () => {
+    if (!sessionUser) {
+      promptAuth("Hãy đăng nhập để dùng nhắc lịch cho vé.", { screen, tab: activeTab });
+      return;
+    }
     if (!selectedTicketDetail) return;
     const showtime = new Date(selectedTicketDetail.showtime.startTime);
     const remindAt = new Date(showtime.getTime() - 60 * 60_000).toISOString().slice(0, 19).replace("T", " ");
@@ -899,7 +824,7 @@ export default function App() {
         method: "POST",
         body: JSON.stringify({ remindAt }),
       });
-      showToast("?? ??t nh?c tr??c 1 gi?.", "success", "reminder");
+      showToast("Đã đặt nhắc trước 1 giờ.", "success", "reminder");
       await openTicketDetail({
         id: selectedTicketDetail.id,
         bookingId: selectedTicketDetail.id,
@@ -912,15 +837,19 @@ export default function App() {
       });
       await loadRemoteData();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Kh?ng th? ??t nh?c l?ch", "error", "reminder");
+      showToast(error instanceof Error ? error.message : "Không thể đặt nhắc lịch", "error", "reminder");
     }
   };
 
   const cancelTicketReminder = async () => {
+    if (!sessionUser) {
+      promptAuth("Hãy đăng nhập để quản lý nhắc lịch.", { screen, tab: activeTab });
+      return;
+    }
     if (!selectedTicketDetail) return;
     try {
       await requestJson(`/bookings/${selectedTicketDetail.id}/reminder`, { method: "DELETE" });
-      showToast("?? h?y nh?c l?ch.", "info", "reminder");
+      showToast("Đã hủy nhắc lịch.", "info", "reminder");
       await openTicketDetail({
         id: selectedTicketDetail.id,
         bookingId: selectedTicketDetail.id,
@@ -933,7 +862,7 @@ export default function App() {
       });
       await loadRemoteData();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Kh?ng th? h?y nh?c l?ch", "error", "reminder");
+      showToast(error instanceof Error ? error.message : "Không thể hủy nhắc lịch", "error", "reminder");
     }
   };
 
@@ -988,7 +917,22 @@ export default function App() {
 
   let content: React.ReactNode = null;
   const activePillWidth = bottomBarWidth > 0 ? (bottomBarWidth - 24) / tabItems.length : 0;
-  const requiresAuth = !sessionUser;
+
+  const handleTabPress = React.useCallback(
+    (tab: TabId) => {
+      if (!sessionUser && (tab === "tickets" || tab === "profile")) {
+        promptAuth(
+          tab === "tickets"
+            ? "Hãy đăng nhập để xem vé của bạn."
+            : "Hãy đăng nhập để xem tài khoản của bạn.",
+          { screen: "tabs", tab: activeTab }
+        );
+        return;
+      }
+      navigate({ screen: "tabs", tab });
+    },
+    [activeTab, navigate, promptAuth, sessionUser]
+  );
 
   if (!authReady) {
     content = (
@@ -997,11 +941,9 @@ export default function App() {
         <Text style={styles.accountDetail}>Đang khôi phục phiên đăng nhập...</Text>
       </View>
     );
-  } else if (requiresAuth) {
+  } else if (screen === "auth") {
     content = (
       <AuthScreen
-        apiBaseUrl={apiBaseUrl}
-        setApiBaseUrl={setApiBaseUrl}
         authMode={authMode}
         setAuthMode={setAuthMode}
         authName={authName}
@@ -1015,6 +957,13 @@ export default function App() {
         onSubmitAuth={submitAuth}
         onGoogleAuth={continueWithGoogle}
         authLoading={authLoading}
+        initialStep={3}
+        onBack={() => {
+          setAuthGateMessage(null);
+          setAuthReturnRoute(null);
+          goBack();
+        }}
+        helperMessage={authGateMessage}
       />
     );
   } else if (screen === "movie") {
@@ -1118,8 +1067,6 @@ export default function App() {
   } else {
     content = (
       <ProfileScreen
-        apiBaseUrl={apiBaseUrl}
-        setApiBaseUrl={setApiBaseUrl}
         onReload={loadRemoteData}
         favoriteMovies={favoriteMovies}
         watchlistMovies={watchlistMovies}
@@ -1143,7 +1090,7 @@ export default function App() {
       </View>
       {toast ? <Toast toastId={toast.id} message={toast.message} tone={toast.tone} kind={toast.kind} closing={toast.closing} /> : null}
       {content}
-      {screen === "tabs" && !requiresAuth ? (
+      {screen === "tabs" ? (
         <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event) => setBottomBarWidth(event.nativeEvent.layout.width)}>
           {bottomBarWidth > 0 ? (
             <>
@@ -1172,7 +1119,7 @@ export default function App() {
           {tabItems.map((item, index) => (
             <Pressable
               key={item.id}
-              onPress={() => navigate({ screen: "tabs", tab: item.id })}
+              onPress={() => handleTabPress(item.id)}
               onPressIn={() => animateTabPress(index, true)}
               onPressOut={() => animateTabPress(index, false)}
               style={styles.tabPressable}
@@ -1189,3 +1136,5 @@ export default function App() {
     </SafeAreaView>
   );
 }
+
+

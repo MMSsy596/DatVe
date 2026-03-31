@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DatVe API",
-  description: "Backend API cho he thong dat ve xem phim",
+  title: "Đặt Vé API",
+  description: "Backend API cho hệ thống đặt vé xem phim",
 };
 
 export default function RootLayout({

@@ -64,7 +64,7 @@ export async function registerUser(input: {
     [normalizedEmail]
   );
   if (existing) {
-    throw new Error("Email da ton tai.");
+    throw new Error("Email đã tồn tại.");
   }
 
   const [result] = await pool.execute<ResultSetHeader>(
@@ -95,7 +95,7 @@ export async function loginUser(input: { email: string; password: string; device
   );
 
   if (!user || !verifyPassword(input.password, user.password_hash)) {
-    throw new Error("Email hoac mat khau khong dung.");
+    throw new Error("Email hoặc mật khẩu không đúng.");
   }
 
   return createSession(Number(user.id), input.deviceName ?? "React Native");
@@ -105,7 +105,7 @@ export async function loginWithGoogle(input: { idToken: string; deviceName?: str
   await ensureRuntimeSchema();
   const audiences = getGoogleAudienceList();
   if (audiences.length === 0) {
-    throw new Error("Dang nhap Google chua duoc cau hinh tren may chu.");
+    throw new Error("Đăng nhập Google chưa được cấu hình trên máy chủ.");
   }
 
   const googleClient = new OAuth2Client();
@@ -116,16 +116,16 @@ export async function loginWithGoogle(input: { idToken: string; deviceName?: str
   const payload = ticket.getPayload();
 
   if (!payload?.sub || !payload.email) {
-    throw new Error("Google token khong hop le.");
+    throw new Error("Google token không hợp lệ.");
   }
   if (payload.email_verified === false) {
-    throw new Error("Tai khoan Google chua xac minh email.");
+    throw new Error("Tài khoản Google chưa xác minh email.");
   }
 
   const pool = getPool();
   const normalizedEmail = payload.email.trim().toLowerCase();
   const googleSub = payload.sub;
-  const displayName = String(payload.name ?? normalizedEmail.split("@")[0] ?? "Nguoi dung Google").trim();
+  const displayName = String(payload.name ?? normalizedEmail.split("@")[0] ?? "Người dùng Google").trim();
   const avatarUrl = String(payload.picture ?? `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(displayName)}`);
 
   const [[existingByGoogle]] = await pool.query<RowDataPacket[]>(
@@ -174,7 +174,7 @@ export async function createSession(userId: number, deviceName?: string | null) 
   );
   const user = await getSessionUser(rawToken);
   if (!user) {
-    throw new Error("Khong the tao session.");
+    throw new Error("Không thể tạo phiên đăng nhập.");
   }
   return { token: rawToken, user };
 }
@@ -219,7 +219,7 @@ export async function resolveSessionUser(request: Request) {
 export async function requireSession(request: Request) {
   const user = await resolveSessionUser(request);
   if (!user) {
-    throw new Error("Can dang nhap de tiep tuc.");
+    throw new Error("Cần đăng nhập để tiếp tục.");
   }
   return user;
 }
@@ -227,7 +227,7 @@ export async function requireSession(request: Request) {
 export async function requireAdmin(request: Request) {
   const user = await requireSession(request);
   if (user.role !== "ADMIN" && user.role !== "STAFF") {
-    throw new Error("Ban khong co quyen thuc hien thao tac nay.");
+    throw new Error("Bạn không có quyền thực hiện thao tác này.");
   }
   return user;
 }

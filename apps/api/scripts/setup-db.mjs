@@ -9,7 +9,7 @@ function getDatabaseUrl() {
   const line = envContent.split(/\r?\n/).find((item) => item.startsWith("DATABASE_URL="));
 
   if (!line) {
-    throw new Error("Khong tim thay DATABASE_URL trong .env.local");
+    throw new Error("Không tìm thấy DATABASE_URL trong .env.local");
   }
 
   return line.replace("DATABASE_URL=", "").trim();
@@ -178,6 +178,7 @@ CREATE TABLE IF NOT EXISTS movies (
   badge VARCHAR(80) NULL,
   poster_url TEXT NULL,
   banner_url TEXT NULL,
+  trailer_url TEXT NULL,
   highlight_color VARCHAR(20) NULL,
   is_featured BOOLEAN NOT NULL DEFAULT FALSE,
   box_office_rank INT NULL,
@@ -223,7 +224,7 @@ CREATE TABLE IF NOT EXISTS showtimes (
   cinema_id BIGINT UNSIGNED NOT NULL,
   room_id BIGINT UNSIGNED NOT NULL,
   start_time DATETIME NOT NULL,
-  language_label VARCHAR(60) NOT NULL DEFAULT 'Phu de',
+  language_label VARCHAR(60) NOT NULL DEFAULT 'Phụ đề',
   format_label VARCHAR(80) NOT NULL DEFAULT '2D',
   base_price INT NOT NULL DEFAULT 90000,
   status ENUM('SCHEDULED','SELLING','SOLD_OUT') NOT NULL DEFAULT 'SELLING',
@@ -416,95 +417,113 @@ for (const table of [
 await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
 const users = [
-  { id: 1, fullName: "Admin DatVe", email: "admin@datve.local", phone: "0900000001", role: "ADMIN", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Admin%20DatVe", password: "Admin@123" },
-  { id: 2, fullName: "Nguyen Van A", email: "user@datve.local", phone: "0900000002", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Nguyen%20Van%20A", password: "User@123" },
-  { id: 3, fullName: "Tran Minh Anh", email: "minh.anh@datve.local", phone: "0900000003", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Tran%20Minh%20Anh", password: "User@123" },
-  { id: 4, fullName: "Le Hoang Nam", email: "hoang.nam@datve.local", phone: "0900000004", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Le%20Hoang%20Nam", password: "User@123" },
-  { id: 5, fullName: "Pham Gia Huy", email: "gia.huy@datve.local", phone: "0900000005", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Gia%20Huy", password: "User@123" },
-  { id: 6, fullName: "Vo Thu Trang", email: "thu.trang@datve.local", phone: "0900000006", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Vo%20Thu%20Trang", password: "User@123" },
-  { id: 7, fullName: "Bui Khanh Linh", email: "khanh.linh@datve.local", phone: "0900000007", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Bui%20Khanh%20Linh", password: "User@123" },
-  { id: 8, fullName: "Do Quoc Bao", email: "quoc.bao@datve.local", phone: "0900000008", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Do%20Quoc%20Bao", password: "User@123" },
-  { id: 9, fullName: "Dang Thanh Truc", email: "thanh.truc@datve.local", phone: "0900000009", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Dang%20Thanh%20Truc", password: "User@123" },
-  { id: 10, fullName: "Pham Duc Khoa", email: "duc.khoa@datve.local", phone: "0900000010", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Duc%20Khoa", password: "User@123" },
-  { id: 11, fullName: "Phan Nhat Vy", email: "nhat.vy@datve.local", phone: "0900000011", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Phan%20Nhat%20Vy", password: "User@123" },
+  { id: 1, fullName: "Admin Đặt Vé", email: "admin@datve.local", phone: "0900000001", role: "ADMIN", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Admin%20DatVe", password: "Admin@123" },
+  { id: 2, fullName: "Nguyễn Văn A", email: "user@datve.local", phone: "0900000002", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Nguyen%20Van%20A", password: "User@123" },
+  { id: 3, fullName: "Trần Minh Anh", email: "minh.anh@datve.local", phone: "0900000003", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Tran%20Minh%20Anh", password: "User@123" },
+  { id: 4, fullName: "Lê Hoàng Nam", email: "hoang.nam@datve.local", phone: "0900000004", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Le%20Hoang%20Nam", password: "User@123" },
+  { id: 5, fullName: "Phạm Gia Huy", email: "gia.huy@datve.local", phone: "0900000005", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Gia%20Huy", password: "User@123" },
+  { id: 6, fullName: "Võ Thu Trang", email: "thu.trang@datve.local", phone: "0900000006", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Vo%20Thu%20Trang", password: "User@123" },
+  { id: 7, fullName: "Bùi Khánh Linh", email: "khanh.linh@datve.local", phone: "0900000007", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Bui%20Khanh%20Linh", password: "User@123" },
+  { id: 8, fullName: "Đỗ Quốc Bảo", email: "quoc.bao@datve.local", phone: "0900000008", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Do%20Quoc%20Bao", password: "User@123" },
+  { id: 9, fullName: "Đặng Thanh Trúc", email: "thanh.truc@datve.local", phone: "0900000009", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Dang%20Thanh%20Truc", password: "User@123" },
+  { id: 10, fullName: "Phạm Đức Khoa", email: "duc.khoa@datve.local", phone: "0900000010", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Duc%20Khoa", password: "User@123" },
+  { id: 11, fullName: "Phan Nhật Vy", email: "nhat.vy@datve.local", phone: "0900000011", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Phan%20Nhat%20Vy", password: "User@123" },
   { id: 12, fullName: "Cinema Ops 01", email: "ops01@datve.local", phone: "0900000012", role: "STAFF", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Cinema%20Ops%2001", password: "Staff@123" },
 ];
 
 const vouchers = [
-  { code: "WELCOME50", title: "Chao mung thanh vien moi", description: "Giam 50% toi da 50.000d cho don tu 120.000d", discountType: "PERCENT", discountValue: 50, minOrderValue: 120000, maxDiscountValue: 50000, assignedUserId: null, expiresAt: toMysqlDateTime(addDays(new Date(), 30)), isActive: true },
-  { code: "MIDNIGHT20", title: "Suat dem giam 20%", description: "Danh cho cac suat sau 20h, toi da 40.000d", discountType: "PERCENT", discountValue: 20, minOrderValue: 160000, maxDiscountValue: 40000, assignedUserId: null, expiresAt: toMysqlDateTime(addDays(new Date(), 20)), isActive: true },
-  { code: "AONLY30K", title: "Qua cho Nguyen Van A", description: "Voucher ca nhan cho user demo", discountType: "FIXED", discountValue: 30000, minOrderValue: 100000, maxDiscountValue: null, assignedUserId: 2, expiresAt: toMysqlDateTime(addDays(new Date(), 14)), isActive: true },
-  { code: "FAMILY80K", title: "Family combo gift", description: "Giam 80.000d cho don lon hon 300.000d", discountType: "FIXED", discountValue: 80000, minOrderValue: 300000, maxDiscountValue: null, assignedUserId: null, expiresAt: toMysqlDateTime(addDays(new Date(), 25)), isActive: true },
-  { code: "ARCHIVE10", title: "Voucher da tat", description: "Du lieu demo cho admin", discountType: "PERCENT", discountValue: 10, minOrderValue: 0, maxDiscountValue: 20000, assignedUserId: null, expiresAt: null, isActive: false },
+  { code: "WELCOME50", title: "Chào mừng thành viên mới", description: "Giảm 50% tối đa 50.000đ cho đơn từ 120.000đ", discountType: "PERCENT", discountValue: 50, minOrderValue: 120000, maxDiscountValue: 50000, assignedUserId: null, expiresAt: toMysqlDateTime(addDays(new Date(), 30)), isActive: true },
+  { code: "MIDNIGHT20", title: "Suất đêm giảm 20%", description: "Dành cho các suất sau 20h, tối đa 40.000đ", discountType: "PERCENT", discountValue: 20, minOrderValue: 160000, maxDiscountValue: 40000, assignedUserId: null, expiresAt: toMysqlDateTime(addDays(new Date(), 20)), isActive: true },
+  { code: "AONLY30K", title: "Quà cho Nguyễn Văn A", description: "Voucher cá nhân cho tài khoản demo", discountType: "FIXED", discountValue: 30000, minOrderValue: 100000, maxDiscountValue: null, assignedUserId: 2, expiresAt: toMysqlDateTime(addDays(new Date(), 14)), isActive: true },
+  { code: "FAMILY80K", title: "Ưu đãi gia đình", description: "Giảm 80.000đ cho đơn lớn hơn 300.000đ", discountType: "FIXED", discountValue: 80000, minOrderValue: 300000, maxDiscountValue: null, assignedUserId: null, expiresAt: toMysqlDateTime(addDays(new Date(), 25)), isActive: true },
+  { code: "ARCHIVE10", title: "Voucher đã tắt", description: "Dữ liệu demo cho admin", discountType: "PERCENT", discountValue: 10, minOrderValue: 0, maxDiscountValue: 20000, assignedUserId: null, expiresAt: null, isActive: false },
 ];
 
 const banners = [
-  { id: 1, title: "Galaxy Week", subtitle: "Mua 2 ve tang 1 combo mini cho suat sau 20h.", accentColor: "#1f2f73", sortOrder: 1, isActive: true },
-  { id: 2, title: "Premiere Night", subtitle: "Dat som phim hot va nhan uu dai hoi vien moi.", accentColor: "#5a1826", sortOrder: 2, isActive: true },
-  { id: 3, title: "Tuesday Date", subtitle: "Ghe doi giam 15% vao toi thu 3 tai rap lien ket.", accentColor: "#713b16", sortOrder: 3, isActive: true },
-  { id: 4, title: "Sinh vien xem dem", subtitle: "Xuat trinh the sinh vien de nhan combo nuoc gia mem.", accentColor: "#0f766e", sortOrder: 4, isActive: true },
-  { id: 5, title: "Marathon cuoi tuan", subtitle: "Dat 3 suat lien tiep de mo voucher cho thang sau.", accentColor: "#48257a", sortOrder: 5, isActive: true },
+  { id: 1, title: "Galaxy Week", subtitle: "Mua 2 vé tặng 1 combo mini cho suất sau 20h.", accentColor: "#1f2f73", imageUrl: "/demo-media/promos/banner-1.svg", sortOrder: 1, isActive: true },
+  { id: 2, title: "Premiere Night", subtitle: "Đặt sớm phim hot và nhận ưu đãi hội viên mới.", accentColor: "#5a1826", imageUrl: "/demo-media/promos/banner-2.svg", sortOrder: 2, isActive: true },
+  { id: 3, title: "Tuesday Date", subtitle: "Ghế đôi giảm 15% vào tối thứ 3 tại rạp liên kết.", accentColor: "#713b16", imageUrl: "/demo-media/promos/banner-3.svg", sortOrder: 3, isActive: true },
+  { id: 4, title: "Sinh viên xem đêm", subtitle: "Xuất trình thẻ sinh viên để nhận combo nước giá mềm.", accentColor: "#0f766e", imageUrl: "/demo-media/promos/banner-4.svg", sortOrder: 4, isActive: true },
+  { id: 5, title: "Marathon cuối tuần", subtitle: "Đặt 3 suất liên tiếp để mở voucher cho tháng sau.", accentColor: "#48257a", imageUrl: "/demo-media/promos/banner-5.svg", sortOrder: 5, isActive: true },
 ];
 
 const movieSeedSource = [
-  ["Nguoi Nhen Da Vu Tru", "Ari Levin", "Hanh dong, Vien tuong", 142, 8.7, "Peter va cac dong doi phai va lai vet nut da vu tru truoc khi moi thuc tai sup do."],
-  ["Lat Mat 8", "Le Nhat Minh", "Tinh cam, Hai", 118, 7.6, "Chuyen gia dinh voi nhieu tinh huong bat ngo, hai huoc va cam xuc."],
-  ["Bong Toi Bien Mat", "Khang Trinh", "Kinh di, Bi an", 110, 7.1, "Nhung hien tuong ky la lien tuc xuat hien tai benh vien bo hoang o ngoai o."],
-  ["Dai Chien Ngan Ha", "Marcus Tran", "Vien tuong, Phieu luu", 130, 0, "Bom tan khoa hoc vien tuong khoi chieu trong thang toi."],
-  ["Conan: Vu An Cuoi Cung", "Aoyama Studio", "Hoat hinh, Trinh tham", 104, 0, "Vu an nguy hiem nhat cua Conan tai vung bang gia."],
-  ["Mat Ma Bien Dem", "Ngo Thien Bao", "Hanh dong, Toi pham", 123, 8.2, "Doi dieu tra truy duoi duong day rua tien xuyen quoc gia."],
-  ["Tho San Mat Trang", "Pham Gia Linh", "Phieu luu, Vien tuong", 127, 8.0, "Nhom du hanh tim kiem kho bau tren ve tinh mat tich."],
-  ["Ngay Mai Co Mua Sao Bang", "Hoang Thien", "Tinh cam, Gia tuong", 112, 7.8, "Mot chuyen tinh keo dai qua nhieu moc thoi gian song song."],
-  ["Ho So So 13", "Duong Khai", "Trinh tham, Tam ly", 109, 8.1, "Thanh tra tre mo lai ho so lanh da bi chon vui 15 nam."],
-  ["Toc Do Thanh Pho", "Jules Park", "Hanh dong, Dua xe", 116, 7.9, "Cuoc dua duong pho cuoi cung de cuu lay gara gia dinh."],
-  ["Dem Cuoi O Sai Gon", "Tran Moc An", "Tam ly, Chinh kich", 121, 8.4, "Nam con nguoi, mot dem, va nhung lua chon khong the quay dau."],
-  ["Hac Anh Troi Day", "Ly Quoc Tin", "Kinh di, Sieu nhien", 107, 7.5, "Mot nghi thuc co vo tinh danh thuc thuc the bi phong an."],
-  ["Chien Tuyen Do", "Vu Quang Duy", "Chien tranh, Chinh kich", 133, 0, "Tieu doi dac nhiem nhan nhiem vu khong tuong o bien gioi."],
-  ["Vua Bep Hoc Duong", "Mai Lam Chi", "Hai, Gia dinh", 101, 0, "Cuoc thi nau an lien truong lam dao lon ca khu pho."],
-  ["Trai Tim Co Khi", "Elena Vu", "Khoa hoc, Lang man", 119, 0, "Ky su tre dem long yeu mot AI mang ky uc nguoi that."],
-  ["Sieu Diep Vu A9", "Nguyen Ai Van", "Hanh dong, Gian diep", 125, 0, "Nu diep vien A9 tham nhap mang luoi vu khi ngam."],
-  ["Than Dong Co Vay", "Kim Joon Lee", "The thao, Truyen cam hung", 106, 0, "Cau be tinh le buoc vao giai co vay quoc te."],
-  ["Mua He Cua Chung Ta", "An Nhien", "Thanh xuan, Tinh cam", 113, 0, "Nhom ban cu gap lai sau 10 nam trong chuyen di cuoi he."],
-  ["Ban Do Thanh Pho Ngam", "Lam Tri Duc", "Phieu luu, Toi pham", 122, 0, "Hai anh em vo tinh mo khoa ban do kho bau duoi long do thi."],
-  ["Mat Uoc Tren May", "Trinh Lam Vy", "Tinh cam, Chinh kich", 115, 0, "Hai phi cong tre giu bi mat ve tham hoa suyt xay ra tren khong."],
-  ["Bien Ban Sao Hoa", "Kenji Duong", "Khoa hoc, Sinh ton", 129, 0, "To nghien cuu dau tien tren Sao Hoa doi mat su co mat lien lac Trai Dat."],
-  ["Van Cuoc Cuoi Ca", "Phuc Hao", "Trinh tham, Hinh su", 111, 0, "Nu bac si phap y truy tim hung thu trong chinh benh vien minh lam viec."],
-  ["Dao Gio Do", "Duong Hai Nam", "Kinh di, Sinh ton", 108, 0, "Nhom du khach ket lai tren dao biet lap dung ngay le hien te co."],
-  ["Nhip Dap 42", "Quynh An", "Am nhac, Truyen cam hung", 117, 0, "Ban nhac indie tai hop de cuu trung tam nghe thuat sap bi giai toa."],
-  ["Bao Trang Bac Cuc", "Ha Minh Truong", "Sinh ton, Phieu luu", 124, 8.3, "Doi cuu ho lao vao vung bang tan de giai cuu con tau nghien cuu mac ket."],
-  ["Hen Gap O Dem Thu Bay", "Luu Gia Han", "Tinh cam, Hai", 114, 7.7, "Hai nguoi xa la lien tuc gap nhau trong nhung toi cuoi tuan ky la."],
-  ["Lenh Truy Sat 0 Gio", "Thai Vu", "Hanh dong, Giat gan", 119, 8.0, "Cuu dac vu bi truy sat suot mot dem de ngan tai lieu mat bi cong bo."],
-  ["Phong Thu So 7", "Bui Kha Uyen", "Am nhac, Bi an", 109, 7.9, "Ca si tre phat hien ban thu ma quai co the thay doi ky uc nguoi nghe."],
-  ["Thanh Pho Khong Ngu", "Nguyen Phong", "Chinh kich, Toi pham", 128, 8.5, "Mot dem tuan tra bien thanh cuoc dung do voi ca bo may ngam cua thanh pho."],
-  ["Hanh Tinh Thu Chin", "Do Han", "Vien tuong, Khoa hoc", 131, 8.1, "Chuyen bay tham do xa nhat loai nguoi mo ra bi mat ngoai He Mat Troi."],
-  ["Khuc Song Lang", "Viet Dong", "Gia dinh, Chinh kich", 116, 0, "Ba chi em tro ve que giai quyet di chuc cua nguoi cha mat tich nhieu nam."],
-  ["Tin Hieu 404", "Nha Thu", "Cong nghe, Giat gan", 112, 0, "Nhom lap trinh vien phat hien nen tang mang xa hoi dang thao tung hanh vi cu tri."],
-  ["Doan Bang Mau Xanh", "Tra Giang", "Bi an, Tam ly", 105, 0, "Mot cuon phim VHS he lo ky uc khong thuoc ve nguoi xem."],
-  ["Mua San Sao", "Phan Nhat Duong", "Thanh xuan, Phieu luu", 118, 0, "Nhom ban tre rong ruoi khap mien Trung de san tran mua sao bang tram nam."],
-  ["Vu Dieu Duong Bien", "Lam Phuc Hung", "Hanh dong, Vo thuat", 121, 0, "Vu cong duong pho tro thanh mat xich quan trong trong chuyen an xuyen bien gioi."],
-  ["Nha Ga Cuoi Cung", "Phuong Linh", "Gia tuong, Chinh kich", 123, 0, "Nhung hanh khach lo chuyen tau dem buoc vao nha ga khong ton tai tren ban do."],
+  ["Người Nhện Đa Vũ Trụ", "Ari Levin", "Hành động, Viễn tưởng", 142, 8.7, "Peter và các đồng đội phải vá lại vết nứt đa vũ trụ trước khi mọi thực tại sụp đổ."],
+  ["Lật Mặt 8", "Lê Nhật Minh", "Tình cảm, Hài", 118, 7.6, "Chuyện gia đình với nhiều tình huống bất ngờ, hài hước và cảm xúc."],
+  ["Bóng Tối Biến Mất", "Khang Trịnh", "Kinh dị, Bí ẩn", 110, 7.1, "Những hiện tượng kỳ lạ liên tục xuất hiện tại bệnh viện bỏ hoang ở ngoại ô."],
+  ["Đại Chiến Ngân Hà", "Marcus Trần", "Viễn tưởng, Phiêu lưu", 130, 0, "Bom tấn khoa học viễn tưởng khởi chiếu trong tháng tới."],
+  ["Conan: Vụ Án Cuối Cùng", "Aoyama Studio", "Hoạt hình, Trinh thám", 104, 0, "Vụ án nguy hiểm nhất của Conan tại vùng băng giá."],
+  ["Mật Mã Biển Đêm", "Ngô Thiên Bảo", "Hành động, Tội phạm", 123, 8.2, "Đội điều tra truy đuổi đường dây rửa tiền xuyên quốc gia."],
+  ["Thợ Săn Mặt Trăng", "Phạm Gia Linh", "Phiêu lưu, Viễn tưởng", 127, 8.0, "Nhóm du hành tìm kiếm kho báu trên vệ tinh mất tích."],
+  ["Ngày Mai Có Mưa Sao Băng", "Hoàng Thiên", "Tình cảm, Giả tưởng", 112, 7.8, "Một chuyện tình kéo dài qua nhiều mốc thời gian song song."],
+  ["Hồ Sơ Số 13", "Dương Khải", "Trinh thám, Tâm lý", 109, 8.1, "Thanh tra trẻ mở lại hồ sơ lạnh đã bị chôn vùi 15 năm."],
+  ["Tốc Độ Thành Phố", "Jules Park", "Hành động, Đua xe", 116, 7.9, "Cuộc đua đường phố cuối cùng để cứu lấy gara gia đình."],
+  ["Đêm Cuối Ở Sài Gòn", "Trần Mộc An", "Tâm lý, Chính kịch", 121, 8.4, "Năm con người, một đêm, và những lựa chọn không thể quay đầu."],
+  ["Hắc Ảnh Trỗi Dậy", "Lý Quốc Tín", "Kinh dị, Siêu nhiên", 107, 7.5, "Một nghi thức cổ vô tình đánh thức thực thể bị phong ấn."],
+  ["Chiến Tuyến Đỏ", "Vũ Quang Duy", "Chiến tranh, Chính kịch", 133, 0, "Tiểu đội đặc nhiệm nhận nhiệm vụ không tưởng ở biên giới."],
+  ["Vua Bếp Học Đường", "Mai Lam Chi", "Hài, Gia đình", 101, 0, "Cuộc thi nấu ăn liên trường làm đảo lộn cả khu phố."],
+  ["Trái Tim Cơ Khí", "Elena Vũ", "Khoa học, Lãng mạn", 119, 0, "Kỹ sư trẻ đem lòng yêu một AI mang ký ức người thật."],
+  ["Siêu Điệp Vụ A9", "Nguyễn Ái Vân", "Hành động, Gián điệp", 125, 0, "Nữ điệp viên A9 thâm nhập mạng lưới vũ khí ngầm."],
+  ["Thần Đồng Cờ Vây", "Kim Joon Lee", "Thể thao, Truyền cảm hứng", 106, 0, "Cậu bé tỉnh lẻ bước vào giải cờ vây quốc tế."],
+  ["Mùa Hè Của Chúng Ta", "An Nhiên", "Thanh xuân, Tình cảm", 113, 0, "Nhóm bạn cũ gặp lại sau 10 năm trong chuyến đi cuối hè."],
+  ["Bản Đồ Thành Phố Ngầm", "Lâm Trí Đức", "Phiêu lưu, Tội phạm", 122, 0, "Hai anh em vô tình mở khóa bản đồ kho báu dưới lòng đô thị."],
+  ["Mật Ước Trên Mây", "Trịnh Lam Vy", "Tình cảm, Chính kịch", 115, 0, "Hai phi công trẻ giữ bí mật về thảm họa suýt xảy ra trên không."],
+  ["Biên Bản Sao Hỏa", "Kenji Dương", "Khoa học, Sinh tồn", 129, 0, "Tổ nghiên cứu đầu tiên trên Sao Hỏa đối mặt sự cố mất liên lạc Trái Đất."],
+  ["Ván Cược Cuối Ca", "Phúc Hạo", "Trinh thám, Hình sự", 111, 0, "Nữ bác sĩ pháp y truy tìm hung thủ trong chính bệnh viện mình làm việc."],
+  ["Đảo Gió Đỏ", "Dương Hải Nam", "Kinh dị, Sinh tồn", 108, 0, "Nhóm du khách kẹt lại trên đảo biệt lập đúng ngày lễ hiến tế cổ."],
+  ["Nhịp Đập 42", "Quỳnh An", "Âm nhạc, Truyền cảm hứng", 117, 0, "Ban nhạc indie tái hợp để cứu trung tâm nghệ thuật sắp bị giải tỏa."],
+  ["Bão Trắng Bắc Cực", "Hà Minh Trường", "Sinh tồn, Phiêu lưu", 124, 8.3, "Đội cứu hộ lao vào vùng băng tan để giải cứu con tàu nghiên cứu mắc kẹt."],
+  ["Hẹn Gặp Ở Đêm Thứ Bảy", "Lưu Gia Hân", "Tình cảm, Hài", 114, 7.7, "Hai người xa lạ liên tục gặp nhau trong những tối cuối tuần kỳ lạ."],
+  ["Lệnh Truy Sát 0 Giờ", "Thái Vũ", "Hành động, Giật gân", 119, 8.0, "Cựu đặc vụ bị truy sát suốt một đêm để ngăn tài liệu mật bị công bố."],
+  ["Phòng Thu Số 7", "Bùi Khả Uyên", "Âm nhạc, Bí ẩn", 109, 7.9, "Ca sĩ trẻ phát hiện bản thu ma quái có thể thay đổi ký ức người nghe."],
+  ["Thành Phố Không Ngủ", "Nguyễn Phong", "Chính kịch, Tội phạm", 128, 8.5, "Một đêm tuần tra biến thành cuộc đụng độ với cả bộ máy ngầm của thành phố."],
+  ["Hành Tinh Thứ Chín", "Đỗ Hân", "Viễn tưởng, Khoa học", 131, 8.1, "Chuyến bay thăm dò xa nhất loài người mở ra bí mật ngoài Hệ Mặt Trời."],
+  ["Khúc Sóng Lặng", "Việt Đông", "Gia đình, Chính kịch", 116, 0, "Ba chị em trở về quê giải quyết di chúc của người cha mất tích nhiều năm."],
+  ["Tín Hiệu 404", "Nhã Thu", "Công nghệ, Giật gân", 112, 0, "Nhóm lập trình viên phát hiện nền tảng mạng xã hội đang thao túng hành vi cử tri."],
+  ["Đoạn Băng Màu Xanh", "Trà Giang", "Bí ẩn, Tâm lý", 105, 0, "Một cuốn phim VHS hé lộ ký ức không thuộc về người xem."],
+  ["Mùa Săn Sao", "Phan Nhật Dương", "Thanh xuân, Phiêu lưu", 118, 0, "Nhóm bạn trẻ rong ruổi khắp miền Trung để săn trận mưa sao băng trăm năm."],
+  ["Vũ Điệu Đường Biên", "Lâm Phúc Hưng", "Hành động, Võ thuật", 121, 0, "Vũ công đường phố trở thành mắt xích quan trọng trong chuyên án xuyên biên giới."],
+  ["Nhà Ga Cuối Cùng", "Phương Linh", "Giả tưởng, Chính kịch", 123, 0, "Những hành khách lỡ chuyến tàu đêm bước vào nhà ga không tồn tại trên bản đồ."],
+  ["Bão Mùa Neon", "NanBao Studio", "Hành động, Công nghệ", 126, 0, "Một thành phố thông minh mất kiểm soát khi hệ thống giao thông tự học quay sang săn lùng người tạo ra nó."],
+  ["Mật Lệnh Hoa Phượng", "Tạ Minh Kha", "Thanh xuân, Trinh thám", 114, 0, "Nhóm học sinh cuối cấp giải mã chuỗi thư bí ẩn dẫn tới vụ mất tích nhiều năm trước trong sân trường."],
+  ["Dòng Sông Không Tên", "Võ Gia Huy", "Chính kịch, Bí ẩn", 120, 0, "Người lái đò già giữ một bí mật liên quan đến những hành khách chỉ xuất hiện vào đêm trăng non."],
+  ["Ranh Giới Ký Ức", "Hà Yên Chi", "Tâm lý, Khoa học", 117, 0, "Bác sĩ thần kinh thử nghiệm công nghệ ghép ký ức và vô tình đánh thức một vụ án đã bị xóa khỏi hồ sơ."],
+  ["Trạm Cuối Sao Kim", "Lục Thiên Ân", "Viễn tưởng, Sinh tồn", 134, 0, "Tổ đội sửa chữa tỉnh dậy giữa trạm nghiên cứu bỏ hoang trên Sao Kim với lượng oxy chỉ đủ cho 12 giờ."],
+  ["Kẻ Gọi Mưa", "Ngô Nhật Tân", "Kinh dị, Dân gian", 108, 0, "Một miền biển hạn kéo dài đón cơn mưa đầu mùa cùng chuỗi hiện tượng hiến tế khó lý giải."],
+  ["Số Ghế 27", "Trần Bảo Ý", "Giật gân, Bí ẩn", 102, 0, "Mỗi khán giả ngồi đúng ghế số 27 trong rạp cũ đều nhìn thấy một đoạn kết khác nhau của cùng một bộ phim."],
+  ["Bản Giao Hưởng Tro Tàn", "Lê Vân Khôi", "Âm nhạc, Chính kịch", 119, 0, "Nhạc trưởng sa sút tập hợp dàn nhạc cuối cùng để biểu diễn giữa thành phố vừa trải qua đại hỏa hoạn."],
 ];
 
 const palette = ["#6d28d9", "#0f766e", "#9333ea", "#c41010", "#0f4c81", "#8a1f3d", "#18534f", "#7c3aed"];
-const badgesNow = ["Noi bat", "Top doanh thu", "Hot", "Rap day"];
-const badgesSoon = ["Sap chieu", "Dat truoc", "Sneak show"];
+const badgesNow = ["Nổi bật", "Top doanh thu", "Hot", "Rạp đầy"];
+const badgesSoon = ["Sắp chiếu", "Đặt trước", "Sneak show"];
+const trailerCatalog = [
+  "https://www.youtube.com/embed/EXeTwQWrcwY?playsinline=1",
+  "https://www.youtube.com/embed/TcMBFSGVi1c?playsinline=1",
+  "https://www.youtube.com/embed/8ugaeA-nMTc?playsinline=1",
+  "https://www.youtube.com/embed/hA6hldpSTF8?playsinline=1",
+  "https://www.youtube.com/embed/qSqVVswa420?playsinline=1",
+  "https://www.youtube.com/embed/6ZfuNTqbHE8?playsinline=1",
+];
 const movies = movieSeedSource.map(([title, author, genre, duration, rating, shortDesc], index) => {
   const status = index < 18 ? (index % 5 === 0 ? "TRENDING" : "NOW_SHOWING") : "COMING_SOON";
   const releaseBase = addDays(new Date(), status === "COMING_SOON" ? 3 + (index - 18) : -(index % 20) - 1);
+  const slug = slugify(title);
   return {
     id: index + 1,
-    slug: slugify(title),
+    slug,
     title,
     subtitle: `${author} | ${shortDesc}`,
-    synopsis: `${shortDesc} Phien ban seed nay duoc dong bo lai tu catalog cu cua du an DatVeXemPhim va bo sung them ngu canh booking de giong he thong dang van hanh.`,
+    synopsis: `${shortDesc} Phiên bản seed này được đồng bộ lại từ catalog cũ của dự án DatVeXemPhim và bổ sung thêm ngữ cảnh booking để giống hệ thống đang vận hành.`,
     genre,
     durationMinutes: duration,
     releaseDate: toMysqlDate(releaseBase),
     status,
     rating: rating > 0 ? rating : 7.2 + ((index % 8) * 0.2),
     badge: status === "COMING_SOON" ? randomPick(badgesSoon, index) : randomPick(badgesNow, index),
-    posterUrl: null,
-    bannerUrl: null,
+    posterUrl: `/demo-media/posters/${slug}.svg`,
+    bannerUrl: `/demo-media/banners/${slug}.svg`,
+    trailerUrl: trailerCatalog[index % trailerCatalog.length],
     highlightColor: randomPick(palette, index),
     isFeatured: index < 12,
     boxOfficeRank: status === "COMING_SOON" ? null : index + 1,
@@ -512,11 +531,11 @@ const movies = movieSeedSource.map(([title, author, genre, duration, rating, sho
 });
 
 const cinemas = [
-  { id: 1, name: "CGV Nguyen Du", city: "TP.HCM", address: "116 Nguyen Du, Quan 1, TP.HCM", description: "Rap trung tam voi luong dat online cao va suat toi dong deu." },
-  { id: 2, name: "CGV Landmark 81", city: "TP.HCM", address: "Vincom Landmark 81, Binh Thanh, TP.HCM", description: "Cum rap flagship, thich hop phim premium va IMAX." },
-  { id: 3, name: "CGV Van Hanh Mall", city: "TP.HCM", address: "11 Su Van Hanh, Quan 10, TP.HCM", description: "Tap trung nguoi xem tre, luu luong combo cao." },
-  { id: 4, name: "CGV Aeon Tan Phu", city: "TP.HCM", address: "30 Bo Bao Tan Thang, Tan Phu, TP.HCM", description: "Rap gia dinh, dat ve som vao cuoi tuan." },
-  { id: 5, name: "CGV Thu Duc", city: "TP.HCM", address: "216 Vo Van Ngan, Thu Duc, TP.HCM", description: "Rap lien ket cho khu vuc Dong Sai Gon." },
+  { id: 1, name: "CGV Nguyễn Du", city: "TP.HCM", address: "116 Nguyễn Du, Quận 1, TP.HCM", description: "Rạp trung tâm với lượng đặt online cao và suất tối đông đều." },
+  { id: 2, name: "CGV Landmark 81", city: "TP.HCM", address: "Vincom Landmark 81, Bình Thạnh, TP.HCM", description: "Cụm rạp flagship, thích hợp phim premium và IMAX." },
+  { id: 3, name: "CGV Vạn Hạnh Mall", city: "TP.HCM", address: "11 Sư Vạn Hạnh, Quận 10, TP.HCM", description: "Tập trung người xem trẻ, lưu lượng combo cao." },
+  { id: 4, name: "CGV Aeon Tân Phú", city: "TP.HCM", address: "30 Bờ Bao Tân Thắng, Tân Phú, TP.HCM", description: "Rạp gia đình, đặt vé sớm vào cuối tuần." },
+  { id: 5, name: "CGV Thủ Đức", city: "TP.HCM", address: "216 Võ Văn Ngân, Thủ Đức, TP.HCM", description: "Rạp liên kết cho khu vực Đông Sài Gòn." },
 ];
 
 const roomFormats = ["IMAX", "Dolby Atmos", "2D LUXE"];
@@ -529,7 +548,7 @@ for (const cinema of cinemas) {
     rooms.push({
       id: roomId,
       cinemaId: cinema.id,
-      name: `Phong ${i + 1}`,
+      name: `Phòng ${i + 1}`,
       formatLabel: roomFormats[i],
       seatLayout: roomTemplates[i],
     });
@@ -538,16 +557,16 @@ for (const cinema of cinemas) {
 }
 
 const foods = [
-  { id: 1, name: "Combo Couple", description: "2 nuoc lon + 1 bap pho mai", price: 159000, category: "COMBO", isActive: true },
-  { id: 2, name: "Combo Family", description: "4 nuoc + 2 bap caramel", price: 289000, category: "COMBO", isActive: true },
-  { id: 3, name: "Combo Night", description: "1 hotdog + 1 nuoc + 1 bap caramel", price: 119000, category: "COMBO", isActive: true },
-  { id: 4, name: "Bap pho mai lon", description: "Bap rang vi pho mai size large", price: 79000, category: "FOOD", isActive: true },
-  { id: 5, name: "Nachos phomai", description: "Nachos kem sot phomai cay nhe", price: 69000, category: "FOOD", isActive: true },
-  { id: 6, name: "Coca Cola", description: "Nuoc ngot co ga size M", price: 35000, category: "DRINK", isActive: true },
-  { id: 7, name: "Tra dao", description: "Tra dao mat lanh tai quay F&B", price: 42000, category: "DRINK", isActive: true },
-  { id: 8, name: "Combo Sinh Vien", description: "1 bap vua + 1 nuoc + 1 hotdog mini", price: 99000, category: "COMBO", isActive: true },
-  { id: 9, name: "Combo Midnight", description: "2 nuoc + 2 bap mix caramel va bo", price: 189000, category: "COMBO", isActive: true },
-  { id: 10, name: "Nuoc suoi", description: "Chai 500ml", price: 20000, category: "DRINK", isActive: true },
+  { id: 1, name: "Combo Cặp đôi", description: "2 nước lớn + 1 bắp phô mai", price: 159000, category: "COMBO", isActive: true },
+  { id: 2, name: "Combo Gia đình", description: "4 nước + 2 bắp caramel", price: 289000, category: "COMBO", isActive: true },
+  { id: 3, name: "Combo Đêm", description: "1 hotdog + 1 nước + 1 bắp caramel", price: 119000, category: "COMBO", isActive: true },
+  { id: 4, name: "Bắp phô mai lớn", description: "Bắp rang vị phô mai cỡ lớn", price: 79000, category: "FOOD", isActive: true },
+  { id: 5, name: "Nachos phô mai", description: "Nachos kèm sốt phô mai cay nhẹ", price: 69000, category: "FOOD", isActive: true },
+  { id: 6, name: "Coca-Cola", description: "Nước ngọt có ga cỡ M", price: 35000, category: "DRINK", isActive: true },
+  { id: 7, name: "Trà đào", description: "Trà đào mát lạnh tại quầy F&B", price: 42000, category: "DRINK", isActive: true },
+  { id: 8, name: "Combo Sinh viên", description: "1 bắp vừa + 1 nước + 1 hotdog mini", price: 99000, category: "COMBO", isActive: true },
+  { id: 9, name: "Combo Midnight", description: "2 nước + 2 bắp mix caramel và bơ", price: 189000, category: "COMBO", isActive: true },
+  { id: 10, name: "Nước suối", description: "Chai 500ml", price: 20000, category: "DRINK", isActive: true },
 ];
 
 const today = new Date();
@@ -575,7 +594,7 @@ for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
       const room = rooms.find(
         (item) =>
           item.cinemaId === cinema.id &&
-          item.name === `Phong ${((movieIndex + cinemaOffset) % 3) + 1}`
+          item.name === `Phòng ${((movieIndex + cinemaOffset) % 3) + 1}`
       );
       const selectedSlotIndexes = movieIndex % 2 === 0 ? [0, 2, 4] : [1, 3, 5];
       for (const slotIndex of selectedSlotIndexes) {
@@ -589,7 +608,7 @@ for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
           cinemaId: cinema.id,
           roomId: room.id,
           startTime: toMysqlDateTime(startTime),
-          languageLabel: (movieIndex + slotIndex) % 3 === 0 ? "Long tieng" : "Phu de",
+          languageLabel: (movieIndex + slotIndex) % 3 === 0 ? "Lồng tiếng" : "Phụ đề",
           formatLabel: room.formatLabel,
           basePrice: basePrice + weekendSurcharge,
           status: dayOffset === 0 && slot.hour < 12 ? "SOLD_OUT" : "SELLING",
@@ -604,7 +623,7 @@ for (let dayOffset = 3; dayOffset < 10; dayOffset += 1) {
   const date = addDays(today, dayOffset);
   comingSoonMovies.forEach((movie, movieIndex) => {
     const cinema = cinemas[(movieIndex + dayOffset) % cinemas.length];
-    const room = rooms.find((item) => item.cinemaId === cinema.id && item.name === "Phong 2");
+    const room = rooms.find((item) => item.cinemaId === cinema.id && item.name === "Phòng 2");
     const slot = showtimeSlots[(movieIndex + dayOffset) % showtimeSlots.length];
     showtimes.push({
       id: showtimeId,
@@ -612,7 +631,7 @@ for (let dayOffset = 3; dayOffset < 10; dayOffset += 1) {
       cinemaId: cinema.id,
       roomId: room.id,
       startTime: toMysqlDateTime(setTime(date, slot.hour, slot.minute)),
-      languageLabel: "Phu de",
+      languageLabel: "Phụ đề",
       formatLabel: room.formatLabel,
       basePrice: 100000 + ((movieIndex % 3) * 10000),
       status: "SCHEDULED",
@@ -630,12 +649,12 @@ await bulkInsert(
 await bulkInsert(
   "banners",
   ["id", "title", "eyebrow", "subtitle", "accent_color", "image_url", "sort_order", "is_active"],
-  banners.map((banner) => [banner.id, banner.title, "Khuyen mai DatVe", banner.subtitle, banner.accentColor, null, banner.sortOrder, banner.isActive ? 1 : 0])
+  banners.map((banner) => [banner.id, banner.title, "Khuyến mãi Đặt Vé", banner.subtitle, banner.accentColor, banner.imageUrl ?? null, banner.sortOrder, banner.isActive ? 1 : 0])
 );
 
 await bulkInsert(
   "movies",
-  ["id", "slug", "title", "subtitle", "synopsis", "genre", "duration_minutes", "release_date", "status", "rating", "badge", "poster_url", "banner_url", "highlight_color", "is_featured", "box_office_rank"],
+  ["id", "slug", "title", "subtitle", "synopsis", "genre", "duration_minutes", "release_date", "status", "rating", "badge", "poster_url", "banner_url", "trailer_url", "highlight_color", "is_featured", "box_office_rank"],
   movies.map((movie) => [
     movie.id,
     movie.slug,
@@ -650,6 +669,7 @@ await bulkInsert(
     movie.badge,
     movie.posterUrl,
     movie.bannerUrl,
+    movie.trailerUrl,
     movie.highlightColor,
     movie.isFeatured ? 1 : 0,
     movie.boxOfficeRank,
@@ -854,7 +874,7 @@ for (let index = 0; index < activeShowtimes.length; index += 5) {
     checkoutUrl: `http://localhost:3001/pay/TXN${String(bookingCodeIndex).padStart(6, "0")}`,
     returnUrl: "datve://payment-result",
     reviewStatus: status === "PENDING" ? "PENDING" : "AUTO",
-    reviewNote: status === "FAILED" ? "Gateway mock tra ve that bai." : null,
+    reviewNote: status === "FAILED" ? "Gateway mock trả về thất bại." : null,
     reviewedBy: status === "PENDING" && index % 2 === 0 ? 1 : null,
     reviewedAt: status === "PENDING" && index % 2 === 0 ? toMysqlDateTime(new Date(createdAt.getTime() + 10 * 60_000)) : null,
     paidAt: status === "PAID" ? toMysqlDateTime(new Date(createdAt.getTime() + 5 * 60_000)) : null,
@@ -954,7 +974,7 @@ await connection.end();
 
 console.log(
   [
-    "Da reseed thanh cong du lieu DatVe.",
+    "Đã reseed thành công dữ liệu Đặt Vé.",
     `movies=${movieCount.total}`,
     `cinemas=${cinemaCount.total}`,
     `rooms=${roomCount.total}`,

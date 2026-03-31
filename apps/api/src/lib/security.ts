@@ -41,7 +41,7 @@ export async function enforceRateLimit(request: Request, namespace: string, limi
   }
 
   if (current.count >= limit) {
-    throw new Error("Ban gui yeu cau qua nhanh. Thu lai sau it phut.");
+    throw new Error("Bạn gửi yêu cầu quá nhanh. Thử lại sau ít phút.");
   }
 
   current.count += 1;

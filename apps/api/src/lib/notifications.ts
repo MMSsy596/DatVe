@@ -27,7 +27,7 @@ async function sendExpoPushBatch(tokens: string[], payload: PushPayload) {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Expo push loi: ${response.status} ${text}`);
+    throw new Error(`Expo push lỗi: ${response.status} ${text}`);
   }
 
   return response.json();
@@ -106,8 +106,8 @@ export async function dispatchDueReminders(limit = 25) {
   const dispatched: Array<{ id: number; userId: number; sent: number }> = [];
   for (const row of rows) {
     const result = await sendPushToUser(Number(row.user_id), {
-      title: "Nhac lich suat chieu",
-      body: `${row.movie_title} sap chieu tai ${row.cinema_name}.`,
+      title: "Nhắc lịch suất chiếu",
+      body: `${row.movie_title} sắp chiếu tại ${row.cinema_name}.`,
       data: {
         bookingId: Number(row.booking_id),
         bookingCode: row.booking_code,
@@ -128,4 +128,3 @@ export async function dispatchDueReminders(limit = 25) {
 
   return dispatched;
 }
-

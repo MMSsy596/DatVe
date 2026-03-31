@@ -96,7 +96,7 @@ async function buildVnpayPayment(input: {
     vnp_CurrCode: "VND",
     vnp_IpAddr: input.ipAddr,
     vnp_Locale: "vn",
-    vnp_OrderInfo: `Thanh toan ve ${input.bookingCode}`,
+    vnp_OrderInfo: `Thanh toán vé ${input.bookingCode}`,
     vnp_OrderType: "other",
     vnp_ReturnUrl: `${input.origin}/api/v1/payments/callback/vnpay`,
     vnp_TmnCode: config.tmnCode,
@@ -143,7 +143,7 @@ async function buildMomoPayment(input: {
   const redirectUrl = `${input.origin}/api/v1/payments/callback/momo`;
   const rawSignature =
     `accessKey=${accessKey}&amount=${input.amount}&extraData=` +
-    `&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=Thanh toan ve ${input.bookingCode}` +
+    `&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=Thanh toán vé ${input.bookingCode}` +
     `&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=captureWallet`;
 
   const payload = {
@@ -151,7 +151,7 @@ async function buildMomoPayment(input: {
     requestId,
     amount: input.amount,
     orderId,
-    orderInfo: `Thanh toan ve ${input.bookingCode}`,
+    orderInfo: `Thanh toán vé ${input.bookingCode}`,
     redirectUrl,
     ipnUrl,
     extraData: "",
@@ -167,7 +167,7 @@ async function buildMomoPayment(input: {
   });
   const json = await response.json();
   if (!response.ok || !json.payUrl) {
-    throw new Error(json.message ?? "MoMo khong tao duoc link thanh toan.");
+    throw new Error(json.message ?? "MoMo không tạo được link thanh toán.");
   }
 
   return {
@@ -217,7 +217,7 @@ async function buildZalopayPayment(input: {
     app_trans_id: appTransId,
     embed_data: embedData,
     item,
-    description: `DatVe - ${input.bookingCode}`,
+    description: `Đặt Vé - ${input.bookingCode}`,
     callback_url: `${input.origin}/api/v1/payments/callback/zalopay`,
     mac: hmacSha256(key1, data),
   };
@@ -235,7 +235,7 @@ async function buildZalopayPayment(input: {
   });
   const json = await response.json();
   if (!response.ok || !(json.order_url || json.orderurl)) {
-    throw new Error(json.return_message ?? "ZaloPay khong tao duoc link thanh toan.");
+    throw new Error(json.return_message ?? "ZaloPay không tạo được link thanh toán.");
   }
 
   return {

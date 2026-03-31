@@ -14,6 +14,7 @@ export type MoviePayload = {
   badge?: string | null;
   posterUrl?: string | null;
   bannerUrl?: string | null;
+  trailerUrl?: string | null;
   highlightColor?: string | null;
   isFeatured?: boolean;
   boxOfficeRank?: number | null;
@@ -167,7 +168,7 @@ export async function getDashboardStats() {
       status: item.status,
       totalAmount: Number(item.total_amount),
       createdAt: item.created_at,
-      customerName: item.customer_name ?? "Khach le",
+      customerName: item.customer_name ?? "Khách lẻ",
       movieTitle: item.movie_title,
       cinemaName: item.cinema_name,
     })),
@@ -202,7 +203,7 @@ export async function getUserProfile(userId: number) {
     `SELECT activity_type, activity_title, activity_meta, activity_time
      FROM (
        SELECT 'BOOKING' AS activity_type,
-              CONCAT('Dat ve ', m.title) AS activity_title,
+              CONCAT('Đặt vé ', m.title) AS activity_title,
               CONCAT(c.name, ' | ', b.status, ' | ', b.total_amount) AS activity_meta,
               b.created_at AS activity_time
        FROM bookings b
@@ -212,7 +213,7 @@ export async function getUserProfile(userId: number) {
        WHERE b.user_id = ?
        UNION ALL
        SELECT 'FAVORITE' AS activity_type,
-              CONCAT('Them yeu thich: ', m.title) AS activity_title,
+              CONCAT('Thêm yêu thích: ', m.title) AS activity_title,
               m.genre AS activity_meta,
               f.created_at AS activity_time
        FROM favorites f
@@ -220,7 +221,7 @@ export async function getUserProfile(userId: number) {
        WHERE f.user_id = ?
        UNION ALL
        SELECT 'WATCHLIST' AS activity_type,
-              CONCAT('Them xem sau: ', m.title) AS activity_title,
+              CONCAT('Thêm xem sau: ', m.title) AS activity_title,
               m.genre AS activity_meta,
               w.created_at AS activity_time
        FROM watchlist w
@@ -259,7 +260,7 @@ export async function listMovies() {
   await ensureRuntimeSchema();
   const pool = getPool();
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, slug, title, subtitle, synopsis, genre, duration_minutes, release_date, status, rating, badge, poster_url, banner_url, highlight_color, is_featured, box_office_rank
+    `SELECT id, slug, title, subtitle, synopsis, genre, duration_minutes, release_date, status, rating, badge, poster_url, banner_url, trailer_url, highlight_color, is_featured, box_office_rank
      FROM movies
      ORDER BY is_featured DESC, box_office_rank ASC, id DESC`
   );
@@ -271,8 +272,8 @@ export async function createMovie(payload: MoviePayload) {
   const pool = getPool();
   const [result] = await pool.execute<ResultSetHeader>(
     `INSERT INTO movies
-      (slug, title, subtitle, synopsis, genre, duration_minutes, release_date, status, rating, badge, poster_url, banner_url, highlight_color, is_featured, box_office_rank)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (slug, title, subtitle, synopsis, genre, duration_minutes, release_date, status, rating, badge, poster_url, banner_url, trailer_url, highlight_color, is_featured, box_office_rank)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       payload.slug,
       payload.title,
@@ -286,6 +287,7 @@ export async function createMovie(payload: MoviePayload) {
       payload.badge ?? null,
       payload.posterUrl ?? null,
       payload.bannerUrl ?? null,
+      payload.trailerUrl ?? null,
       payload.highlightColor ?? null,
       payload.isFeatured ? 1 : 0,
       payload.boxOfficeRank ?? null,
@@ -299,7 +301,7 @@ export async function updateMovie(id: number, payload: MoviePayload) {
   const pool = getPool();
   await pool.execute(
     `UPDATE movies
-     SET slug = ?, title = ?, subtitle = ?, synopsis = ?, genre = ?, duration_minutes = ?, release_date = ?, status = ?, rating = ?, badge = ?, poster_url = ?, banner_url = ?, highlight_color = ?, is_featured = ?, box_office_rank = ?
+     SET slug = ?, title = ?, subtitle = ?, synopsis = ?, genre = ?, duration_minutes = ?, release_date = ?, status = ?, rating = ?, badge = ?, poster_url = ?, banner_url = ?, trailer_url = ?, highlight_color = ?, is_featured = ?, box_office_rank = ?
      WHERE id = ?`,
     [
       payload.slug,
@@ -314,6 +316,7 @@ export async function updateMovie(id: number, payload: MoviePayload) {
       payload.badge ?? null,
       payload.posterUrl ?? null,
       payload.bannerUrl ?? null,
+      payload.trailerUrl ?? null,
       payload.highlightColor ?? null,
       payload.isFeatured ? 1 : 0,
       payload.boxOfficeRank ?? null,
@@ -405,10 +408,10 @@ export async function createCinema(payload: CinemaPayload) {
     [payload.name, payload.city, payload.address, payload.description ?? null]
   );
 
-  // tao 1 phong mac dinh de admin co the tao suat chieu ngay
+  // Tạo 1 phòng mặc định để admin có thể tạo suất chiếu ngay
   await pool.execute(
     `INSERT INTO rooms (cinema_id, name, format_label, seat_layout_json)
-     VALUES (?, 'Phong Mac Dinh', '2D', JSON_ARRAY(JSON_ARRAY('A1','A2','A3','A4'), JSON_ARRAY('B1','B2','B3','B4')))`,
+     VALUES (?, 'Phòng Mặc Định', '2D', JSON_ARRAY(JSON_ARRAY('A1','A2','A3','A4'), JSON_ARRAY('B1','B2','B3','B4')))`,
     [result.insertId]
   );
 
@@ -533,7 +536,7 @@ export async function createShowtime(payload: ShowtimePayload) {
       payload.cinemaId,
       payload.roomId,
       payload.startTime,
-      payload.languageLabel ?? "Phu de",
+      payload.languageLabel ?? "Phụ đề",
       payload.formatLabel ?? "2D",
       payload.basePrice,
       payload.status ?? "SELLING",
@@ -554,7 +557,7 @@ export async function updateShowtime(id: number, payload: ShowtimePayload) {
       payload.cinemaId,
       payload.roomId,
       payload.startTime,
-      payload.languageLabel ?? "Phu de",
+      payload.languageLabel ?? "Phụ đề",
       payload.formatLabel ?? "2D",
       payload.basePrice,
       payload.status ?? "SELLING",

@@ -69,16 +69,16 @@ export async function findVoucherForCheckout(code: string, userId: number | null
     [normalized]
   );
   if (!voucher) {
-    throw new Error("Voucher khong ton tai.");
+    throw new Error("Voucher không tồn tại.");
   }
   if (!voucher.is_active) {
-    throw new Error("Voucher dang tat.");
+    throw new Error("Voucher đang tắt.");
   }
   if (voucher.expires_at && new Date(voucher.expires_at).getTime() < Date.now()) {
-    throw new Error("Voucher da het han.");
+    throw new Error("Voucher đã hết hạn.");
   }
   if (voucher.assigned_user_id && userId && Number(voucher.assigned_user_id) !== userId) {
-    throw new Error("Voucher khong ap dung cho tai khoan nay.");
+    throw new Error("Voucher không áp dụng cho tài khoản này.");
   }
   if (userId) {
     const [[used]] = await pool.query<RowDataPacket[]>(
@@ -86,7 +86,7 @@ export async function findVoucherForCheckout(code: string, userId: number | null
       [userId, normalized]
     );
     if (used) {
-      throw new Error("Voucher da duoc su dung.");
+      throw new Error("Voucher đã được sử dụng.");
     }
   }
   return voucher;

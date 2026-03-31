@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const folder = formData.get("folder");
 
     if (!(file instanceof File)) {
-      throw new Error("Can gui file anh.");
+      throw new Error("Cần gửi file ảnh.");
     }
 
     const normalizedFolder =
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json(saved, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Upload that bai" },
+      { error: error instanceof Error ? error.message : "Upload thất bại" },
       { status: 400 }
     );
   }

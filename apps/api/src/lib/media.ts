@@ -13,11 +13,11 @@ export async function saveUploadedImage(file: File, folder: "movies" | "banners"
 
   const extension = ALLOWED_TYPES.get(file.type);
   if (!extension) {
-    throw new Error("Chi chap nhan file JPG, PNG hoac WEBP.");
+    throw new Error("Chỉ chấp nhận file JPG, PNG hoặc WEBP.");
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    throw new Error("File qua lon. Gioi han 5MB.");
+    throw new Error("File quá lớn. Giới hạn 5MB.");
   }
 
   const uploadRoot = path.join(process.cwd(), "public", "uploads", folder);
@@ -34,4 +34,3 @@ export async function saveUploadedImage(file: File, folder: "movies" | "banners"
     contentType: file.type,
   };
 }
-

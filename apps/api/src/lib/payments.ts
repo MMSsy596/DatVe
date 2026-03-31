@@ -31,11 +31,11 @@ export async function createPaymentLink(payload: CreatePaymentPayload) {
   );
 
   if (!booking) {
-    throw new Error("Khong tim thay booking de thanh toan.");
+    throw new Error("Không tìm thấy đơn để thanh toán.");
   }
 
   if (booking.status === "PAID") {
-    throw new Error("Booking nay da thanh toan.");
+    throw new Error("Đơn này đã thanh toán.");
   }
 
   const providerTxnRef = makeProviderTxnRef(payload.provider);
@@ -188,7 +188,7 @@ export async function updatePaymentStatus(
     );
 
     if (!payment) {
-      throw new Error("Khong tim thay payment.");
+      throw new Error("Không tìm thấy giao dịch.");
     }
 
     await connection.execute(
@@ -213,8 +213,8 @@ export async function updatePaymentStatus(
 
     if (status === "SUCCESS" && payment.user_id) {
       await sendPushToUser(Number(payment.user_id), {
-        title: "Thanh toan thanh cong",
-        body: `${payment.movie_title} da xac nhan cho ma ve ${payment.booking_code}.`,
+        title: "Thanh toán thành công",
+        body: `${payment.movie_title} đã xác nhận cho mã vé ${payment.booking_code}.`,
         data: {
           bookingId: Number(payment.booking_id),
           bookingCode: payment.booking_code,

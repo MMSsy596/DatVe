@@ -8,7 +8,7 @@ declare global {
 
 export function getPool() {
   if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL chua duoc cau hinh");
+    throw new Error("DATABASE_URL chưa được cấu hình");
   }
 
   if (!global.__datvePool) {
@@ -79,6 +79,10 @@ export async function ensureRuntimeSchema() {
 
       if (!(await hasColumn(pool, "movies", "banner_url"))) {
         await pool.execute("ALTER TABLE movies ADD COLUMN banner_url TEXT NULL AFTER poster_url");
+      }
+
+      if (!(await hasColumn(pool, "movies", "trailer_url"))) {
+        await pool.execute("ALTER TABLE movies ADD COLUMN trailer_url TEXT NULL AFTER banner_url");
       }
 
       if (!(await hasColumn(pool, "payments", "provider_order_id"))) {

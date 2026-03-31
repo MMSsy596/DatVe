@@ -14,7 +14,7 @@ const standaloneCandidates = [
 const standaloneServer = standaloneCandidates.find((candidate) => fs.existsSync(candidate));
 
 if (!standaloneServer) {
-  throw new Error("Khong tim thay Next standalone server. Hay chay `npm run build` trong apps/api truoc.");
+  throw new Error("Không tìm thấy Next standalone server. Hãy chạy `npm run build` trong apps/api trước.");
 }
 
 const child = spawn(

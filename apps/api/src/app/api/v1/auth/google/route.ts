@@ -9,12 +9,12 @@ export async function POST(request: Request) {
     const body = asObject(await request.json());
     const session = await loginWithGoogle({
       idToken: v.string(body.idToken, "Google id_token", { min: 20, max: 4096, trim: false }),
-      deviceName: v.optionalString(body.deviceName, "Ten thiet bi", { max: 120 }) ?? "Google Sign-In",
+      deviceName: v.optionalString(body.deviceName, "Tên thiết bị", { max: 120 }) ?? "Google Sign-In",
     });
     return NextResponse.json(session, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Dang nhap Google that bai" },
+      { error: error instanceof Error ? error.message : "Đăng nhập Google thất bại" },
       { status: 401 }
     );
   }

@@ -1,7 +1,8 @@
-import React from "react";
+﻿import React from "react";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { ActivityIndicator, Animated, Easing, Image, ImageBackground, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { WebView } from "react-native-webview";
@@ -45,21 +46,15 @@ const mapCheckinStatus = (status?: string | null) => {
   }
 };
 
-const trailerUrlsBySlug: Record<string, string> = {
-  "lat-mat-8": "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&playsinline=1",
-  "the-last-voyage": "https://www.youtube.com/embed/ScMzIvxBSi4?autoplay=1&playsinline=1",
-  "mua-he-truoc-cua-em": "https://www.youtube.com/embed/ysz5S6PUM-U?autoplay=1&playsinline=1",
-};
-
 function useMinuteNow() {
   const [minuteNow, setMinuteNow] = React.useState(() => Date.now());
 
   React.useEffect(() => {
     const refresh = () => setMinuteNow(Date.now());
-    const timeoutMs = 60000 - (Date.now() % 60000);
+    const timeoutMs = 15000 - (Date.now() % 15000);
     const bootstrap = setTimeout(() => {
       refresh();
-      const interval = setInterval(refresh, 60000);
+      const interval = setInterval(refresh, 15000);
       (refresh as typeof refresh & { interval?: ReturnType<typeof setInterval> }).interval = interval;
     }, timeoutMs);
 
@@ -73,6 +68,190 @@ function useMinuteNow() {
   }, []);
 
   return minuteNow;
+}
+
+function normalizeTrailerUrl(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.includes("/embed/")) {
+    return trimmed.includes("?") ? trimmed : `${trimmed}?playsinline=1`;
+  }
+  const vimeoPlayerMatch = trimmed.match(/player\.vimeo\.com\/video\/(\d+)/i);
+  if (vimeoPlayerMatch?.[1]) {
+    return `https://player.vimeo.com/video/${vimeoPlayerMatch[1]}?autoplay=1&playsinline=1`;
+  }
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(\d+)/i);
+  if (vimeoMatch?.[1]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&playsinline=1`;
+  }
+  const shortMatch = trimmed.match(/youtu\.be\/([^?&/]+)/i);
+  if (shortMatch?.[1]) {
+    return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&playsinline=1`;
+  }
+  const watchMatch = trimmed.match(/[?&]v=([^?&]+)/i);
+  if (trimmed.includes("youtube.com") && watchMatch?.[1]) {
+    return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&playsinline=1`;
+  }
+  return trimmed;
+}
+
+function formatCountdownLabel(startTime: string, now: number) {
+  const diffMs = new Date(startTime).getTime() - now;
+  if (diffMs <= 0) {
+    return "Hết giờ";
+  }
+  if (diffMs < 60000) {
+    return "Đang vào rạp";
+  }
+  const minutes = Math.max(1, Math.ceil(diffMs / 60000));
+  if (minutes <= 3) {
+    return "Sắp bắt đầu";
+  }
+  return `Bắt đầu sau ${minutes} phút`;
+}
+
+function getCountdownLevel(startTime: string, now: number) {
+  const diffMs = new Date(startTime).getTime() - now;
+  if (diffMs <= 0) {
+    return "disabled" as const;
+  }
+  if (diffMs < 60000) {
+    return "boarding" as const;
+  }
+  if (diffMs <= 10 * 60000) {
+    return "soon" as const;
+  }
+  return "active" as const;
+}
+
+function detectTrailerKind(url: string | null) {
+  if (!url) {
+    return "none" as const;
+  }
+  if (/\.(mp4|m3u8|mov)(\?|$)/i.test(url)) {
+    return "native" as const;
+  }
+  if (/youtube\.com|youtu\.be|vimeo\.com|player\.vimeo\.com/i.test(url)) {
+    return "web" as const;
+  }
+  return "web" as const;
+}
+
+const glassNoiseDots = [
+  { left: "8%", top: 8, size: 2, opacity: 0.12 },
+  { left: "18%", top: 18, size: 1.6, opacity: 0.1 },
+  { left: "29%", top: 12, size: 2.4, opacity: 0.11 },
+  { left: "43%", top: 20, size: 1.8, opacity: 0.08 },
+  { left: "57%", top: 10, size: 2, opacity: 0.1 },
+  { left: "69%", top: 18, size: 1.5, opacity: 0.07 },
+  { left: "82%", top: 11, size: 2.2, opacity: 0.1 },
+  { left: "91%", top: 19, size: 1.4, opacity: 0.08 },
+] as const;
+
+function TrailerPlayer({ url, posterUrl, title }: { url: string | null; posterUrl?: string | null; title: string }) {
+  const kind = detectTrailerKind(url);
+  const [started, setStarted] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [loadProgress, setLoadProgress] = React.useState(0);
+  const player = useVideoPlayer(kind === "native" && url ? url : null, (instance) => {
+    instance.loop = false;
+    instance.muted = false;
+  });
+
+  React.useEffect(() => {
+    if (!player || kind !== "native") {
+      return;
+    }
+    if (started) {
+      setLoading(true);
+      player.play();
+    } else {
+      player.pause();
+      setLoading(false);
+      setLoadProgress(0);
+    }
+  }, [kind, player, started]);
+
+  if (!url) {
+    return (
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>Chưa có trailer</Text>
+        <Text style={styles.accountDetail}>Phim này hiện chưa có link trailer để phát trong app.</Text>
+      </View>
+    );
+  }
+
+  if (!started) {
+    return (
+      <Pressable style={styles.trailerPosterPreview} onPress={() => setStarted(true)}>
+        {posterUrl ? <Image source={{ uri: posterUrl }} style={styles.trailerPosterImage} resizeMode="cover" /> : null}
+        <LinearGradient
+          colors={["rgba(5,5,7,0.08)", "rgba(5,5,7,0.62)", "rgba(5,5,7,0.9)"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.trailerPosterScrim}
+        />
+        <View style={styles.trailerPosterCenter}>
+          <View style={styles.trailerPosterPlay}>
+            <MaterialCommunityIcons name="play" size={24} color="#fff6f0" />
+          </View>
+          <Text style={styles.trailerPosterTitle}>{title}</Text>
+          <Text style={styles.trailerPosterHint}>Bấm để phát trailer</Text>
+        </View>
+      </Pressable>
+    );
+  }
+
+  if (kind === "native") {
+    return (
+      <View style={styles.trailerPlayerWrap}>
+        <VideoView
+          player={player}
+          style={styles.trailerWebview}
+          allowsFullscreen
+          allowsPictureInPicture={false}
+          contentFit="contain"
+        />
+        {loading ? (
+          <View style={styles.trailerLoadingOverlay}>
+            <ActivityIndicator color={palette.cyan} />
+            <Text style={styles.trailerLoadingText}>{loadProgress > 0 ? `Đang tải ${loadProgress}%` : "Đang tải trailer"}</Text>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.trailerPlayerWrap}>
+      <WebView
+        source={{ uri: url }}
+        style={styles.trailerWebview}
+        allowsFullscreenVideo
+        mediaPlaybackRequiresUserAction={false}
+        onLoadStart={() => {
+          setLoading(true);
+          setLoadProgress(12);
+        }}
+        onLoadProgress={({ nativeEvent }) => setLoadProgress(Math.max(12, Math.round(nativeEvent.progress * 100)))}
+        onLoadEnd={() => {
+          setLoading(false);
+          setLoadProgress(100);
+        }}
+      />
+      {loading ? (
+        <View style={styles.trailerLoadingOverlay}>
+          <ActivityIndicator color={palette.cyan} />
+          <Text style={styles.trailerLoadingText}>{`Đang tải ${Math.max(loadProgress, 12)}%`}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export function SectionHeader({ title, action }: { title: string; action?: string }) {
@@ -94,26 +273,101 @@ export function NeonButton({ label, variant = "primary", onPress }: { label: str
 
 const TOAST_VISIBLE_MS = 2200;
 
-const toastToneLabel = (tone: ToastTone) => (tone === "success" ? "Ho?n t?t" : tone === "error" ? "L?i" : "Th?ng b?o");
+const toastToneLabel = (tone: ToastTone) => (tone === "success" ? "Hoàn tất" : tone === "error" ? "Lỗi" : "Thông báo");
 
 const toastKindMeta: Record<ToastKind, { label: string; outlineIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; filledIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; color: string; bg: string }> = {
-  ticket: { label: "V?", outlineIcon: "ticket-confirmation-outline", filledIcon: "ticket-confirmation", color: palette.amber, bg: "rgba(255,207,106,0.14)" },
-  favorite: { label: "Y?u th?ch", outlineIcon: "heart-outline", filledIcon: "heart", color: "#ff88a4", bg: "rgba(201,63,98,0.16)" },
-  seat: { label: "Gh?", outlineIcon: "sofa-single-outline", filledIcon: "sofa-single", color: palette.cyan, bg: "rgba(115,246,221,0.14)" },
-  payment: { label: "Thanh to?n", outlineIcon: "credit-card-outline", filledIcon: "credit-card", color: "#9cc7ff", bg: "rgba(98,141,235,0.16)" },
-  reminder: { label: "Nh?c l?ch", outlineIcon: "bell-outline", filledIcon: "bell", color: "#ffd88d", bg: "rgba(255,184,72,0.16)" },
-  auth: { label: "T?i kho?n", outlineIcon: "account-circle-outline", filledIcon: "account-circle", color: "#d7b8ff", bg: "rgba(147,51,234,0.18)" },
-  system: { label: "H? th?ng", outlineIcon: "information-outline", filledIcon: "information", color: palette.text, bg: "rgba(255,255,255,0.08)" },
+  ticket: { label: "Vé", outlineIcon: "ticket-confirmation-outline", filledIcon: "ticket-confirmation", color: palette.amber, bg: "rgba(255,207,106,0.14)" },
+  favorite: { label: "Yêu thích", outlineIcon: "heart-outline", filledIcon: "heart", color: "#ff88a4", bg: "rgba(201,63,98,0.16)" },
+  seat: { label: "Ghế", outlineIcon: "sofa-single-outline", filledIcon: "sofa-single", color: palette.cyan, bg: "rgba(115,246,221,0.14)" },
+  payment: { label: "Thanh toán", outlineIcon: "credit-card-outline", filledIcon: "credit-card", color: "#9cc7ff", bg: "rgba(98,141,235,0.16)" },
+  reminder: { label: "Nhắc lịch", outlineIcon: "bell-outline", filledIcon: "bell", color: "#ffd88d", bg: "rgba(255,184,72,0.16)" },
+  auth: { label: "Tài khoản", outlineIcon: "account-circle-outline", filledIcon: "account-circle", color: "#d7b8ff", bg: "rgba(147,51,234,0.18)" },
+  system: { label: "Hệ thống", outlineIcon: "information-outline", filledIcon: "information", color: palette.text, bg: "rgba(255,255,255,0.08)" },
 };
 
-const toastKindMotion: Record<ToastKind, { delay: number; outputRange: [number, number]; keyframes: number[] }> = {
-  ticket: { delay: 52, outputRange: [-7.5, 7.5], keyframes: [1, -1, 0.7, -0.35, 0] },
-  favorite: { delay: 66, outputRange: [-5.5, 5.5], keyframes: [0.85, -0.85, 0.45, -0.2, 0] },
-  seat: { delay: 42, outputRange: [-8.5, 8.5], keyframes: [1, -1, 0.85, -0.45, 0] },
-  payment: { delay: 36, outputRange: [-9.5, 9.5], keyframes: [1, -1, 0.9, -0.5, 0] },
-  reminder: { delay: 72, outputRange: [-4.5, 4.5], keyframes: [0.7, -0.7, 0.35, -0.14, 0] },
-  auth: { delay: 58, outputRange: [-6, 6], keyframes: [0.9, -0.9, 0.5, -0.24, 0] },
-  system: { delay: 76, outputRange: [-4, 4], keyframes: [0.6, -0.6, 0.25, -0.1, 0] },
+const toastKindMotion: Record<
+  ToastKind,
+  {
+    delay: number;
+    outputRange: [number, number];
+    keyframes: number[];
+    iconScalePeak: number;
+    iconRotatePeak: number;
+    iconLift: number;
+    hapticSuccess: Haptics.ImpactFeedbackStyle;
+    hapticError: Haptics.ImpactFeedbackStyle;
+  }
+> = {
+  ticket: {
+    delay: 52,
+    outputRange: [-7.5, 7.5],
+    keyframes: [1, -1, 0.7, -0.35, 0],
+    iconScalePeak: 1.16,
+    iconRotatePeak: 0.1,
+    iconLift: -5,
+    hapticSuccess: Haptics.ImpactFeedbackStyle.Medium,
+    hapticError: Haptics.ImpactFeedbackStyle.Heavy,
+  },
+  favorite: {
+    delay: 66,
+    outputRange: [-5.5, 5.5],
+    keyframes: [0.85, -0.85, 0.45, -0.2, 0],
+    iconScalePeak: 1.2,
+    iconRotatePeak: 0.14,
+    iconLift: -4,
+    hapticSuccess: Haptics.ImpactFeedbackStyle.Light,
+    hapticError: Haptics.ImpactFeedbackStyle.Medium,
+  },
+  seat: {
+    delay: 42,
+    outputRange: [-8.5, 8.5],
+    keyframes: [1, -1, 0.85, -0.45, 0],
+    iconScalePeak: 1.14,
+    iconRotatePeak: 0.06,
+    iconLift: -6,
+    hapticSuccess: Haptics.ImpactFeedbackStyle.Rigid,
+    hapticError: Haptics.ImpactFeedbackStyle.Heavy,
+  },
+  payment: {
+    delay: 36,
+    outputRange: [-9.5, 9.5],
+    keyframes: [1, -1, 0.9, -0.5, 0],
+    iconScalePeak: 1.12,
+    iconRotatePeak: 0.08,
+    iconLift: -7,
+    hapticSuccess: Haptics.ImpactFeedbackStyle.Heavy,
+    hapticError: Haptics.ImpactFeedbackStyle.Heavy,
+  },
+  reminder: {
+    delay: 72,
+    outputRange: [-4.5, 4.5],
+    keyframes: [0.7, -0.7, 0.35, -0.14, 0],
+    iconScalePeak: 1.1,
+    iconRotatePeak: 0.18,
+    iconLift: -3,
+    hapticSuccess: Haptics.ImpactFeedbackStyle.Light,
+    hapticError: Haptics.ImpactFeedbackStyle.Medium,
+  },
+  auth: {
+    delay: 58,
+    outputRange: [-6, 6],
+    keyframes: [0.9, -0.9, 0.5, -0.24, 0],
+    iconScalePeak: 1.13,
+    iconRotatePeak: 0.09,
+    iconLift: -4,
+    hapticSuccess: Haptics.ImpactFeedbackStyle.Medium,
+    hapticError: Haptics.ImpactFeedbackStyle.Rigid,
+  },
+  system: {
+    delay: 76,
+    outputRange: [-4, 4],
+    keyframes: [0.6, -0.6, 0.25, -0.1, 0],
+    iconScalePeak: 1.08,
+    iconRotatePeak: 0.05,
+    iconLift: -2,
+    hapticSuccess: Haptics.ImpactFeedbackStyle.Light,
+    hapticError: Haptics.ImpactFeedbackStyle.Medium,
+  },
 };
 
 export function Toast({ toastId, message, tone = "info", kind = "system", closing = false }: { toastId: number; message: string; tone?: ToastTone; kind?: ToastKind; closing?: boolean }) {
@@ -123,10 +377,12 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
   const shellWidth = React.useRef(new Animated.Value(0.76)).current;
   const iconScale = React.useRef(new Animated.Value(0.74)).current;
   const iconRotate = React.useRef(new Animated.Value(-0.18)).current;
+  const iconTranslateY = React.useRef(new Animated.Value(2)).current;
   const wobble = React.useRef(new Animated.Value(0)).current;
   const bodyOpacity = React.useRef(new Animated.Value(0)).current;
   const bodyTranslateX = React.useRef(new Animated.Value(-14)).current;
   const progress = React.useRef(new Animated.Value(1)).current;
+  const shimmer = React.useRef(new Animated.Value(0)).current;
   const toneLabel = toastToneLabel(tone);
   const meta = toastKindMeta[kind];
   const motion = toastKindMotion[kind];
@@ -142,10 +398,12 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
     shellWidth.setValue(0.76);
     iconScale.setValue(0.74);
     iconRotate.setValue(-0.18);
+    iconTranslateY.setValue(2);
     wobble.setValue(0);
     bodyOpacity.setValue(0);
     bodyTranslateX.setValue(-14);
     progress.setValue(1);
+    shimmer.setValue(0);
 
     Animated.sequence([
       Animated.parallel([
@@ -153,13 +411,15 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         Animated.timing(shellScale, { toValue: 0.88, duration: 110, easing: Easing.out(Easing.quad), useNativeDriver: true }),
         Animated.timing(shellWidth, { toValue: 0.84, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
         Animated.timing(iconScale, { toValue: 0.88, duration: 110, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(iconTranslateY, { toValue: 0, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.spring(shellScale, { toValue: 1.03, tension: 95, friction: 8, useNativeDriver: true }),
         Animated.spring(shellWidth, { toValue: 1.02, tension: 90, friction: 9, useNativeDriver: true }),
         Animated.spring(shellTranslateY, { toValue: 0, tension: 85, friction: 12, useNativeDriver: true }),
-        Animated.spring(iconScale, { toValue: 1.06, tension: 120, friction: 8, useNativeDriver: true }),
-        Animated.timing(iconRotate, { toValue: 0.08, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.spring(iconScale, { toValue: motion.iconScalePeak, tension: 120, friction: 8, useNativeDriver: true }),
+        Animated.timing(iconRotate, { toValue: motion.iconRotatePeak, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.spring(iconTranslateY, { toValue: motion.iconLift, tension: 110, friction: 9, useNativeDriver: true }),
       ]),
       Animated.timing(shellOpacity, { toValue: 1, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.parallel([
@@ -167,6 +427,7 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         Animated.spring(shellWidth, { toValue: 1, tension: 88, friction: 10, useNativeDriver: true }),
         Animated.spring(iconScale, { toValue: 1, tension: 110, friction: 9, useNativeDriver: true }),
         Animated.timing(iconRotate, { toValue: 0, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(iconTranslateY, { toValue: 0, tension: 110, friction: 10, useNativeDriver: true }),
         Animated.parallel([
           Animated.timing(bodyOpacity, { toValue: 1, duration: 170, easing: Easing.out(Easing.quad), useNativeDriver: true }),
           Animated.timing(bodyTranslateX, { toValue: 0, duration: 190, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
@@ -187,12 +448,33 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
       easing: Easing.linear,
       useNativeDriver: false,
     }).start();
+    const shimmerLoop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(120),
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.delay(260),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    shimmerLoop.start();
     if (tone === "success") {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.impactAsync(motion.hapticSuccess);
     } else if (tone === "error") {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      void Haptics.impactAsync(motion.hapticError);
     }
-  }, [bodyOpacity, bodyTranslateX, iconRotate, iconScale, motion.delay, motion.keyframes, progress, shellOpacity, shellScale, shellTranslateY, shellWidth, toastId, wobble, tone]);
+    return () => {
+      shimmerLoop.stop();
+    };
+  }, [bodyOpacity, bodyTranslateX, iconRotate, iconScale, iconTranslateY, motion.delay, motion.hapticError, motion.hapticSuccess, motion.iconLift, motion.iconRotatePeak, motion.iconScalePeak, motion.keyframes, progress, shellOpacity, shellScale, shellTranslateY, shellWidth, shimmer, toastId, wobble, tone]);
 
   React.useEffect(() => {
     if (!closing) return;
@@ -205,8 +487,9 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
       Animated.timing(shellTranslateY, { toValue: -14, duration: 180, easing: Easing.in(Easing.quad), useNativeDriver: true }),
       Animated.timing(iconScale, { toValue: 0.82, duration: 140, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       Animated.timing(iconRotate, { toValue: -0.08, duration: 120, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      Animated.timing(iconTranslateY, { toValue: 1, duration: 120, easing: Easing.in(Easing.quad), useNativeDriver: true }),
     ]).start();
-  }, [bodyOpacity, bodyTranslateX, closing, iconRotate, iconScale, shellOpacity, shellScale, shellTranslateY, shellWidth]);
+  }, [bodyOpacity, bodyTranslateX, closing, iconRotate, iconScale, iconTranslateY, shellOpacity, shellScale, shellTranslateY, shellWidth]);
 
   return (
     <Animated.View
@@ -218,7 +501,7 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         { opacity: shellOpacity, transform: [{ translateX: wobble.interpolate({ inputRange: [-1, 1], outputRange: motion.outputRange }) }, { translateY: shellTranslateY }, { scaleX: shellWidth }, { scaleY: shellScale }] },
       ]}
     >
-      <Animated.View style={[styles.toastIconWrap, tone === "success" && styles.toastIconWrapSuccess, tone === "error" && styles.toastIconWrapError, { backgroundColor: meta.bg, transform: [{ scale: iconScale }, { rotate: iconRotate.interpolate({ inputRange: [-1, 1], outputRange: ["-1rad", "1rad"] }) }] }]}>
+      <Animated.View style={[styles.toastIconWrap, tone === "success" && styles.toastIconWrapSuccess, tone === "error" && styles.toastIconWrapError, { backgroundColor: meta.bg, transform: [{ translateY: iconTranslateY }, { scale: iconScale }, { rotate: iconRotate.interpolate({ inputRange: [-1, 1], outputRange: ["-1rad", "1rad"] }) }] }]}>
         <MaterialCommunityIcons name={iconName} size={18} color={toneAccent} />
       </Animated.View>
       <Animated.View style={[styles.toastBody, { opacity: bodyOpacity, transform: [{ translateX: bodyTranslateX }] }]}>
@@ -231,6 +514,15 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         <View style={styles.toastProgressTrack}>
           <Animated.View style={[styles.toastProgressFill, tone === "success" && styles.toastProgressFillSuccess, tone === "error" && styles.toastProgressFillError, { width: progress.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }), backgroundColor: progressColor, shadowColor: progressColor }]} />
           <View pointerEvents="none" style={[styles.toastProgressGlow, { backgroundColor: progressGlow }]} />
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.toastProgressShimmer,
+              {
+                transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-84, 244] }) }],
+              },
+            ]}
+          />
         </View>
       </Animated.View>
     </Animated.View>
@@ -251,8 +543,10 @@ export function HomeScreen(props: {
 }) {
   const { onMoviePress, onSeatPress, bannersData, moviesData, loading, fallbackMovie } = props;
   const heroMovie = moviesData[0] ?? fallbackMovie;
-  const nowShowing = moviesData.filter((movie) => movie.status !== "COMING_SOON").slice(0, 6);
-  const comingSoon = moviesData.filter((movie) => movie.status === "COMING_SOON").slice(0, 4);
+  const nowShowing = moviesData.filter((movie) => movie.status !== "COMING_SOON");
+  const nowShowingFeatured = nowShowing.slice(0, 12);
+  const nowShowingExtended = nowShowing.slice(12);
+  const comingSoon = moviesData.filter((movie) => movie.status === "COMING_SOON").slice(0, 10);
   const featuredBanner = bannersData[0];
 
   if (loading && moviesData.length === 0) {
@@ -330,7 +624,7 @@ export function HomeScreen(props: {
 
       <SectionHeader title="Đang chiếu" action="Chọn phim" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {nowShowing.map((movie) => (
+        {nowShowingFeatured.map((movie) => (
           <Pressable key={movie.id} style={styles.movieCard} onPress={() => onMoviePress(movie)}>
             <ImageBackground source={movie.posterUrl ? { uri: movie.posterUrl } : undefined} imageStyle={styles.posterImage} style={[styles.poster, { backgroundColor: movie.tone }]}>
               <View style={styles.posterScrim} />
@@ -346,13 +640,35 @@ export function HomeScreen(props: {
         ))}
       </ScrollView>
 
+      {nowShowingExtended.length > 0 ? (
+        <>
+          <SectionHeader title="Lướt thêm" action={`${nowShowing.length} phim`} />
+          <View style={styles.rankingWrap}>
+            {nowShowingExtended.map((movie) => (
+              <Pressable key={`extended-${movie.id}`} style={styles.rankingRow} onPress={() => onMoviePress(movie)}>
+                <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
+                  {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
+                </View>
+                <View style={styles.rankMain}>
+                  <Text style={styles.rankMovie}>{movie.title}</Text>
+                  <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
+                </View>
+                <Text style={styles.rankActionText}>Mở</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
+
       {comingSoon.length > 0 ? (
         <>
           <SectionHeader title="Sắp chiếu" action="Theo dõi" />
           <View style={styles.rankingWrap}>
             {comingSoon.map((movie) => (
               <Pressable key={`coming-${movie.id}`} style={styles.rankingRow} onPress={() => onMoviePress(movie)}>
-                <View style={[styles.rankPoster, { backgroundColor: movie.tone }]} />
+                <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
+                  {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
+                </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{movie.title}</Text>
                   <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime}</Text>
@@ -506,8 +822,6 @@ export function TicketsScreen({ onSeatPress, onTicketPress, tickets, moviesData,
 }
 
 export function AuthScreen(props: {
-  apiBaseUrl: string;
-  setApiBaseUrl: Setter<string>;
   authMode: "login" | "register";
   setAuthMode: Setter<"login" | "register">;
   authName: string;
@@ -521,34 +835,42 @@ export function AuthScreen(props: {
   onSubmitAuth: () => void;
   onGoogleAuth: () => void;
   authLoading: boolean;
+  initialStep?: number;
+  onBack?: () => void;
+  helperMessage?: string | null;
 }) {
-  const { apiBaseUrl, setApiBaseUrl, authMode, setAuthMode, authName, setAuthName, authEmail, setAuthEmail, authPhone, setAuthPhone, authPassword, setAuthPassword, onSubmitAuth, onGoogleAuth, authLoading } = props;
+  const { authMode, setAuthMode, authName, setAuthName, authEmail, setAuthEmail, authPhone, setAuthPhone, authPassword, setAuthPassword, onSubmitAuth, onGoogleAuth, authLoading, initialStep = 0, onBack, helperMessage } = props;
   const slides = [
     {
-      eyebrow: "??T V? TH?NG MINH",
-      title: "Ch?n phim nhanh, gi? gh? ??p v? quay l?i ??ng b??c ?ang xem.",
-      body: "App ghi nh? lu?ng ?ang m? ?? tr?i nghi?m gi?ng s?n ph?m th?t, kh?ng c?n c?m gi?c demo.",
-      chips: ["Gi? gh? theo th?i gian th?c", "Back Android ??ng lu?ng"],
+      eyebrow: "ĐẶT VÉ THÔNG MINH",
+      title: "Chọn phim nhanh, giữ ghế đẹp và quay lại đúng bước đang xem.",
+      body: "App ghi nhớ luồng đang mở để trải nghiệm giống sản phẩm thật, không còn cảm giác demo.",
+      chips: ["Giữ ghế theo thời gian thực", "Back Android đúng luồng"],
     },
     {
-      eyebrow: "V? V? NH?C L?CH",
-      title: "To?n b? v?, QR v? l?ch nh?c ???c gom v?o m?t n?i d? qu?t.",
-      body: "B?n c? th? m? l?i v?, theo d?i tr?ng th?i thanh to?n v? nh?n nh?c l?ch tr??c gi? chi?u.",
-      chips: ["V? ??ng b?", "Nh?c l?ch t? ??ng"],
+      eyebrow: "VÉ VÀ NHẮC LỊCH",
+      title: "Toàn bộ vé, QR và lịch nhắc được gom vào một nơi dễ quét.",
+      body: "Bạn có thể mở lại vé, theo dõi trạng thái thanh toán và nhận nhắc lịch trước giờ chiếu.",
+      chips: ["Vé đồng bộ", "Nhắc lịch tự động"],
     },
     {
-      eyebrow: "PHI?N C? NH?N",
-      title: "??ng nh?p m?t l?n, m? l?i app v?n v?o th?ng tr?i nghi?m c?a b?n.",
-      body: "Phi?n ???c l?u an to?n b?ng Secure Store ?? d?ng t?t h?n cho m?i tr??ng production.",
-      chips: ["Secure Store", "?u ??i c? nh?n"],
+      eyebrow: "PHIÊN CÁ NHÂN",
+      title: "Đăng nhập một lần, mở lại app vẫn vào thẳng trải nghiệm của bạn.",
+      body: "Phiên được lưu an toàn bằng Secure Store để dùng tốt hơn cho môi trường production.",
+      chips: ["Secure Store", "Ưu đãi cá nhân"],
     },
   ] as const;
-  const [onboardingStep, setOnboardingStep] = React.useState(0);
+  const [onboardingStep, setOnboardingStep] = React.useState(initialStep);
   const inAuthForm = onboardingStep >= slides.length;
   const currentSlide = slides[Math.min(onboardingStep, slides.length - 1)];
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {onBack ? (
+        <Pressable onPress={onBack}>
+          <Text style={styles.backLink}>← Quay lại</Text>
+        </Pressable>
+      ) : null}
       {!inAuthForm ? (
         <>
           <View style={styles.authHero}>
@@ -572,48 +894,44 @@ export function AuthScreen(props: {
 
           <View style={styles.authNavRow}>
             <Pressable onPress={() => setOnboardingStep(slides.length)}>
-              <Text style={styles.authLink}>B? qua</Text>
+              <Text style={styles.authLink}>Bỏ qua</Text>
             </Pressable>
-            <NeonButton label={onboardingStep === slides.length - 1 ? "B?t ??u" : "Ti?p theo"} onPress={() => setOnboardingStep((step) => Math.min(step + 1, slides.length))} />
+            <NeonButton label={onboardingStep === slides.length - 1 ? "Bắt đầu" : "Tiếp theo"} onPress={() => setOnboardingStep((step) => Math.min(step + 1, slides.length))} />
           </View>
         </>
       ) : (
         <>
           <View style={styles.authHero}>
-            <Text style={styles.eyebrow}>S?N S?NG ??NG NH?P</Text>
-            <Text style={styles.authTitle}>??ng nh?p ?? ??ng b? v?, gh? ?? gi? v? l?ch nh?c tr?n thi?t b? c?a b?n.</Text>
-            <Text style={styles.authBody}>M?i giao d?ch, m? QR v? ?u ??i s? ???c gi? l?i khi b?n m? app l?n sau.</Text>
+            <Text style={styles.eyebrow}>SẴN SÀNG ĐĂNG NHẬP</Text>
+            <Text style={styles.authTitle}>Đăng nhập để đồng bộ vé, ghế đã giữ và lịch nhắc trên thiết bị của bạn.</Text>
+            <Text style={styles.authBody}>Mọi giao dịch, mã QR và ưu đãi sẽ được giữ lại khi bạn mở app lần sau.</Text>
           </View>
 
           <View style={styles.authCard}>
-            <Text style={styles.accountTitle}>B?t ??u</Text>
-            <Text style={styles.accountDetail}>T?o t?i kho?n m?i ho?c ??ng nh?p ?? v?o tr?i nghi?m ??t v? ??y ??.</Text>
+            <Text style={styles.accountTitle}>Bắt đầu</Text>
+            {helperMessage ? <Text style={styles.accountDetail}>{helperMessage}</Text> : null}
+            <Text style={styles.accountDetail}>Tạo tài khoản mới hoặc đăng nhập để vào trải nghiệm đặt vé đầy đủ.</Text>
             <Pressable style={styles.googleButton} onPress={onGoogleAuth}>
               <MaterialCommunityIcons name="google" size={18} color="#ffffff" />
-              <Text style={styles.googleButtonText}>Ti?p t?c v?i Google</Text>
+              <Text style={styles.googleButtonText}>Tiếp tục với Google</Text>
             </Pressable>
-            <Text style={styles.authDivider}>ho?c d?ng email</Text>
+            <Text style={styles.authDivider}>hoặc dùng email</Text>
             <View style={styles.paymentWrap}>
               {["login", "register"].map((mode) => (
                 <Pressable key={mode} style={[styles.paymentMethod, authMode === mode && styles.paymentMethodActive]} onPress={() => setAuthMode(mode as "login" | "register")}>
-                  <Text style={[styles.paymentMethodText, authMode === mode && styles.paymentMethodTextActive]}>{mode === "login" ? "??ng nh?p" : "??ng k?"}</Text>
+                  <Text style={[styles.paymentMethodText, authMode === mode && styles.paymentMethodTextActive]}>{mode === "login" ? "Đăng nhập" : "Đăng ký"}</Text>
                 </Pressable>
               ))}
             </View>
-            {authMode === "register" ? <TextInput value={authName} onChangeText={setAuthName} placeholder="H? v? t?n" placeholderTextColor={palette.muted} style={styles.input} /> : null}
+            {authMode === "register" ? <TextInput value={authName} onChangeText={setAuthName} placeholder="Họ và tên" placeholderTextColor={palette.muted} style={styles.input} /> : null}
             <TextInput value={authEmail} onChangeText={setAuthEmail} placeholder="Email" placeholderTextColor={palette.muted} style={styles.input} autoCapitalize="none" />
-            {authMode === "register" ? <TextInput value={authPhone} onChangeText={setAuthPhone} placeholder="S? ?i?n tho?i" placeholderTextColor={palette.muted} style={styles.input} /> : null}
-            <TextInput value={authPassword} onChangeText={setAuthPassword} placeholder="M?t kh?u" placeholderTextColor={palette.muted} style={styles.input} secureTextEntry />
+            {authMode === "register" ? <TextInput value={authPhone} onChangeText={setAuthPhone} placeholder="Số điện thoại" placeholderTextColor={palette.muted} style={styles.input} /> : null}
+            <TextInput value={authPassword} onChangeText={setAuthPassword} placeholder="Mật khẩu" placeholderTextColor={palette.muted} style={styles.input} secureTextEntry />
             {authLoading ? <ActivityIndicator color={palette.cyan} /> : null}
-            <NeonButton label={authMode === "login" ? "V?o ?ng d?ng" : "T?o t?i kho?n"} onPress={onSubmitAuth} />
-            <Text style={styles.accountDetail}>T?i kho?n m?u: `admin@datve.local / Admin@123`, `user@datve.local / User@123`.</Text>
+            <NeonButton label={authMode === "login" ? "Vào ứng dụng" : "Tạo tài khoản"} onPress={onSubmitAuth} />
+            <Text style={styles.accountDetail}>Tài khoản mẫu: `admin@datve.local / Admin@123`, `user@datve.local / User@123`.</Text>
           </View>
 
-          <View style={styles.accountRow}>
-            <Text style={styles.accountTitle}>K?t n?i API</Text>
-            <Text style={styles.accountDetail}>??i URL backend n?u thi?t b? ?ang ? m?ng kh?c.</Text>
-            <TextInput value={apiBaseUrl} onChangeText={setApiBaseUrl} style={styles.input} autoCapitalize="none" />
-          </View>
         </>
       )}
     </ScrollView>
@@ -621,8 +939,6 @@ export function AuthScreen(props: {
 }
 
 export function ProfileScreen(props: {
-  apiBaseUrl: string;
-  setApiBaseUrl: Setter<string>;
   onReload: () => void;
   favoriteMovies: Movie[];
   watchlistMovies: Movie[];
@@ -632,58 +948,58 @@ export function ProfileScreen(props: {
   reminders: ReminderItem[];
   onLogout: () => void;
 }) {
-  const { apiBaseUrl, setApiBaseUrl, onReload, favoriteMovies, watchlistMovies, onMoviePress, profile, sessionUser, reminders, onLogout } = props;
+  const { onReload, favoriteMovies, watchlistMovies, onMoviePress, profile, sessionUser, reminders, onLogout } = props;
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={styles.profileHero}>
         {profile?.avatarUrl ? <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} /> : <View style={styles.avatar} />}
         <View style={styles.profileMetaBlock}>
-          <Text style={styles.profileName}>{profile?.fullName ?? sessionUser?.fullName ?? "Kh?ch"}</Text>
-          <Text style={styles.profileMail}>{profile?.email ?? sessionUser?.email ?? "Ch?a ??ng nh?p"}</Text>
-          <Text style={styles.accountDetail}>{profile?.phone ?? sessionUser?.phone ?? "??ng nh?p ?? ??ng b? v?, ?u ??i v? nh?c l?ch."}</Text>
+          <Text style={styles.profileName}>{profile?.fullName ?? sessionUser?.fullName ?? "Khách"}</Text>
+          <Text style={styles.profileMail}>{profile?.email ?? sessionUser?.email ?? "Chưa đăng nhập"}</Text>
+          <Text style={styles.accountDetail}>{profile?.phone ?? sessionUser?.phone ?? "Đăng nhập để đồng bộ vé, ưu đãi và nhắc lịch."}</Text>
         </View>
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>T?i kho?n</Text>
-        <Text style={styles.accountDetail}>{sessionUser ? `?ang ??ng nh?p v?i vai tr? ${sessionUser.role}.` : "??ng nh?p ho?c ??ng k? ?? d?ng d? li?u c? nh?n v? voucher."}</Text>
-        <NeonButton label="??ng xu?t" variant="secondary" onPress={onLogout} />
+        <Text style={styles.accountTitle}>Tài khoản</Text>
+        <Text style={styles.accountDetail}>{sessionUser ? `Đang đăng nhập với vai trò ${sessionUser.role}.` : "Đăng nhập hoặc đăng ký để dùng dữ liệu cá nhân và voucher."}</Text>
+        <NeonButton label="Đăng xuất" variant="secondary" onPress={onLogout} />
       </View>
 
       {profile ? (
         <View style={styles.checkoutSummaryGrid}>
           <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>Y?u th?ch</Text>
+            <Text style={styles.summaryLabel}>Yêu thích</Text>
             <Text style={styles.summaryValue}>{profile.stats.favorites}</Text>
           </View>
           <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>V? ?? ??t</Text>
+            <Text style={styles.summaryLabel}>Vé đã đặt</Text>
             <Text style={styles.summaryValue}>{profile.stats.bookings}</Text>
           </View>
           <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>Chi ti?u</Text>
+            <Text style={styles.summaryLabel}>Chi tiêu</Text>
             <Text style={styles.summaryValue}>{formatCurrency(profile.stats.spending)}</Text>
           </View>
         </View>
       ) : null}
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Nh?c l?ch v?</Text>
-        {reminders.length === 0 ? <Text style={styles.accountDetail}>Ch?a c? l?ch nh?c n?o.</Text> : null}
+        <Text style={styles.accountTitle}>Nhắc lịch vé</Text>
+        {reminders.length === 0 ? <Text style={styles.accountDetail}>Chưa có lịch nhắc nào.</Text> : null}
         {reminders.slice(0, 4).map((item) => (
           <View key={`reminder-${item.id}`} style={styles.activityRow}>
             <Text style={styles.activityTitle}>{item.movie_title}</Text>
-            <Text style={styles.activityMeta}>{item.cinema_name} ? {formatDateTime(item.start_time)}</Text>
-            <Text style={styles.activityTime}>Nh?c l?c {formatDateTime(item.remind_at)} ? {item.status}</Text>
+            <Text style={styles.activityMeta}>{item.cinema_name} • {formatDateTime(item.start_time)}</Text>
+            <Text style={styles.activityTime}>Nhắc lúc {formatDateTime(item.remind_at)} • {item.status}</Text>
           </View>
         ))}
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Y?u th?ch</Text>
+        <Text style={styles.accountTitle}>Yêu thích</Text>
         <View style={styles.profileMovieList}>
-          {favoriteMovies.length === 0 ? <Text style={styles.accountDetail}>Ch?a c? phim y?u th?ch.</Text> : null}
+          {favoriteMovies.length === 0 ? <Text style={styles.accountDetail}>Chưa có phim yêu thích.</Text> : null}
           {favoriteMovies.map((movie) => (
             <Pressable key={`fav-${movie.id}`} onPress={() => onMoviePress(movie)} style={styles.profileMovieChip}>
               <Text style={styles.profileMovieChipText}>{movie.title}</Text>
@@ -695,7 +1011,7 @@ export function ProfileScreen(props: {
       <View style={styles.accountRow}>
         <Text style={styles.accountTitle}>Xem sau</Text>
         <View style={styles.profileMovieList}>
-          {watchlistMovies.length === 0 ? <Text style={styles.accountDetail}>Ch?a c? phim trong danh s?ch xem sau.</Text> : null}
+          {watchlistMovies.length === 0 ? <Text style={styles.accountDetail}>Chưa có phim trong danh sách xem sau.</Text> : null}
           {watchlistMovies.map((movie) => (
             <Pressable key={`watch-${movie.id}`} onPress={() => onMoviePress(movie)} style={styles.profileMovieChip}>
               <Text style={styles.profileMovieChipText}>{movie.title}</Text>
@@ -705,10 +1021,9 @@ export function ProfileScreen(props: {
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>K?t n?i API</Text>
-        <Text style={styles.accountDetail}>??i URL backend n?u thi?t b? ?ang ? m?ng kh?c.</Text>
-        <TextInput value={apiBaseUrl} onChangeText={setApiBaseUrl} style={styles.input} autoCapitalize="none" />
-        <NeonButton label="T?i l?i d? li?u" onPress={onReload} />
+        <Text style={styles.accountTitle}>Dữ liệu tài khoản</Text>
+        <Text style={styles.accountDetail}>Tải lại để đồng bộ vé, ưu đãi và nhắc lịch mới nhất.</Text>
+        <NeonButton label="Tải lại dữ liệu" onPress={onReload} />
       </View>
     </ScrollView>
   );
@@ -723,13 +1038,13 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
     .filter((item) => new Date(item.startTime).getTime() >= now)
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0]?.id ?? null;
   const featuredShowtime = movieShowtimes.find((item) => item.id === activeShowtimeId) ?? movieShowtimes[0];
-  const trailerUrl = trailerUrlsBySlug[movie.slug] ?? movie.bannerUrl ?? null;
+  const trailerUrl = normalizeTrailerUrl(movie.trailerUrl);
 
   return (
     <>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Pressable onPress={onBack}>
-          <Text style={styles.backLink}>? Quay l?i</Text>
+          <Text style={styles.backLink}>← Quay lại</Text>
         </Pressable>
 
       <View style={styles.detailHeaderRow}>
@@ -739,10 +1054,10 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
         <View style={styles.detailHeaderMeta}>
           <Text style={styles.detailHeaderTitle}>{movie.title}</Text>
           <View style={styles.detailHeaderChips}>
-            <Text style={styles.detailHeaderChip}>{movie.status === "COMING_SOON" ? "S?p chi?u" : "?ang chi?u"}</Text>
+            <Text style={styles.detailHeaderChip}>{movie.status === "COMING_SOON" ? "Sắp chiếu" : "Đang chiếu"}</Text>
             <Text style={styles.detailHeaderChipSecondary}>IMDb {movie.score}</Text>
           </View>
-          <Text style={styles.detailHeaderSubline}>{movie.genre} ? {movie.runtime}</Text>
+          <Text style={styles.detailHeaderSubline}>{movie.genre} • {movie.runtime}</Text>
         </View>
       </View>
 
@@ -752,7 +1067,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
         <Text style={styles.posterBadge}>{movie.badge}</Text>
         <View style={styles.detailOverlayMeta}>
           <Text style={styles.detailOverlayText}>IMDb {movie.score}</Text>
-          <Text style={styles.detailOverlayText}>{movie.status === "COMING_SOON" ? "S?p chi?u" : "?ang chi?u"}</Text>
+          <Text style={styles.detailOverlayText}>{movie.status === "COMING_SOON" ? "Sắp chiếu" : "Đang chiếu"}</Text>
         </View>
         <View style={styles.detailMediaBottom}>
           <Pressable style={styles.detailMediaPlay} onPress={() => setTrailerVisible(true)}>
@@ -760,45 +1075,46 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
             <Text style={styles.detailMediaPlayText}>Trailer</Text>
           </Pressable>
           <View style={styles.detailMediaFacts}>
-            <Text style={styles.detailMediaFactText}>{featuredShowtime ? featuredShowtime.startTime.slice(11, 16) : "C?p nh?t s?m"}</Text>
-            <Text style={styles.detailMediaFactDivider}>?</Text>
+            <Text style={styles.detailMediaFactText}>{featuredShowtime ? featuredShowtime.startTime.slice(11, 16) : "Cập nhật sớm"}</Text>
+            <Text style={styles.detailMediaFactDivider}>•</Text>
             <Text style={styles.detailMediaFactText}>{featuredShowtime ? featuredShowtime.formatLabel : movie.runtime}</Text>
-            <Text style={styles.detailMediaFactDivider}>?</Text>
+            <Text style={styles.detailMediaFactDivider}>•</Text>
             <Text style={styles.detailMediaFactText}>{featuredShowtime ? featuredShowtime.languageLabel : movie.genre}</Text>
           </View>
         </View>
       </View>
 
       <Text style={styles.detailTitle}>{movie.title}</Text>
-      <Text style={styles.detailMeta}>{movie.genre} ? {movie.runtime}</Text>
+      <Text style={styles.detailMeta}>{movie.genre} • {movie.runtime}</Text>
       <Text style={styles.detailDescription}>{movie.description}</Text>
 
       <View style={styles.detailActionsRow}>
-        <NeonButton label={isFavorite ? "B? y?u th?ch" : "Th?m y?u th?ch"} variant="secondary" onPress={onToggleFavorite} />
-        <NeonButton label={isInWatchlist ? "B? xem sau" : "L?u xem sau"} variant="secondary" onPress={onToggleWatchlist} />
+        <NeonButton label={isFavorite ? "Bỏ yêu thích" : "Thêm yêu thích"} variant="secondary" onPress={onToggleFavorite} />
+        <NeonButton label={isInWatchlist ? "Bỏ xem sau" : "Lưu xem sau"} variant="secondary" onPress={onToggleWatchlist} />
       </View>
 
       <View style={styles.detailStatsRow}>
         <View style={styles.detailStat}>
-          <Text style={styles.detailStatLabel}>Tr?ng th?i</Text>
-          <Text style={styles.detailStatValue}>{movie.status === "COMING_SOON" ? "S?p chi?u" : "?ang chi?u"}</Text>
+          <Text style={styles.detailStatLabel}>Trạng thái</Text>
+          <Text style={styles.detailStatValue}>{movie.status === "COMING_SOON" ? "Sắp chiếu" : "Đang chiếu"}</Text>
         </View>
         <View style={styles.detailStat}>
-          <Text style={styles.detailStatLabel}>??nh gi?</Text>
+          <Text style={styles.detailStatLabel}>Đánh giá</Text>
           <Text style={styles.detailStatValue}>{movie.score}/10</Text>
         </View>
         <View style={styles.detailStat}>
-          <Text style={styles.detailStatLabel}>Th?i l??ng</Text>
+          <Text style={styles.detailStatLabel}>Thời lượng</Text>
           <Text style={styles.detailStatValue}>{movie.runtime}</Text>
         </View>
       </View>
 
-      <SectionHeader title="L?ch chi?u h?m nay" action={`${movieShowtimes.length} su?t`} />
+      <SectionHeader title="Lịch chiếu hôm nay" action={`${movieShowtimes.length} suất`} />
       <View style={styles.showtimeGrid}>
         {movieShowtimes.map((item) => {
           const showtimeTimestamp = new Date(item.startTime).getTime();
           const isDisabled = showtimeTimestamp < now;
           const isActive = item.id === activeShowtimeId;
+          const countdownLevel = getCountdownLevel(item.startTime, now);
           return (
             <Pressable
               key={`${item.id}-${item.roomName}`}
@@ -815,8 +1131,16 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
               <Text style={styles.showtimeInfo}>{item.roomName}</Text>
               <View style={styles.showtimeFooterRow}>
                 <Text style={[styles.showtimePrice, isDisabled && styles.showtimePriceDisabled]}>{formatCurrency(item.basePrice)}</Text>
-                <Text style={[styles.showtimeState, isActive && styles.showtimeStateActive, isDisabled && styles.showtimeStateDisabled]}>
-                  {isDisabled ? "H?t gi?" : isActive ? "?? xu?t" : "M? b?n"}
+                <Text
+                  style={[
+                    styles.showtimeState,
+                    isActive && styles.showtimeStateActive,
+                    isActive && countdownLevel === "soon" && styles.showtimeStateSoon,
+                    isActive && countdownLevel === "boarding" && styles.showtimeStateBoarding,
+                    isDisabled && styles.showtimeStateDisabled,
+                  ]}
+                >
+                  {isDisabled ? "Hết giờ" : isActive ? formatCountdownLabel(item.startTime, now) : "Mở bán"}
                 </Text>
               </View>
             </Pressable>
@@ -824,7 +1148,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
         })}
       </View>
 
-      {featuredShowtime ? <NeonButton label="Ch?n gh?" onPress={() => onBook(featuredShowtime)} /> : null}
+      {featuredShowtime ? <NeonButton label="Chọn ghế" onPress={() => onBook(featuredShowtime)} /> : null}
       </ScrollView>
 
       <Modal visible={trailerVisible} animationType="slide" transparent onRequestClose={() => setTrailerVisible(false)}>
@@ -840,16 +1164,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
                 <MaterialCommunityIcons name="close" size={20} color={palette.text} />
               </Pressable>
             </View>
-            {trailerUrl ? (
-              <View style={styles.trailerPlayerWrap}>
-                <WebView source={{ uri: trailerUrl }} style={styles.trailerWebview} allowsFullscreenVideo mediaPlaybackRequiresUserAction={false} />
-              </View>
-            ) : (
-              <View style={styles.accountRow}>
-                <Text style={styles.accountTitle}>Chưa có trailer</Text>
-                <Text style={styles.accountDetail}>Phim này hiện chưa có link trailer để phát trong app.</Text>
-              </View>
-            )}
+            <TrailerPlayer url={trailerUrl} posterUrl={movie.bannerUrl ?? movie.posterUrl} title={movie.title} />
           </View>
         </View>
       </Modal>
@@ -859,6 +1174,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
 
 export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seat: SeatSelection) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
   const layout = seatMapRows;
+  const scrollY = React.useRef(new Animated.Value(0)).current;
   const standardRows = layout.filter((row) => row.seats.some((seat) => seat.seatType === "STANDARD"));
   const vipRows = layout.filter((row) => row.seats.some((seat) => seat.seatType === "VIP"));
   const coupleRows = layout.filter((row) => row.seats.some((seat) => seat.seatType === "COUPLE"));
@@ -901,40 +1217,45 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
 
   return (
     <View style={styles.screenShell}>
-      <ScrollView contentContainerStyle={[styles.scrollContent, styles.stickyScrollContent]} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView
+        contentContainerStyle={[styles.scrollContent, styles.stickyScrollContent]}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+      >
         <Pressable onPress={onBack}>
-          <Text style={styles.backLink}>? Quay l?i</Text>
+          <Text style={styles.backLink}>← Quay lại</Text>
         </Pressable>
 
         <View style={styles.seatHeader}>
           <Text style={styles.detailTitle}>{movie.title}</Text>
-          <Text style={styles.detailMeta}>{showtime ? `${showtime.cinemaName} ? ${showtime.roomName} ? ${showtime.startTime.slice(11, 16)}` : "Ch?a ch?n su?t chi?u"}</Text>
+          <Text style={styles.detailMeta}>{showtime ? `${showtime.cinemaName} • ${showtime.roomName} • ${showtime.startTime.slice(11, 16)}` : "Chưa chọn suất chiếu"}</Text>
         </View>
 
         <View style={styles.seatPriceRow}>
           <View style={styles.seatPriceCard}>
-            <Text style={styles.seatPriceLabel}>Gh? th??ng</Text>
-            <Text style={styles.seatPriceValue}>C? b?n</Text>
+            <Text style={styles.seatPriceLabel}>Ghế thường</Text>
+            <Text style={styles.seatPriceValue}>Cơ bản</Text>
           </View>
           <View style={styles.seatPriceCard}>
-            <Text style={styles.seatPriceLabel}>Gh? VIP</Text>
-            <Text style={styles.seatPriceValue}>+30.000?</Text>
+            <Text style={styles.seatPriceLabel}>Ghế VIP</Text>
+            <Text style={styles.seatPriceValue}>+30.000đ</Text>
           </View>
           <View style={styles.seatPriceCard}>
-            <Text style={styles.seatPriceLabel}>Gh? ??i</Text>
-            <Text style={styles.seatPriceValue}>+90.000?</Text>
+            <Text style={styles.seatPriceLabel}>Ghế đôi</Text>
+            <Text style={styles.seatPriceValue}>+90.000đ</Text>
           </View>
         </View>
 
         <View style={styles.screenArcWrap}>
           <View style={styles.screenArcGlow} />
-          <Text style={styles.screenArcText}>M?N H?NH</Text>
+          <Text style={styles.screenArcText}>MÀN HÌNH</Text>
         </View>
 
         <View style={styles.seatGridWrap}>
           {standardRows.length > 0 ? (
             <View style={styles.seatSection}>
-              <Text style={styles.seatSectionLabel}>KHU TH??NG</Text>
+              <Text style={styles.seatSectionLabel}>KHU THƯỜNG</Text>
               {standardRows.map((row) => renderSeatRow(row, "standard"))}
             </View>
           ) : null}
@@ -946,21 +1267,21 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
           ) : null}
           {coupleRows.length > 0 ? (
             <View style={styles.seatSectionCouple}>
-              <Text style={styles.seatSectionLabelCouple}>SWEETBOX / GH? ??I</Text>
+              <Text style={styles.seatSectionLabelCouple}>SWEETBOX / GHẾ ĐÔI</Text>
               {coupleRows.map((row) => renderSeatRow(row, "couple"))}
             </View>
           ) : null}
         </View>
 
         <View style={styles.legendGrid}>
-          {[["Gh? th??ng", palette.seat], ["Gh? VIP", palette.vip], ["Gh? ??i", palette.couple], ["?? b?n", palette.sold], ["?ang gi?", palette.held]].map(([label, color]) => (
+          {[["Ghế thường", palette.seat], ["Ghế VIP", palette.vip], ["Ghế đôi", palette.couple], ["Đã bán", palette.sold], ["Đang giữ", palette.held]].map(([label, color]) => (
             <View key={label} style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: color }]} />
               <Text style={styles.legendText}>{label}</Text>
             </View>
           ))}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
       <View style={styles.stickyFooterWrap}>
         <LinearGradient
           pointerEvents="none"
@@ -970,14 +1291,38 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
           style={styles.stickyFooterTopGlow}
         />
         <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
+          <View pointerEvents="none" style={styles.stickyFooterInnerHighlight} />
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.stickyFooterNoise, { transform: [{ translateY: scrollY.interpolate({ inputRange: [0, 320], outputRange: [0, -6], extrapolate: "clamp" }) }] }]}
+          >
+            {glassNoiseDots.map((dot, index) => (
+              <View
+                key={`seat-noise-${index}`}
+                style={[
+                  styles.stickyFooterNoiseDot,
+                  { left: dot.left, top: dot.top, width: dot.size, height: dot.size, opacity: dot.opacity },
+                ]}
+              />
+            ))}
+            {glassNoiseDots.map((dot, index) => (
+              <View
+                key={`seat-noise-dark-${index}`}
+                style={[
+                  styles.stickyFooterNoiseDotDark,
+                  { left: dot.left, top: dot.top + 8, width: dot.size + 0.4, height: dot.size + 0.4, opacity: dot.opacity * 0.55 },
+                ]}
+              />
+            ))}
+          </Animated.View>
           <View style={styles.stickySummaryMain}>
-            <Text style={styles.summaryLabel}>Gh? ?? ch?n</Text>
-            <Text style={styles.stickyPrimaryValue}>{selectedSeats.map((item) => item.seatCode).join(", ") || "Ch?a ch?n"}</Text>
-            <Text style={styles.stickySecondaryValue}>T?m t?nh {formatCurrency(subtotal)}</Text>
+            <Text style={styles.summaryLabel}>Ghế đã chọn</Text>
+            <Text style={styles.stickyPrimaryValue}>{selectedSeats.map((item) => item.seatCode).join(", ") || "Chưa chọn"}</Text>
+            <Text style={styles.stickySecondaryValue}>Tạm tính {formatCurrency(subtotal)}</Text>
           </View>
           <View style={styles.stickyActionBlock}>
             {holding ? <ActivityIndicator color={palette.cyan} /> : null}
-            <NeonButton label="Ti?p t?c" onPress={onContinue} />
+            <NeonButton label="Tiếp tục" onPress={onContinue} />
           </View>
         </BlurView>
       </View>
@@ -987,23 +1332,29 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
 
 export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combosData: ComboItem[]; selectedSeats: SeatSelection[]; selectedComboIds: number[]; selectedPaymentProvider: PaymentProvider; selectedPaymentGatewayMode: "SANDBOX" | "REAL"; onSelectPaymentProvider: (provider: PaymentProvider) => void; onSelectPaymentGatewayMode: (mode: "SANDBOX" | "REAL") => void; onToggleCombo: (id: number) => void; customerName: string; setCustomerName: Setter<string>; customerEmail: string; setCustomerEmail: Setter<string>; customerPhone: string; setCustomerPhone: Setter<string>; onConfirm: () => void; confirming: boolean; vouchers: Voucher[]; voucherCode: string; setVoucherCode: Setter<string>; appliedVoucherCode: string | null; estimatedDiscount: number; }) {
   const { movie, onBack, combosData, selectedSeats, selectedComboIds, selectedPaymentProvider, selectedPaymentGatewayMode, onSelectPaymentProvider, onSelectPaymentGatewayMode, onToggleCombo, customerName, setCustomerName, customerEmail, setCustomerEmail, customerPhone, setCustomerPhone, onConfirm, confirming, vouchers, voucherCode, setVoucherCode, appliedVoucherCode, estimatedDiscount } = props;
+  const scrollY = React.useRef(new Animated.Value(0)).current;
   const selectedCombos = combosData.filter((combo) => selectedComboIds.includes(combo.id));
   const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0) + selectedCombos.reduce((sum, item) => sum + item.unitPrice, 0);
   const total = Math.max(subtotal - estimatedDiscount, 0);
 
   return (
     <View style={styles.screenShell}>
-      <ScrollView contentContainerStyle={[styles.scrollContent, styles.stickyScrollContent]} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView
+        contentContainerStyle={[styles.scrollContent, styles.stickyScrollContent]}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+      >
         <Pressable onPress={onBack}>
-          <Text style={styles.backLink}>? Quay l?i</Text>
+          <Text style={styles.backLink}>← Quay lại</Text>
         </Pressable>
 
-        <Text style={styles.detailTitle}>Thanh to?n</Text>
-        <Text style={styles.detailMeta}>{movie.title} ? {selectedSeats.map((item) => item.seatCode).join(", ") || "Ch?a ch?n gh?"}</Text>
+        <Text style={styles.detailTitle}>Thanh toán</Text>
+        <Text style={styles.detailMeta}>{movie.title} • {selectedSeats.map((item) => item.seatCode).join(", ") || "Chưa chọn ghế"}</Text>
 
         <View style={styles.checkoutSummaryGrid}>
           <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>S? gh?</Text>
+            <Text style={styles.summaryLabel}>Số ghế</Text>
             <Text style={styles.summaryValue}>{selectedSeats.length}</Text>
           </View>
           <View style={styles.checkoutSummaryCell}>
@@ -1011,12 +1362,12 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
             <Text style={styles.summaryValue}>{selectedCombos.length}</Text>
           </View>
           <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>C?ng</Text>
+            <Text style={styles.summaryLabel}>Cổng</Text>
             <Text style={styles.summaryValue}>{selectedPaymentProvider}</Text>
           </View>
         </View>
 
-        <SectionHeader title="Combo" action="T?y ch?n" />
+        <SectionHeader title="Combo" action="Tùy chọn" />
         {combosData.map((combo) => (
           <Pressable key={combo.id} style={[styles.comboCard, selectedComboIds.includes(combo.id) && styles.comboCardActive]} onPress={() => onToggleCombo(combo.id)}>
             <View style={styles.comboInfo}>
@@ -1029,7 +1380,7 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
 
         <View style={styles.accountRow}>
           <Text style={styles.accountTitle}>Voucher</Text>
-          <TextInput value={voucherCode} onChangeText={setVoucherCode} placeholder="Nh?p m? voucher" placeholderTextColor={palette.muted} style={styles.input} autoCapitalize="characters" />
+          <TextInput value={voucherCode} onChangeText={setVoucherCode} placeholder="Nhập mã voucher" placeholderTextColor={palette.muted} style={styles.input} autoCapitalize="characters" />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
             {vouchers.slice(0, 8).map((voucher) => (
               <Pressable key={voucher.code} style={[styles.paymentMethod, voucherCode === voucher.code && styles.paymentMethodActive]} onPress={() => setVoucherCode(voucher.code)}>
@@ -1037,10 +1388,10 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
               </Pressable>
             ))}
           </ScrollView>
-          <Text style={styles.accountDetail}>{appliedVoucherCode ? `?ang ?p d?ng ${appliedVoucherCode}, gi?m kho?ng ${formatCurrency(estimatedDiscount)}.` : "Ch?n voucher n?u b?n c? ?u ??i."}</Text>
+          <Text style={styles.accountDetail}>{appliedVoucherCode ? `Đang áp dụng ${appliedVoucherCode}, giảm khoảng ${formatCurrency(estimatedDiscount)}.` : "Chọn voucher nếu bạn có ưu đãi."}</Text>
         </View>
 
-        <SectionHeader title="Ph??ng th?c thanh to?n" action="MoMo ? ZaloPay ? VNPay" />
+        <SectionHeader title="Phương thức thanh toán" action="MoMo • ZaloPay • VNPay" />
         <View style={styles.paymentWrap}>
           {[["MOMO", "MoMo"], ["ZALOPAY", "ZaloPay"], ["VNPAY", "VNPay"]].map(([id, label]) => (
             <Pressable key={id} style={[styles.paymentMethod, selectedPaymentProvider === id && styles.paymentMethodActive]} onPress={() => onSelectPaymentProvider(id as PaymentProvider)}>
@@ -1050,7 +1401,7 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
         </View>
 
         <View style={styles.paymentWrap}>
-          {[["SANDBOX", "Th? nghi?m"], ["REAL", "Th?c t?"]].map(([id, label]) => (
+          {[["SANDBOX", "Thử nghiệm"], ["REAL", "Thực tế"]].map(([id, label]) => (
             <Pressable key={id} style={[styles.paymentMethod, selectedPaymentGatewayMode === id && styles.paymentMethodActive]} onPress={() => onSelectPaymentGatewayMode(id as "SANDBOX" | "REAL")}>
               <Text style={[styles.paymentMethodText, selectedPaymentGatewayMode === id && styles.paymentMethodTextActive]}>{label}</Text>
             </Pressable>
@@ -1058,18 +1409,18 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
         </View>
 
         <View style={styles.checkoutCard}>
-          <Text style={styles.summaryLabel}>T?ng thanh to?n</Text>
+          <Text style={styles.summaryLabel}>Tổng thanh toán</Text>
           <Text style={styles.checkoutPrice}>{formatCurrency(total)}</Text>
-          <Text style={styles.checkoutHint}>T?m t?nh {formatCurrency(subtotal)} ? Gi?m gi? {formatCurrency(estimatedDiscount)}.</Text>
+          <Text style={styles.checkoutHint}>Tạm tính {formatCurrency(subtotal)} • Giảm giá {formatCurrency(estimatedDiscount)}.</Text>
         </View>
 
         <View style={styles.accountRow}>
-          <Text style={styles.accountTitle}>Th?ng tin nh?n v?</Text>
-          <TextInput value={customerName} onChangeText={setCustomerName} placeholder="H? t?n" placeholderTextColor={palette.muted} style={styles.input} />
+          <Text style={styles.accountTitle}>Thông tin nhận vé</Text>
+          <TextInput value={customerName} onChangeText={setCustomerName} placeholder="Họ tên" placeholderTextColor={palette.muted} style={styles.input} />
           <TextInput value={customerEmail} onChangeText={setCustomerEmail} placeholder="Email" placeholderTextColor={palette.muted} style={styles.input} autoCapitalize="none" />
-          <TextInput value={customerPhone} onChangeText={setCustomerPhone} placeholder="S? ?i?n tho?i" placeholderTextColor={palette.muted} style={styles.input} />
+          <TextInput value={customerPhone} onChangeText={setCustomerPhone} placeholder="Số điện thoại" placeholderTextColor={palette.muted} style={styles.input} />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
       <View style={styles.stickyFooterWrap}>
         <LinearGradient
           pointerEvents="none"
@@ -1079,14 +1430,38 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
           style={styles.stickyFooterTopGlow}
         />
         <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
+          <View pointerEvents="none" style={styles.stickyFooterInnerHighlight} />
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.stickyFooterNoise, { transform: [{ translateY: scrollY.interpolate({ inputRange: [0, 320], outputRange: [0, -6], extrapolate: "clamp" }) }] }]}
+          >
+            {glassNoiseDots.map((dot, index) => (
+              <View
+                key={`checkout-noise-${index}`}
+                style={[
+                  styles.stickyFooterNoiseDot,
+                  { left: dot.left, top: dot.top, width: dot.size, height: dot.size, opacity: dot.opacity },
+                ]}
+              />
+            ))}
+            {glassNoiseDots.map((dot, index) => (
+              <View
+                key={`checkout-noise-dark-${index}`}
+                style={[
+                  styles.stickyFooterNoiseDotDark,
+                  { left: dot.left, top: dot.top + 8, width: dot.size + 0.4, height: dot.size + 0.4, opacity: dot.opacity * 0.55 },
+                ]}
+              />
+            ))}
+          </Animated.View>
           <View style={styles.stickySummaryMain}>
-            <Text style={styles.summaryLabel}>Thanh to?n</Text>
+            <Text style={styles.summaryLabel}>Thanh toán</Text>
             <Text style={styles.stickyPrimaryValue}>{formatCurrency(total)}</Text>
-            <Text style={styles.stickySecondaryValue}>T?m t?nh {formatCurrency(subtotal)} ? Gi?m {formatCurrency(estimatedDiscount)}</Text>
+            <Text style={styles.stickySecondaryValue}>Tạm tính {formatCurrency(subtotal)} • Giảm {formatCurrency(estimatedDiscount)}</Text>
           </View>
           <View style={styles.stickyActionBlock}>
             {confirming ? <ActivityIndicator color={palette.cyan} /> : null}
-            <NeonButton label={`Thanh to?n v?i ${selectedPaymentProvider}`} onPress={onConfirm} />
+            <NeonButton label={`Thanh toán với ${selectedPaymentProvider}`} onPress={onConfirm} />
           </View>
         </BlurView>
       </View>

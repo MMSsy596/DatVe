@@ -1,7 +1,7 @@
 import React from "react";
 
 export type TabId = "home" | "explore" | "tickets" | "profile";
-export type ScreenId = "tabs" | "movie" | "seats" | "checkout" | "ticket";
+export type ScreenId = "tabs" | "movie" | "seats" | "checkout" | "ticket" | "auth";
 export type PaymentProvider = "MOMO" | "ZALOPAY" | "VNPAY";
 export type ToastTone = "info" | "success" | "error";
 export type ToastKind = "ticket" | "favorite" | "seat" | "payment" | "reminder" | "auth" | "system";
@@ -27,6 +27,7 @@ export type Movie = {
   status?: string;
   posterUrl?: string | null;
   bannerUrl?: string | null;
+  trailerUrl?: string | null;
 };
 
 export type Banner = {
