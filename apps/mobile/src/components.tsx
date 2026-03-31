@@ -1704,7 +1704,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
   const layout = [...seatMapRows].sort((left, right) => left.rowLabel.localeCompare(right.rowLabel, "vi"));
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0);
-  const [seatTapHint, setSeatTapHint] = React.useState<{ label: string; detail: string; price: number } | null>(null);
+  const [seatTapHint, setSeatTapHint] = React.useState<{ anchorKey: string; label: string; detail: string; price: number } | null>(null);
   const hotSeats = layout.flatMap((row) => row.seats.filter((seat) => seat.isHot && typeof seat.columnIndex === "number").map((seat) => ({ rowLabel: row.rowLabel, columnIndex: Number(seat.columnIndex) })));
   const hotBounds = React.useMemo(() => {
     if (hotSeats.length === 0) {
@@ -1752,15 +1752,19 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
     if (ordered.length < 7) {
       return { left: [] as typeof ordered, center: ordered, right: [] as typeof ordered };
     }
-    const sideCount = ordered.length >= 10 ? 2 : 1;
+    const totalColumns = layout.reduce((max, row) => Math.max(max, ...row.seats.map((seat) => Number(seat.columnIndex ?? 0))), 0);
+    const roomName = String(showtime?.roomName ?? "").toLowerCase();
+    const wideRoom = roomName.includes("imax") || roomName.includes("luxe") || roomName.includes("premium");
+    const sideCount = totalColumns >= 14 ? 3 : totalColumns >= 11 || wideRoom ? 2 : 1;
     return {
       left: ordered.slice(0, sideCount),
       center: ordered.slice(sideCount, ordered.length - sideCount),
       right: ordered.slice(ordered.length - sideCount),
     };
-  }, []);
+  }, [layout, showtime?.roomName]);
 
   const renderSeatItem = React.useCallback((row: SeatMapRow, seat: SeatMapRow["seats"][number]) => {
+    const anchorKey = `${row.rowLabel}-${seat.seatCode}-${seat.seatType}`;
     const selectionUnit = getSeatSelectionUnit(row, seat);
     const active = selectionUnit.every((item) => selectedSeats.some((selected) => selected.seatCode === item.seatCode && selected.seatType === item.seatType));
     const disabled = selectionUnit.some((item) => {
@@ -1790,14 +1794,20 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
 
     return (
       <Pressable
-        key={`${row.rowLabel}-${seat.seatCode}-${seat.seatType}`}
+        key={anchorKey}
         disabled={disabled}
         onPress={() => {
           onToggleSeat(selectionUnit);
-          setSeatTapHint({ label, detail, price: totalPrice });
+          setSeatTapHint({ anchorKey, label, detail, price: totalPrice });
         }}
         style={[styles.seatCell, seat.seatType === "COUPLE" && styles.coupleSeatCell, active && styles.seatActive, disabled && styles.seatDisabled]}
       >
+        {seatTapHint?.anchorKey === anchorKey ? (
+          <View style={[styles.seatInlineHint, seat.seatType === "COUPLE" && styles.seatInlineHintCouple]}>
+            <Text style={styles.seatInlineHintPrice}>{formatCurrency(seatTapHint.price)}</Text>
+            <Text style={styles.seatInlineHintMeta}>{seatTapHint.detail}</Text>
+          </View>
+        ) : null}
         <View
           style={[
             styles.seatShell,
@@ -1834,25 +1844,127 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
     </View>
   ), [renderSeatItem]);
 
+  const renderAisleGuide = React.useCallback((direction: "left" | "right") => (
+    <View style={styles.seatOuterAisleLine}>
+      <View style={[styles.seatAisleCurveTop, direction === "left" ? styles.seatAisleCurveTopLeft : styles.seatAisleCurveTopRight]} />
+      <View style={styles.seatAisleCurveBottom} />
+    </View>
+  ), []);
+
   const renderSeatRow = (row: SeatMapRow) => {
     const orderedSeats = [...row.seats].sort((left, right) => Number(left.columnIndex ?? 0) - Number(right.columnIndex ?? 0));
     const isCoupleRow = orderedSeats.some((seat) => seat.seatType === "COUPLE");
     const displaySeats = isCoupleRow ? orderedSeats.filter((seat) => Number(seat.columnIndex ?? 0) % 2 === 1) : orderedSeats;
     const groups = splitSeatGroups(displaySeats);
+    const centerHotSeats = hotBounds
+      ? groups.center.filter((seat) => {
+          const column = Number(seat.columnIndex ?? -1);
+          return Boolean(seat.isHot) && column >= hotBounds.minColumn && column <= hotBounds.maxColumn;
+        })
+      : [];
+    const hotStartColumn = centerHotSeats.length > 0 ? Number(centerHotSeats[0].columnIndex ?? -1) : null;
+    const hotEndColumn = centerHotSeats.length > 0 ? Number(centerHotSeats[centerHotSeats.length - 1].columnIndex ?? -1) : null;
+    const centerBeforeHot = hotStartColumn === null ? groups.center : groups.center.filter((seat) => Number(seat.columnIndex ?? -1) < hotStartColumn);
+    const centerAfterHot = hotEndColumn === null ? [] : groups.center.filter((seat) => Number(seat.columnIndex ?? -1) > hotEndColumn);
     return (
       <View key={row.rowLabel} style={styles.seatRow}>
-        <Text style={[styles.seatRowLabel, isCoupleRow && styles.seatRowLabelCouple, orderedSeats.some((seat) => seat.seatType === "VIP") && styles.seatRowLabelVip]}>{row.rowLabel}</Text>
+        <View style={styles.seatRowRail}>
+          <Text style={[styles.seatRowLabel, isCoupleRow && styles.seatRowLabelCouple, orderedSeats.some((seat) => seat.seatType === "VIP") && styles.seatRowLabelVip]}>{row.rowLabel}</Text>
+        </View>
         <View style={styles.seatRowContent}>
           {groups.left.length > 0 ? renderSeatGroup(row, groups.left) : <View style={styles.seatGroupPlaceholder} />}
-          {groups.left.length > 0 ? <View style={styles.seatOuterAisle} /> : null}
-          {renderSeatGroup(row, groups.center)}
-          {groups.right.length > 0 ? <View style={styles.seatOuterAisle} /> : null}
+          {groups.left.length > 0 ? renderAisleGuide("left") : null}
+          {centerBeforeHot.length > 0 ? renderSeatGroup(row, centerBeforeHot) : null}
+          {centerHotSeats.length > 0 ? (
+            <View
+              style={[
+                styles.seatHotOutline,
+                hotBounds && row.rowLabel === hotBounds.topRow && styles.seatHotOutlineTop,
+                hotBounds && row.rowLabel === hotBounds.bottomRow && styles.seatHotOutlineBottom,
+                hotBounds && row.rowLabel === hotBounds.topRow && row.rowLabel === hotBounds.bottomRow && styles.seatHotOutlineSingleRow,
+              ]}
+            >
+              <View pointerEvents="none" style={styles.seatHotGlow} />
+              {hotBounds && row.rowLabel === hotBounds.topRow ? (
+                <View style={styles.seatHotZoneLabelWrap}>
+                  <Text style={styles.seatHotZoneLabel}>HOT ZONE</Text>
+                </View>
+              ) : null}
+              {renderSeatGroup(row, centerHotSeats)}
+            </View>
+          ) : hotStartColumn === null ? renderSeatGroup(row, groups.center) : null}
+          {centerAfterHot.length > 0 ? renderSeatGroup(row, centerAfterHot) : null}
+          {groups.right.length > 0 ? renderAisleGuide("right") : null}
           {groups.right.length > 0 ? renderSeatGroup(row, groups.right) : <View style={styles.seatGroupPlaceholder} />}
         </View>
-        <Text style={[styles.seatRowLabel, isCoupleRow && styles.seatRowLabelCouple, orderedSeats.some((seat) => seat.seatType === "VIP") && styles.seatRowLabelVip]}>{row.rowLabel}</Text>
+        <View style={styles.seatRowRailMirror} />
       </View>
     );
   };
+
+  const renderColumnHeader = React.useCallback(() => {
+    const anchorRow = layout.find((row) => row.seats.length > 0) ?? layout[0];
+    if (!anchorRow) {
+      return null;
+    }
+    const orderedSeats = [...anchorRow.seats].sort((left, right) => Number(left.columnIndex ?? 0) - Number(right.columnIndex ?? 0));
+    const isCoupleRow = orderedSeats.some((seat) => seat.seatType === "COUPLE");
+    const displaySeats = isCoupleRow ? orderedSeats.filter((seat) => Number(seat.columnIndex ?? 0) % 2 === 1) : orderedSeats;
+    const groups = splitSeatGroups(displaySeats);
+    const centerHotSeats = hotBounds
+      ? groups.center.filter((seat) => {
+          const column = Number(seat.columnIndex ?? -1);
+          return Boolean(seat.isHot) && column >= hotBounds.minColumn && column <= hotBounds.maxColumn;
+        })
+      : [];
+    const hotStartColumn = centerHotSeats.length > 0 ? Number(centerHotSeats[0].columnIndex ?? -1) : null;
+    const hotEndColumn = centerHotSeats.length > 0 ? Number(centerHotSeats[centerHotSeats.length - 1].columnIndex ?? -1) : null;
+    const centerBeforeHot = hotStartColumn === null ? groups.center : groups.center.filter((seat) => Number(seat.columnIndex ?? -1) < hotStartColumn);
+    const centerAfterHot = hotEndColumn === null ? [] : groups.center.filter((seat) => Number(seat.columnIndex ?? -1) > hotEndColumn);
+
+    const renderColumnGroup = (seats: SeatMapRow["seats"]) => (
+      <View style={styles.seatColumnGroup}>
+        {seats.map((seat) => (
+          <Text key={`col-${seat.seatCode}`} style={[styles.seatColumnLabel, seat.isHot && styles.seatColumnLabelHot]}>
+            {Number(seat.columnIndex ?? 0)}
+          </Text>
+        ))}
+      </View>
+    );
+
+    return (
+      <View style={styles.seatColumnRow}>
+        <View style={styles.seatRowRail}>
+          <Text style={styles.seatColumnSideLabel}>ROW</Text>
+        </View>
+        <View style={styles.seatRowContent}>
+          {groups.left.length > 0 ? renderColumnGroup(groups.left) : <View style={styles.seatGroupPlaceholder} />}
+          {groups.left.length > 0 ? renderAisleGuide("left") : null}
+          {centerBeforeHot.length > 0 ? renderColumnGroup(centerBeforeHot) : null}
+          {centerHotSeats.length > 0 ? (
+            <View
+              style={[
+                styles.seatHotOutline,
+                styles.seatHotOutlineTop,
+                anchorRow.rowLabel === hotBounds?.bottomRow && styles.seatHotOutlineBottom,
+                anchorRow.rowLabel === hotBounds?.topRow && anchorRow.rowLabel === hotBounds?.bottomRow && styles.seatHotOutlineSingleRow,
+              ]}
+            >
+              <View pointerEvents="none" style={styles.seatHotGlow} />
+              <View style={styles.seatHotZoneLabelWrap}>
+                <Text style={styles.seatHotZoneLabel}>HOT ZONE</Text>
+              </View>
+              {renderColumnGroup(centerHotSeats)}
+            </View>
+          ) : hotStartColumn === null ? renderColumnGroup(groups.center) : null}
+          {centerAfterHot.length > 0 ? renderColumnGroup(centerAfterHot) : null}
+          {groups.right.length > 0 ? renderAisleGuide("right") : null}
+          {groups.right.length > 0 ? renderColumnGroup(groups.right) : <View style={styles.seatGroupPlaceholder} />}
+        </View>
+        <View style={styles.seatRowRailMirror} />
+      </View>
+    );
+  }, [hotBounds, layout, renderAisleGuide, splitSeatGroups]);
 
   return (
     <View style={styles.screenShell}>
@@ -1902,6 +2014,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
               <Text style={styles.seatHotBadgeText}>Vùng Hot: vị trí đẹp, đặt nhiều, phụ thu +20.000đ</Text>
             </View>
           ) : null}
+          {renderColumnHeader()}
           <View style={styles.seatSection}>
             {layout.map((row) => renderSeatRow(row))}
           </View>
@@ -1916,13 +2029,6 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
           ))}
         </View>
         <Text style={styles.accountDetail}>Ghế đôi được hiển thị trực tiếp trong sơ đồ và đánh dấu bằng màu riêng, không tách thành khu riêng.</Text>
-        {seatTapHint ? (
-          <View style={styles.seatTapHintCard}>
-            <Text style={styles.seatTapHintTitle}>{seatTapHint.label}</Text>
-            <Text style={styles.seatTapHintMeta}>{seatTapHint.detail}</Text>
-            <Text style={styles.seatTapHintPrice}>{formatCurrency(seatTapHint.price)}</Text>
-          </View>
-        ) : null}
       </Animated.ScrollView>
       <View style={styles.stickyFooterWrap}>
         <LinearGradient
