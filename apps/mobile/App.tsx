@@ -801,11 +801,14 @@ export default function App() {
     }
   };
 
-  const toggleSeat = React.useCallback((seat: SeatSelection) => {
+  const toggleSeat = React.useCallback((seats: SeatSelection[]) => {
     setSelectedSeats((prev) =>
-      prev.some((item) => item.seatCode === seat.seatCode && item.seatType === seat.seatType)
-        ? prev.filter((item) => !(item.seatCode === seat.seatCode && item.seatType === seat.seatType))
-        : [...prev, seat]
+      seats.every((seat) => prev.some((item) => item.seatCode === seat.seatCode && item.seatType === seat.seatType))
+        ? prev.filter((item) => !seats.some((seat) => seat.seatCode === item.seatCode && seat.seatType === item.seatType))
+        : [
+            ...prev,
+            ...seats.filter((seat) => !prev.some((item) => item.seatCode === seat.seatCode && item.seatType === seat.seatType)),
+          ]
     );
   }, []);
 
@@ -1258,7 +1261,7 @@ export default function App() {
           {loadingRemote ? <ActivityIndicator size="small" color={palette.cyan} /> : null}
         </View>
       </View>
-      {toast ? <Toast toastId={toast.id} message={toast.message} tone={toast.tone} kind={toast.kind} closing={toast.closing} visibleMs={toast.visibleMs} /> : null}
+      {toast ? <Toast toastId={toast.id} message={toast.message} tone={toast.tone} kind={toast.kind} closing={toast.closing} visibleMs={toast.visibleMs} topOffset={androidTopInset + 14} /> : null}
       {content}
       {screen === "tabs" ? (
         <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event) => setBottomBarWidth(event.nativeEvent.layout.width)}>

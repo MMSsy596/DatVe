@@ -463,7 +463,7 @@ const toastKindMotion: Record<
   },
 };
 
-export function Toast({ toastId, message, tone = "info", kind = "system", closing = false, visibleMs = 2400 }: { toastId: number; message: string; tone?: ToastTone; kind?: ToastKind; closing?: boolean; visibleMs?: number }) {
+export function Toast({ toastId, message, tone = "info", kind = "system", closing = false, visibleMs = 2400, topOffset }: { toastId: number; message: string; tone?: ToastTone; kind?: ToastKind; closing?: boolean; visibleMs?: number; topOffset?: number }) {
   const shellOpacity = React.useRef(new Animated.Value(0)).current;
   const shellScale = React.useRef(new Animated.Value(0.72)).current;
   const shellTranslateY = React.useRef(new Animated.Value(-20)).current;
@@ -621,6 +621,7 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         styles.toast,
         tone === "success" && styles.toastSuccess,
         tone === "error" && styles.toastError,
+        topOffset != null && { top: topOffset },
         { opacity: shellOpacity, transform: [{ translateX: wobble.interpolate({ inputRange: [-1, 1], outputRange: motion.outputRange }) }, { translateY: shellTranslateY }, { scaleX: shellWidth }, { scaleY: shellScale }] },
       ]}
     >
@@ -1699,80 +1700,159 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
   );
 }
 
-export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seat: SeatSelection) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
-  const layout = seatMapRows;
+export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seats: SeatSelection[]) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
+  const layout = [...seatMapRows].sort((left, right) => left.rowLabel.localeCompare(right.rowLabel, "vi"));
   const scrollY = React.useRef(new Animated.Value(0)).current;
-  const standardRows = layout
-    .map((row) => ({ ...row, seats: row.seats.filter((seat) => seat.seatType === "STANDARD") }))
-    .filter((row) => row.seats.length > 0);
-  const vipRows = layout
-    .map((row) => ({ ...row, seats: row.seats.filter((seat) => seat.seatType === "VIP") }))
-    .filter((row) => row.seats.length > 0);
-  const coupleRows = layout
-    .map((row) => ({ ...row, seats: row.seats.filter((seat) => seat.seatType === "COUPLE") }))
-    .filter((row) => row.seats.length > 0);
   const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0);
+  const [seatTapHint, setSeatTapHint] = React.useState<{ label: string; detail: string; price: number } | null>(null);
+  const hotSeats = layout.flatMap((row) => row.seats.filter((seat) => seat.isHot && typeof seat.columnIndex === "number").map((seat) => ({ rowLabel: row.rowLabel, columnIndex: Number(seat.columnIndex) })));
+  const hotBounds = React.useMemo(() => {
+    if (hotSeats.length === 0) {
+      return null;
+    }
+    return hotSeats.reduce(
+      (acc, seat) => ({
+        topRow: acc.topRow.localeCompare(seat.rowLabel, "vi") <= 0 ? acc.topRow : seat.rowLabel,
+        bottomRow: acc.bottomRow.localeCompare(seat.rowLabel, "vi") >= 0 ? acc.bottomRow : seat.rowLabel,
+        minColumn: Math.min(acc.minColumn, seat.columnIndex),
+        maxColumn: Math.max(acc.maxColumn, seat.columnIndex),
+      }),
+      {
+        topRow: hotSeats[0].rowLabel,
+        bottomRow: hotSeats[0].rowLabel,
+        minColumn: hotSeats[0].columnIndex,
+        maxColumn: hotSeats[0].columnIndex,
+      }
+    );
+  }, [hotSeats]);
+  const getSeatSelectionUnit = React.useCallback((row: SeatMapRow, seat: SeatMapRow["seats"][number]) => {
+    if (seat.seatType !== "COUPLE") {
+      return [{ seatCode: seat.seatCode, seatType: seat.seatType as "STANDARD" | "VIP" | "COUPLE", price: seat.price }];
+    }
 
-  const renderSeatRow = (row: SeatMapRow, accent: "standard" | "vip" | "couple" = "standard") => (
-    <View key={row.rowLabel} style={styles.seatRow}>
-      <Text style={[styles.seatRowLabel, accent === "vip" && styles.seatRowLabelVip, accent === "couple" && styles.seatRowLabelCouple]}>{row.rowLabel}</Text>
-      {row.seats.map((seat, index) => {
-        const active = selectedSeats.some((item) => item.seatCode === seat.seatCode && item.seatType === seat.seatType);
-        const disabled = seat.status !== "AVAILABLE";
-        const seatTone =
-          seat.status === "SOLD"
-            ? palette.sold
-            : seat.status === "HELD"
-              ? palette.held
-              : seat.seatType === "VIP"
-                ? palette.vip
-                : seat.seatType === "COUPLE"
-                  ? palette.couple
-                  : palette.seat;
-        const needsAisleGap = row.seats.length >= 8 && index == Math.floor(row.seats.length / 2) - 1;
+    const orderedCoupleSeats = [...row.seats]
+      .filter((item) => item.seatType === "COUPLE")
+      .sort((left, right) => Number(left.columnIndex ?? 0) - Number(right.columnIndex ?? 0));
+    const column = Number(seat.columnIndex ?? 0);
+    const pairStart = column % 2 === 0 ? column - 1 : column;
+    const pairSeats = orderedCoupleSeats.filter((item) => {
+      const itemColumn = Number(item.columnIndex ?? 0);
+      return itemColumn === pairStart || itemColumn === pairStart + 1;
+    });
+    const targetSeats = pairSeats.length > 0 ? pairSeats : [seat];
+    return targetSeats.map((item) => ({
+      seatCode: item.seatCode,
+      seatType: item.seatType as "STANDARD" | "VIP" | "COUPLE",
+      price: item.price,
+    }));
+  }, []);
 
-        return (
-          <React.Fragment key={`${row.rowLabel}-${seat.seatCode}-${seat.seatType}`}>
-            <Pressable
-              disabled={disabled}
-              onPress={() => onToggleSeat({ seatCode: seat.seatCode, seatType: seat.seatType as "STANDARD" | "VIP" | "COUPLE", price: seat.price })}
-              style={[styles.seatCell, seat.seatType === "COUPLE" && styles.coupleSeatCell, active && styles.seatActive, disabled && styles.seatDisabled]}
-            >
-              <View
-                style={[
-                  styles.seatShell,
-                  seat.seatType === "VIP" && styles.seatShellVip,
-                  seat.seatType === "COUPLE" && styles.seatShellCouple,
-                  active && styles.seatShellActive,
-                  disabled && styles.seatShellDisabled,
-                  { borderColor: seatTone, shadowColor: seatTone },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.seatBack,
-                    seat.seatType === "COUPLE" && styles.seatBackCouple,
-                    { backgroundColor: seatTone },
-                  ]}
-                />
-                <View style={styles.seatArmRow}>
-                  <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
-                  <View style={[styles.seatCushion, seat.seatType === "COUPLE" && styles.seatCushionCouple, { backgroundColor: seatTone }]} />
-                  <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
-                </View>
-                <View style={[styles.seatLeg, { backgroundColor: active ? "#fff7f0" : seatTone }]} />
-              </View>
-              <Text style={[styles.seatCellText, active && styles.seatCellTextActive, disabled && styles.seatCellTextDisabled]}>
-                {seat.seatCode.replace(row.rowLabel, "")}
-              </Text>
-            </Pressable>
-            {needsAisleGap ? <View style={styles.seatAisleGap} /> : null}
-          </React.Fragment>
-        );
-      })}
-      <Text style={[styles.seatRowLabel, accent === "vip" && styles.seatRowLabelVip, accent === "couple" && styles.seatRowLabelCouple]}>{row.rowLabel}</Text>
+  const splitSeatGroups = React.useCallback((rowSeats: SeatMapRow["seats"]) => {
+    const ordered = [...rowSeats].sort((left, right) => Number(left.columnIndex ?? 0) - Number(right.columnIndex ?? 0));
+    if (ordered.length < 7) {
+      return { left: [] as typeof ordered, center: ordered, right: [] as typeof ordered };
+    }
+    const sideCount = ordered.length >= 10 ? 2 : 1;
+    return {
+      left: ordered.slice(0, sideCount),
+      center: ordered.slice(sideCount, ordered.length - sideCount),
+      right: ordered.slice(ordered.length - sideCount),
+    };
+  }, []);
+
+  const renderSeatItem = React.useCallback((row: SeatMapRow, seat: SeatMapRow["seats"][number]) => {
+    const selectionUnit = getSeatSelectionUnit(row, seat);
+    const active = selectionUnit.every((item) => selectedSeats.some((selected) => selected.seatCode === item.seatCode && selected.seatType === item.seatType));
+    const disabled = selectionUnit.some((item) => {
+      const matchedSeat = row.seats.find((candidate) => candidate.seatCode === item.seatCode && candidate.seatType === item.seatType);
+      return matchedSeat?.status !== "AVAILABLE";
+    });
+    const seatTone =
+      seat.status === "SOLD"
+        ? palette.sold
+        : seat.status === "HELD"
+          ? palette.held
+          : seat.isHot
+            ? "#7fe4c9"
+            : seat.seatType === "VIP"
+              ? palette.vip
+              : seat.seatType === "COUPLE"
+                ? palette.couple
+                : palette.seat;
+    const isHot = Boolean(seat.isHot);
+    const isTopHotEdge = isHot && hotBounds && row.rowLabel === hotBounds.topRow;
+    const isBottomHotEdge = isHot && hotBounds && row.rowLabel === hotBounds.bottomRow;
+    const isLeftHotEdge = isHot && hotBounds && Number(seat.columnIndex ?? -1) === hotBounds.minColumn;
+    const isRightHotEdge = isHot && hotBounds && Number(seat.columnIndex ?? -1) === hotBounds.maxColumn;
+    const label = selectionUnit.length > 1 ? selectionUnit.map((item) => item.seatCode).join(" - ") : seat.seatCode;
+    const detail = seat.seatType === "COUPLE" ? "Ghế đôi • chọn cả cặp" : seat.isHot ? "Ghế Hot" : seat.seatType === "VIP" ? "Ghế VIP" : "Ghế thường";
+    const totalPrice = selectionUnit.reduce((sum, item) => sum + item.price, 0);
+
+    return (
+      <Pressable
+        key={`${row.rowLabel}-${seat.seatCode}-${seat.seatType}`}
+        disabled={disabled}
+        onPress={() => {
+          onToggleSeat(selectionUnit);
+          setSeatTapHint({ label, detail, price: totalPrice });
+        }}
+        style={[styles.seatCell, seat.seatType === "COUPLE" && styles.coupleSeatCell, active && styles.seatActive, disabled && styles.seatDisabled]}
+      >
+        <View
+          style={[
+            styles.seatShell,
+            seat.seatType === "VIP" && styles.seatShellVip,
+            seat.seatType === "COUPLE" && styles.seatShellCouple,
+            isHot && styles.seatShellHot,
+            isTopHotEdge && styles.seatHotEdgeTop,
+            isBottomHotEdge && styles.seatHotEdgeBottom,
+            isLeftHotEdge && styles.seatHotEdgeLeft,
+            isRightHotEdge && styles.seatHotEdgeRight,
+            active && styles.seatShellActive,
+            disabled && styles.seatShellDisabled,
+            { borderColor: seatTone, shadowColor: seatTone },
+          ]}
+        >
+          <View style={[styles.seatBack, seat.seatType === "COUPLE" && styles.seatBackCouple, { backgroundColor: seatTone }]} />
+          <View style={styles.seatArmRow}>
+            <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
+            <View style={[styles.seatCushion, seat.seatType === "COUPLE" && styles.seatCushionCouple, { backgroundColor: seatTone }]} />
+            <View style={[styles.seatArm, { backgroundColor: seatTone }]} />
+          </View>
+          <View style={[styles.seatLeg, { backgroundColor: active ? "#fff7f0" : seatTone }]} />
+        </View>
+        <Text style={[styles.seatCellText, active && styles.seatCellTextActive, disabled && styles.seatCellTextDisabled]}>
+          {selectionUnit.length > 1 ? label.replace(`${row.rowLabel}`, "").replace(" - ", "/") : seat.seatCode.replace(row.rowLabel, "")}
+        </Text>
+      </Pressable>
+    );
+  }, [getSeatSelectionUnit, hotBounds, onToggleSeat, selectedSeats]);
+
+  const renderSeatGroup = React.useCallback((row: SeatMapRow, seats: SeatMapRow["seats"]) => (
+    <View style={styles.seatGroup}>
+      {seats.map((seat) => renderSeatItem(row, seat))}
     </View>
-  );
+  ), [renderSeatItem]);
+
+  const renderSeatRow = (row: SeatMapRow) => {
+    const orderedSeats = [...row.seats].sort((left, right) => Number(left.columnIndex ?? 0) - Number(right.columnIndex ?? 0));
+    const isCoupleRow = orderedSeats.some((seat) => seat.seatType === "COUPLE");
+    const displaySeats = isCoupleRow ? orderedSeats.filter((seat) => Number(seat.columnIndex ?? 0) % 2 === 1) : orderedSeats;
+    const groups = splitSeatGroups(displaySeats);
+    return (
+      <View key={row.rowLabel} style={styles.seatRow}>
+        <Text style={[styles.seatRowLabel, isCoupleRow && styles.seatRowLabelCouple, orderedSeats.some((seat) => seat.seatType === "VIP") && styles.seatRowLabelVip]}>{row.rowLabel}</Text>
+        <View style={styles.seatRowContent}>
+          {groups.left.length > 0 ? renderSeatGroup(row, groups.left) : <View style={styles.seatGroupPlaceholder} />}
+          {groups.left.length > 0 ? <View style={styles.seatOuterAisle} /> : null}
+          {renderSeatGroup(row, groups.center)}
+          {groups.right.length > 0 ? <View style={styles.seatOuterAisle} /> : null}
+          {groups.right.length > 0 ? renderSeatGroup(row, groups.right) : <View style={styles.seatGroupPlaceholder} />}
+        </View>
+        <Text style={[styles.seatRowLabel, isCoupleRow && styles.seatRowLabelCouple, orderedSeats.some((seat) => seat.seatType === "VIP") && styles.seatRowLabelVip]}>{row.rowLabel}</Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.screenShell}>
@@ -1801,6 +1881,10 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
             <Text style={styles.seatPriceValue}>+30.000đ</Text>
           </View>
           <View style={styles.seatPriceCard}>
+            <Text style={styles.seatPriceLabel}>Ghế Hot</Text>
+            <Text style={styles.seatPriceValue}>+20.000đ</Text>
+          </View>
+          <View style={styles.seatPriceCard}>
             <Text style={styles.seatPriceLabel}>Ghế đôi</Text>
             <Text style={styles.seatPriceValue}>+90.000đ</Text>
           </View>
@@ -1812,34 +1896,33 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         </View>
 
         <View style={styles.seatGridWrap}>
-          {standardRows.length > 0 ? (
-            <View style={styles.seatSection}>
-              <Text style={styles.seatSectionLabel}>KHU THƯỜNG</Text>
-              {standardRows.map((row) => renderSeatRow(row, "standard"))}
+          {hotBounds ? (
+            <View style={styles.seatHotBadge}>
+              <MaterialCommunityIcons name="fire" size={14} color="#06251d" />
+              <Text style={styles.seatHotBadgeText}>Vùng Hot: vị trí đẹp, đặt nhiều, phụ thu +20.000đ</Text>
             </View>
           ) : null}
-          {vipRows.length > 0 ? (
-            <View style={styles.seatSectionVip}>
-              <Text style={styles.seatSectionLabelVip}>KHU VIP</Text>
-              {vipRows.map((row) => renderSeatRow(row, "vip"))}
-            </View>
-          ) : null}
-          {coupleRows.length > 0 ? (
-            <View style={styles.seatSectionCouple}>
-              <Text style={styles.seatSectionLabelCouple}>SWEETBOX / GHẾ ĐÔI</Text>
-              {coupleRows.map((row) => renderSeatRow(row, "couple"))}
-            </View>
-          ) : null}
+          <View style={styles.seatSection}>
+            {layout.map((row) => renderSeatRow(row))}
+          </View>
         </View>
 
         <View style={styles.legendGrid}>
-          {[["Ghế thường", palette.seat], ["Ghế VIP", palette.vip], ["Ghế đôi", palette.couple], ["Đã chọn", "#ffffff"], ["Đã bán", palette.sold], ["Đang giữ", palette.held]].map(([label, color]) => (
+          {[["Ghế thường", palette.seat], ["Ghế VIP", palette.vip], ["Ghế Hot", "#7fe4c9"], ["Ghế đôi", palette.couple], ["Đã chọn", "#ffffff"], ["Đã bán", palette.sold], ["Đang giữ", palette.held]].map(([label, color]) => (
             <View key={label} style={styles.legendItem}>
               <View style={[styles.legendDot, label === "Đã chọn" ? styles.legendDotSelected : null, { backgroundColor: color }]} />
               <Text style={styles.legendText}>{label}</Text>
             </View>
           ))}
         </View>
+        <Text style={styles.accountDetail}>Ghế đôi được hiển thị trực tiếp trong sơ đồ và đánh dấu bằng màu riêng, không tách thành khu riêng.</Text>
+        {seatTapHint ? (
+          <View style={styles.seatTapHintCard}>
+            <Text style={styles.seatTapHintTitle}>{seatTapHint.label}</Text>
+            <Text style={styles.seatTapHintMeta}>{seatTapHint.detail}</Text>
+            <Text style={styles.seatTapHintPrice}>{formatCurrency(seatTapHint.price)}</Text>
+          </View>
+        ) : null}
       </Animated.ScrollView>
       <View style={styles.stickyFooterWrap}>
         <LinearGradient

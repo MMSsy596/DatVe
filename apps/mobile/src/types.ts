@@ -63,6 +63,9 @@ export type SeatMapRow = {
     seatType: string;
     price: number;
     status: string;
+    rowLabel?: string;
+    columnIndex?: number;
+    isHot?: boolean;
   }>;
 };
 

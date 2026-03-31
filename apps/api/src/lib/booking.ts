@@ -1,6 +1,7 @@
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { getPool } from "./db";
 import { calculateVoucherDiscount, findVoucherForCheckout } from "./vouchers";
+import { isHotSeatPosition, seatPrice } from "./seat-pricing";
 
 type HoldPayload = {
   showtimeId: number;
@@ -24,16 +25,6 @@ function makeBookingCode() {
 
 function makeQrPayload(input: { bookingCode: string; bookingId: number; showtimeId: number; userId?: number | null }) {
   return `DATVE|${input.bookingCode}|${input.bookingId}|${input.showtimeId}|${input.userId ?? "guest"}`;
-}
-
-function canonicalSeatPrice(basePrice: number, seatType: string) {
-  if (seatType === "VIP") {
-    return basePrice + 30000;
-  }
-  if (seatType === "COUPLE") {
-    return basePrice + 90000;
-  }
-  return basePrice;
 }
 
 export async function cleanupExpiredHolds() {
@@ -62,11 +53,21 @@ export async function holdSeats(payload: HoldPayload) {
       throw new Error("Không tìm thấy suất chiếu.");
     }
 
+    const [roomMetricsRows] = await connection.query<RowDataPacket[]>(
+      `SELECT COUNT(DISTINCT row_label) AS total_rows, COALESCE(MAX(column_index), 0) AS total_columns
+       FROM room_seats
+       WHERE room_id = ? AND is_active = TRUE`,
+      [showtime.room_id]
+    );
+    const roomMetrics = roomMetricsRows[0];
+    const totalRows = Number(roomMetrics?.total_rows ?? 0);
+    const totalColumns = Number(roomMetrics?.total_columns ?? 0);
+
     const normalizedSeats: Array<{ seatCode: string; seatType: "STANDARD" | "VIP" | "COUPLE"; price: number }> = [];
 
     for (const seat of payload.seats) {
       const [[roomSeat]] = await connection.query<RowDataPacket[]>(
-        `SELECT seat_code, seat_type
+        `SELECT seat_code, seat_type, row_label, column_index
          FROM room_seats
          WHERE room_id = ? AND seat_code = ? AND is_active = TRUE
          LIMIT 1`,
@@ -96,10 +97,11 @@ export async function holdSeats(payload: HoldPayload) {
         throw new Error(`Ghế ${seat.seatCode} đã được giữ hoặc thanh toán.`);
       }
 
+      const hotSeat = isHotSeatPosition(String(roomSeat.row_label), Number(roomSeat.column_index), totalRows, totalColumns, String(roomSeat.seat_type));
       normalizedSeats.push({
         seatCode: roomSeat.seat_code,
         seatType: roomSeat.seat_type,
-        price: canonicalSeatPrice(Number(showtime.base_price), roomSeat.seat_type),
+        price: seatPrice(Number(showtime.base_price), String(roomSeat.seat_type), hotSeat),
       });
     }
 

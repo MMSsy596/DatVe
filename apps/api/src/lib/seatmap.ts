@@ -1,16 +1,7 @@
 import { RowDataPacket } from "mysql2";
 import { getPool } from "./db";
 import { cleanupExpiredHolds } from "./booking";
-
-function seatPrice(basePrice: number, seatType: string) {
-  if (seatType === "VIP") {
-    return basePrice + 30000;
-  }
-  if (seatType === "COUPLE") {
-    return basePrice + 90000;
-  }
-  return basePrice;
-}
+import { isHotSeatPosition, seatPrice } from "./seat-pricing";
 
 export async function getShowtimeSeatMap(showtimeId: number) {
   await cleanupExpiredHolds();
@@ -58,17 +49,21 @@ export async function getShowtimeSeatMap(showtimeId: number) {
   }
 
   const rows = new Map<string, Array<Record<string, unknown>>>();
+  const totalRows = new Set(roomSeats.map((seat) => String(seat.row_label))).size;
+  const totalColumns = roomSeats.reduce((max, seat) => Math.max(max, Number(seat.column_index ?? 0)), 0);
 
   for (const seat of roomSeats) {
     const key = seat.row_label;
     const items = rows.get(key) ?? [];
+    const hotSeat = isHotSeatPosition(String(seat.row_label), Number(seat.column_index), totalRows, totalColumns, String(seat.seat_type));
     items.push({
       seatCode: seat.seat_code,
       seatType: seat.seat_type,
-      price: seatPrice(Number(showtime.base_price), seat.seat_type),
+      price: seatPrice(Number(showtime.base_price), String(seat.seat_type), hotSeat),
       status: bookedMap.get(seat.seat_code) ?? "AVAILABLE",
       rowLabel: seat.row_label,
       columnIndex: seat.column_index,
+      isHot: hotSeat,
     });
     rows.set(key, items);
   }
