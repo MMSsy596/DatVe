@@ -1,4 +1,4 @@
-package com.datve.mobile
+package phimbook.nanbao.mm
 
 import android.app.Application
 import android.content.res.Configuration

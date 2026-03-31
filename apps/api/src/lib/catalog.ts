@@ -40,6 +40,8 @@ type ShowtimeRow = RowDataPacket & {
   cinema_name: string;
   room_name: string;
   seat_layout_json: string;
+  total_seats: number;
+  occupied_seats: number;
 };
 
 type FoodRow = RowDataPacket & {
@@ -69,7 +71,23 @@ export async function getCatalogData() {
 
   const [showtimes] = await pool.query<ShowtimeRow[]>(
     `SELECT s.id, s.movie_id, s.cinema_id, s.room_id, s.start_time, s.language_label, s.format_label, s.base_price,
-            c.name AS cinema_name, r.name AS room_name, r.seat_layout_json
+            c.name AS cinema_name, r.name AS room_name, r.seat_layout_json,
+            (
+              SELECT COUNT(*)
+              FROM room_seats rs
+              WHERE rs.room_id = s.room_id AND rs.is_active = TRUE
+            ) AS total_seats,
+            (
+              SELECT COUNT(*)
+              FROM booking_seats bs
+              INNER JOIN bookings b ON b.id = bs.booking_id
+              WHERE b.showtime_id = s.id
+                AND (
+                  b.status = 'PAID' OR
+                  b.status = 'PENDING' OR
+                  (b.status = 'HELD' AND b.expires_at IS NOT NULL AND b.expires_at >= NOW())
+                )
+            ) AS occupied_seats
      FROM showtimes s
      INNER JOIN cinemas c ON c.id = s.cinema_id
      INNER JOIN rooms r ON r.id = s.room_id
@@ -121,6 +139,8 @@ export async function getCatalogData() {
       cinemaName: item.cinema_name,
       roomName: item.room_name,
       seatLayout: typeof item.seat_layout_json === "string" ? JSON.parse(item.seat_layout_json) : item.seat_layout_json,
+      totalSeats: Number(item.total_seats ?? 0),
+      availableSeats: Math.max(Number(item.total_seats ?? 0) - Number(item.occupied_seats ?? 0), 0),
     })),
     foods: foods.map((item) => ({
       id: item.id,

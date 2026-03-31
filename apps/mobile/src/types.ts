@@ -1,6 +1,6 @@
 import React from "react";
 
-export type TabId = "home" | "explore" | "tickets" | "profile";
+export type TabId = "home" | "explore" | "favorites" | "watchlist" | "tickets" | "profile";
 export type ScreenId = "tabs" | "movie" | "seats" | "checkout" | "ticket" | "auth";
 export type PaymentProvider = "MOMO" | "ZALOPAY" | "VNPAY";
 export type ToastTone = "info" | "success" | "error";
@@ -11,6 +11,7 @@ export type ToastPayload = {
   tone: ToastTone;
   kind: ToastKind;
   closing: boolean;
+  visibleMs: number;
 };
 
 export type Movie = {
@@ -51,6 +52,8 @@ export type ShowtimeItem = {
   languageLabel: string;
   basePrice: number;
   seatLayout: string[][];
+  totalSeats?: number;
+  availableSeats?: number;
 };
 
 export type SeatMapRow = {

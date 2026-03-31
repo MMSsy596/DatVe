@@ -22,6 +22,52 @@ const formatDateTime = (value: string) => {
   })}`;
 };
 
+const toDateKey = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatShowtimeDateLabel = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+  return date.toLocaleDateString("vi-VN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  });
+};
+
+const formatShowtimeDayNumber = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(-2);
+  }
+  return `${date.getDate()}`.padStart(2, "0");
+};
+
+const formatShowtimeWeekday = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Ngày";
+  }
+  return date.toLocaleDateString("vi-VN", { weekday: "short" });
+};
+
+const showtimeBucketLabel = (startTime: string) => {
+  const hour = Number(String(startTime).slice(11, 13));
+  if (hour < 12) return "Sáng";
+  if (hour < 18) return "Chiều";
+  return "Tối";
+};
+
 const mapBookingStatus = (status: string) => {
   switch (status) {
     case "PAID":
@@ -263,15 +309,31 @@ export function SectionHeader({ title, action }: { title: string; action?: strin
   );
 }
 
-export function NeonButton({ label, variant = "primary", onPress }: { label: string; variant?: "primary" | "secondary"; onPress?: () => void }) {
+export function NeonButton({
+  label,
+  variant = "primary",
+  onPress,
+  loading = false,
+  disabled = false,
+}: {
+  label: string;
+  variant?: "primary" | "secondary";
+  onPress?: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+}) {
+  const blocked = loading || disabled;
   return (
-    <Pressable onPress={onPress} style={[styles.button, variant === "primary" ? styles.buttonPrimary : styles.buttonSecondary]}>
+    <Pressable
+      onPress={blocked ? undefined : onPress}
+      disabled={blocked}
+      style={[styles.button, variant === "primary" ? styles.buttonPrimary : styles.buttonSecondary, blocked && styles.buttonDisabled]}
+    >
+      {loading ? <ActivityIndicator size="small" color={variant === "primary" ? "#fff8f6" : palette.cyan} /> : null}
       <Text style={[styles.buttonText, variant === "primary" ? styles.buttonTextPrimary : styles.buttonTextSecondary]}>{label}</Text>
     </Pressable>
   );
 }
-
-const TOAST_VISIBLE_MS = 2200;
 
 const toastToneLabel = (tone: ToastTone) => (tone === "success" ? "Hoàn tất" : tone === "error" ? "Lỗi" : "Thông báo");
 
@@ -370,7 +432,7 @@ const toastKindMotion: Record<
   },
 };
 
-export function Toast({ toastId, message, tone = "info", kind = "system", closing = false }: { toastId: number; message: string; tone?: ToastTone; kind?: ToastKind; closing?: boolean }) {
+export function Toast({ toastId, message, tone = "info", kind = "system", closing = false, visibleMs = 2400 }: { toastId: number; message: string; tone?: ToastTone; kind?: ToastKind; closing?: boolean; visibleMs?: number }) {
   const shellOpacity = React.useRef(new Animated.Value(0)).current;
   const shellScale = React.useRef(new Animated.Value(0.72)).current;
   const shellTranslateY = React.useRef(new Animated.Value(-20)).current;
@@ -383,6 +445,9 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
   const bodyTranslateX = React.useRef(new Animated.Value(-14)).current;
   const progress = React.useRef(new Animated.Value(1)).current;
   const shimmer = React.useRef(new Animated.Value(0)).current;
+  const marqueeX = React.useRef(new Animated.Value(0)).current;
+  const [messageViewportWidth, setMessageViewportWidth] = React.useState(0);
+  const [messageContentWidth, setMessageContentWidth] = React.useState(0);
   const toneLabel = toastToneLabel(tone);
   const meta = toastKindMeta[kind];
   const motion = toastKindMotion[kind];
@@ -390,6 +455,7 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
   const iconName = tone === "success" ? meta.filledIcon : meta.outlineIcon;
   const progressColor = tone === "success" ? "#8affea" : tone === "error" ? "#ff7b7b" : meta.color;
   const progressGlow = tone === "success" ? "rgba(138,255,234,0.3)" : tone === "error" ? "rgba(255,123,123,0.28)" : meta.bg;
+  const overflowDistance = Math.max(0, messageContentWidth - messageViewportWidth);
 
   React.useEffect(() => {
     shellOpacity.setValue(0);
@@ -401,9 +467,10 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
     iconTranslateY.setValue(2);
     wobble.setValue(0);
     bodyOpacity.setValue(0);
-    bodyTranslateX.setValue(-14);
+    bodyTranslateX.setValue(-8);
     progress.setValue(1);
     shimmer.setValue(0);
+    marqueeX.setValue(0);
 
     Animated.sequence([
       Animated.parallel([
@@ -412,6 +479,8 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         Animated.timing(shellWidth, { toValue: 0.84, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
         Animated.timing(iconScale, { toValue: 0.88, duration: 110, easing: Easing.out(Easing.quad), useNativeDriver: true }),
         Animated.timing(iconTranslateY, { toValue: 0, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(bodyOpacity, { toValue: 0.9, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(bodyTranslateX, { toValue: -1, duration: 130, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.spring(shellScale, { toValue: 1.03, tension: 95, friction: 8, useNativeDriver: true }),
@@ -420,6 +489,8 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         Animated.spring(iconScale, { toValue: motion.iconScalePeak, tension: 120, friction: 8, useNativeDriver: true }),
         Animated.timing(iconRotate, { toValue: motion.iconRotatePeak, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
         Animated.spring(iconTranslateY, { toValue: motion.iconLift, tension: 110, friction: 9, useNativeDriver: true }),
+        Animated.timing(bodyOpacity, { toValue: 1, duration: 130, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(bodyTranslateX, { toValue: 0, duration: 150, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       ]),
       Animated.timing(shellOpacity, { toValue: 1, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.parallel([
@@ -428,10 +499,6 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
         Animated.spring(iconScale, { toValue: 1, tension: 110, friction: 9, useNativeDriver: true }),
         Animated.timing(iconRotate, { toValue: 0, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
         Animated.spring(iconTranslateY, { toValue: 0, tension: 110, friction: 10, useNativeDriver: true }),
-        Animated.parallel([
-          Animated.timing(bodyOpacity, { toValue: 1, duration: 170, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(bodyTranslateX, { toValue: 0, duration: 190, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        ]),
       ]),
     ]).start();
     Animated.sequence([
@@ -444,7 +511,7 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
     ]).start();
     Animated.timing(progress, {
       toValue: 0,
-      duration: TOAST_VISIBLE_MS,
+      duration: visibleMs,
       easing: Easing.linear,
       useNativeDriver: false,
     }).start();
@@ -474,7 +541,32 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
     return () => {
       shimmerLoop.stop();
     };
-  }, [bodyOpacity, bodyTranslateX, iconRotate, iconScale, iconTranslateY, motion.delay, motion.hapticError, motion.hapticSuccess, motion.iconLift, motion.iconRotatePeak, motion.iconScalePeak, motion.keyframes, progress, shellOpacity, shellScale, shellTranslateY, shellWidth, shimmer, toastId, wobble, tone]);
+  }, [bodyOpacity, bodyTranslateX, iconRotate, iconScale, iconTranslateY, marqueeX, motion.delay, motion.hapticError, motion.hapticSuccess, motion.iconLift, motion.iconRotatePeak, motion.iconScalePeak, motion.keyframes, progress, shellOpacity, shellScale, shellTranslateY, shellWidth, shimmer, toastId, visibleMs, wobble, tone]);
+
+  React.useEffect(() => {
+    marqueeX.stopAnimation();
+    marqueeX.setValue(0);
+    if (overflowDistance <= 4) {
+      return;
+    }
+    const marqueeDuration = Math.max(1800, Math.min(visibleMs - 780, overflowDistance * 18));
+    if (marqueeDuration <= 0) {
+      return;
+    }
+    const animation = Animated.sequence([
+      Animated.delay(460),
+      Animated.timing(marqueeX, {
+        toValue: -overflowDistance,
+        duration: marqueeDuration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ]);
+    animation.start();
+    return () => {
+      animation.stop();
+    };
+  }, [marqueeX, overflowDistance, toastId, visibleMs]);
 
   React.useEffect(() => {
     if (!closing) return;
@@ -510,7 +602,18 @@ export function Toast({ toastId, message, tone = "info", kind = "system", closin
           <View style={[styles.toastDot, tone === "success" && styles.toastDotSuccess, tone === "error" && styles.toastDotError]} />
           <Text style={[styles.toastTone, tone === "success" && styles.toastToneSuccess, tone === "error" && styles.toastToneError]}>{toneLabel}</Text>
         </View>
-        <Text style={styles.toastText} numberOfLines={2}>{message}</Text>
+        <View style={styles.toastMessageViewport} onLayout={(event) => setMessageViewportWidth(event.nativeEvent.layout.width)}>
+          <Animated.View style={[styles.toastMessageRail, { transform: [{ translateX: marqueeX }] }]}>
+            <Text style={styles.toastText} numberOfLines={1}>{message}</Text>
+          </Animated.View>
+        </View>
+        <Text
+          style={[styles.toastText, styles.toastTextMeasure]}
+          numberOfLines={1}
+          onLayout={(event) => setMessageContentWidth(event.nativeEvent.layout.width)}
+        >
+          {message}
+        </Text>
         <View style={styles.toastProgressTrack}>
           <Animated.View style={[styles.toastProgressFill, tone === "success" && styles.toastProgressFillSuccess, tone === "error" && styles.toastProgressFillError, { width: progress.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }), backgroundColor: progressColor, shadowColor: progressColor }]} />
           <View pointerEvents="none" style={[styles.toastProgressGlow, { backgroundColor: progressGlow }]} />
@@ -533,6 +636,29 @@ export function SkeletonBlock({ height, width = "100%" }: { height: number; widt
   return <View style={[styles.skeletonBlock, { height, width }]} />;
 }
 
+function MovieStateBadges({ isFavorite, isInWatchlist, compact = false }: { isFavorite: boolean; isInWatchlist: boolean; compact?: boolean }) {
+  if (!isFavorite && !isInWatchlist) {
+    return null;
+  }
+
+  return (
+    <View style={[styles.movieStateBadgeRow, compact && styles.movieStateBadgeRowCompact]}>
+      {isFavorite ? (
+        <View style={[styles.movieStateBadge, styles.movieStateBadgeFavorite, compact && styles.movieStateBadgeCompact]}>
+          <MaterialCommunityIcons name="heart" size={compact ? 11 : 12} color="#ffe7ef" />
+          {!compact ? <Text style={styles.movieStateBadgeText}>Yêu thích</Text> : null}
+        </View>
+      ) : null}
+      {isInWatchlist ? (
+        <View style={[styles.movieStateBadge, styles.movieStateBadgeWatchlist, compact && styles.movieStateBadgeCompact]}>
+          <MaterialCommunityIcons name="bookmark" size={compact ? 11 : 12} color="#e7fff8" />
+          {!compact ? <Text style={styles.movieStateBadgeText}>Xem sau</Text> : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export function HomeScreen(props: {
   onMoviePress: (movie: Movie) => void;
   onSeatPress: (movie: Movie) => void;
@@ -540,8 +666,11 @@ export function HomeScreen(props: {
   moviesData: Movie[];
   loading: boolean;
   fallbackMovie: Movie;
+  loadingSeatMovieId?: number | null;
+  favoriteMovieIds?: number[];
+  watchlistMovieIds?: number[];
 }) {
-  const { onMoviePress, onSeatPress, bannersData, moviesData, loading, fallbackMovie } = props;
+  const { onMoviePress, onSeatPress, bannersData, moviesData, loading, fallbackMovie, loadingSeatMovieId = null, favoriteMovieIds = [], watchlistMovieIds = [] } = props;
   const heroMovie = moviesData[0] ?? fallbackMovie;
   const nowShowing = moviesData.filter((movie) => movie.status !== "COMING_SOON");
   const nowShowingFeatured = nowShowing.slice(0, 12);
@@ -577,6 +706,7 @@ export function HomeScreen(props: {
           <Text style={styles.eyebrow}>ĐẶT VÉ ĐIỆN ẢNH</Text>
           <Text style={styles.heroTag}>Đang mở bán</Text>
         </View>
+        <MovieStateBadges isFavorite={favoriteMovieIds.includes(heroMovie.id)} isInWatchlist={watchlistMovieIds.includes(heroMovie.id)} />
         <View style={styles.heroContent}>
           <Text style={styles.heroKicker}>{heroMovie.badge}</Text>
           <Text style={styles.heroTitle}>{heroMovie.title}</Text>
@@ -598,7 +728,7 @@ export function HomeScreen(props: {
           </View>
         </View>
         <View style={styles.heroActions}>
-          <NeonButton label="Đặt vé ngay" onPress={() => onSeatPress(heroMovie)} />
+          <NeonButton label="Đặt vé ngay" onPress={() => onSeatPress(heroMovie)} loading={loadingSeatMovieId === heroMovie.id} />
           <NeonButton label="Xem chi tiết" variant="secondary" onPress={() => onMoviePress(heroMovie)} />
         </View>
       </View>
@@ -637,7 +767,10 @@ export function HomeScreen(props: {
           <Pressable key={movie.id} style={styles.movieCard} onPress={() => onMoviePress(movie)}>
             <ImageBackground source={movie.posterUrl ? { uri: movie.posterUrl } : undefined} imageStyle={styles.posterImage} style={[styles.poster, { backgroundColor: movie.tone }]}>
               <View style={styles.posterScrim} />
-              <Text style={styles.posterBadge}>{movie.badge}</Text>
+              <View style={styles.posterTopRow}>
+                <Text style={styles.posterBadge}>{movie.badge}</Text>
+                <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+              </View>
             </ImageBackground>
             <Text style={styles.movieTitle}>{movie.title}</Text>
             <Text style={styles.movieMeta}>{movie.genre} • {movie.runtime}</Text>
@@ -660,6 +793,7 @@ export function HomeScreen(props: {
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{movie.title}</Text>
+                  <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
                   <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
                 </View>
                 <Text style={styles.rankActionText}>Mở</Text>
@@ -674,15 +808,16 @@ export function HomeScreen(props: {
           <SectionHeader title="Top đặt nhiều hôm nay" action="Ưu tiên ghế đẹp" />
           <View style={styles.rankingWrap}>
             {hotToday.map((movie, index) => (
-              <Pressable key={`hot-${movie.id}`} style={styles.rankingRow} onPress={() => onSeatPress(movie)}>
+              <Pressable key={`hot-${movie.id}`} style={styles.rankingRow} onPress={() => onSeatPress(movie)} disabled={loadingSeatMovieId === movie.id}>
                 <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
                   {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{`#${index + 1} ${movie.title}`}</Text>
+                  <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
                   <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
                 </View>
-                <Text style={styles.rankActionText}>Đặt</Text>
+                {loadingSeatMovieId === movie.id ? <ActivityIndicator size="small" color={palette.cyan} /> : <Text style={styles.rankActionText}>Đặt</Text>}
               </Pressable>
             ))}
           </View>
@@ -701,7 +836,10 @@ export function HomeScreen(props: {
                   style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}
                 >
                   <View style={styles.posterScrim} />
-                  <Text style={styles.posterBadge}>{movie.badge}</Text>
+                  <View style={styles.posterTopRow}>
+                    <Text style={styles.posterBadge}>{movie.badge}</Text>
+                    <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+                  </View>
                 </ImageBackground>
                 <View style={styles.homeGridBody}>
                   <Text style={styles.homeGridTitle}>{movie.title}</Text>
@@ -729,6 +867,7 @@ export function HomeScreen(props: {
                 </View>
                 <View style={styles.rankMain}>
                   <Text style={styles.rankMovie}>{movie.title}</Text>
+                  <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
                   <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime}</Text>
                 </View>
                 <Text style={styles.rankActionText}>Xem</Text>
@@ -755,8 +894,10 @@ export function ExploreScreen(props: {
   setHourFilter: Setter<string>;
   cinemaOptions: string[];
   genreOptions: string[];
+  favoriteMovieIds?: number[];
+  watchlistMovieIds?: number[];
 }) {
-  const { onMoviePress, moviesData, loading, statusFilter, setStatusFilter, cinemaFilter, setCinemaFilter, genreFilter, setGenreFilter, hourFilter, setHourFilter, cinemaOptions, genreOptions } = props;
+  const { onMoviePress, moviesData, loading, statusFilter, setStatusFilter, cinemaFilter, setCinemaFilter, genreFilter, setGenreFilter, hourFilter, setHourFilter, cinemaOptions, genreOptions, favoriteMovieIds = [], watchlistMovieIds = [] } = props;
 
   if (loading && moviesData.length === 0) {
     return (
@@ -819,6 +960,9 @@ export function ExploreScreen(props: {
         <Pressable key={`explore-${movie.id}`} style={styles.exploreCard} onPress={() => onMoviePress(movie)}>
           <View style={[styles.explorePoster, { backgroundColor: movie.tone }]}>
             {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
+            <View style={styles.explorePosterOverlay}>
+              <MovieStateBadges isFavorite={favoriteMovieIds.includes(movie.id)} isInWatchlist={watchlistMovieIds.includes(movie.id)} compact />
+            </View>
           </View>
           <View style={styles.exploreBody}>
             <Text style={styles.exploreBadge}>{movie.badge}</Text>
@@ -832,7 +976,7 @@ export function ExploreScreen(props: {
   );
 }
 
-export function TicketsScreen({ onSeatPress, onTicketPress, tickets, moviesData, loading, fallbackMovie }: { onSeatPress: (movie: Movie) => void; onTicketPress: (ticket: TicketItem) => void; tickets: TicketItem[]; moviesData: Movie[]; loading: boolean; fallbackMovie: Movie; }) {
+export function TicketsScreen({ onSeatPress, onTicketPress, tickets, moviesData, loading, fallbackMovie, loadingTicketId = null, loadingSeatMovieId = null, favoriteMovieIds = [], watchlistMovieIds = [] }: { onSeatPress: (movie: Movie) => void; onTicketPress: (ticket: TicketItem) => void; tickets: TicketItem[]; moviesData: Movie[]; loading: boolean; fallbackMovie: Movie; loadingTicketId?: number | null; loadingSeatMovieId?: number | null; favoriteMovieIds?: number[]; watchlistMovieIds?: number[]; }) {
   if (loading && tickets.length === 0) {
     return (
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -856,23 +1000,43 @@ export function TicketsScreen({ onSeatPress, onTicketPress, tickets, moviesData,
             <Text style={styles.ticketMovie}>Kho vé đang trống</Text>
             <Text style={styles.ticketInfo}>Đặt suất đầu tiên để bắt đầu lưu vé tại đây.</Text>
           </View>
-          <NeonButton label="Đặt vé ngay" onPress={() => onSeatPress(moviesData[0] ?? fallbackMovie)} />
+          <NeonButton label="Đặt vé ngay" onPress={() => onSeatPress(moviesData[0] ?? fallbackMovie)} loading={loadingSeatMovieId === (moviesData[0] ?? fallbackMovie).id} />
         </View>
       ) : null}
 
       {tickets.map((ticket, index) => (
-        <Pressable key={`${ticket.movie}-${ticket.time}`} style={styles.ticketCard} onPress={() => onTicketPress(ticket)}>
+        <Pressable key={`${ticket.movie}-${ticket.time}`} style={styles.ticketCard} onPress={() => onTicketPress(ticket)} disabled={loadingTicketId === ticket.bookingId}>
+          {(() => {
+            const ticketMovie = moviesData.find((movie) => movie.title === ticket.movie) ?? moviesData[index % moviesData.length] ?? fallbackMovie;
+            return (
+              <>
           <View style={styles.ticketStripe} />
           <View style={styles.ticketContent}>
             <View style={styles.ticketHead}>
-              <Text style={styles.ticketMovie}>{ticket.movie}</Text>
-              <Text style={[styles.ticketStatus, ticket.status === "PAID" && styles.ticketStatusPaid]}>{mapBookingStatus(ticket.status)}</Text>
+              <View style={styles.ticketMovieHead}>
+                <Text style={styles.ticketMovie}>{ticket.movie}</Text>
+                <MovieStateBadges
+                  isFavorite={favoriteMovieIds.includes(ticketMovie.id)}
+                  isInWatchlist={watchlistMovieIds.includes(ticketMovie.id)}
+                  compact
+                />
+              </View>
+              {loadingTicketId === ticket.bookingId ? (
+                <View style={styles.ticketStatusLoading}>
+                  <ActivityIndicator size="small" color={palette.cyan} />
+                </View>
+              ) : (
+                <Text style={[styles.ticketStatus, ticket.status === "PAID" && styles.ticketStatusPaid]}>{mapBookingStatus(ticket.status)}</Text>
+              )}
             </View>
             <Text style={styles.ticketInfo}>{ticket.cinema}</Text>
             <Text style={styles.ticketInfo}>{ticket.time.replace("T", " • ")} • Ghế {ticket.seat}</Text>
             <Text style={styles.ticketInfo}>Mã vé {ticket.bookingCode}</Text>
           </View>
-          <NeonButton label={index === 0 ? "Mở vé" : "Đặt lại"} variant="secondary" onPress={() => onSeatPress(moviesData[index % moviesData.length] ?? fallbackMovie)} />
+          <NeonButton label={index === 0 ? "Mở vé" : "Đặt lại"} variant="secondary" onPress={() => onSeatPress(ticketMovie)} loading={loadingSeatMovieId === ticketMovie.id} />
+              </>
+            );
+          })()}
         </Pressable>
       ))}
     </ScrollView>
@@ -985,8 +1149,7 @@ export function AuthScreen(props: {
             <TextInput value={authEmail} onChangeText={setAuthEmail} placeholder="Email" placeholderTextColor={palette.muted} style={styles.input} autoCapitalize="none" />
             {authMode === "register" ? <TextInput value={authPhone} onChangeText={setAuthPhone} placeholder="Số điện thoại" placeholderTextColor={palette.muted} style={styles.input} /> : null}
             <TextInput value={authPassword} onChangeText={setAuthPassword} placeholder="Mật khẩu" placeholderTextColor={palette.muted} style={styles.input} secureTextEntry />
-            {authLoading ? <ActivityIndicator color={palette.cyan} /> : null}
-            <NeonButton label={authMode === "login" ? "Vào ứng dụng" : "Tạo tài khoản"} onPress={onSubmitAuth} />
+            <NeonButton label={authMode === "login" ? "Vào ứng dụng" : "Tạo tài khoản"} onPress={onSubmitAuth} loading={authLoading} />
             <Text style={styles.accountDetail}>Tài khoản mẫu: `admin@datve.local / Admin@123`, `user@datve.local / User@123`.</Text>
           </View>
 
@@ -998,15 +1161,14 @@ export function AuthScreen(props: {
 
 export function ProfileScreen(props: {
   onReload: () => void;
-  favoriteMovies: Movie[];
-  watchlistMovies: Movie[];
-  onMoviePress: (movie: Movie) => void;
   profile: ProfileData | null;
   sessionUser: SessionUser | null;
   reminders: ReminderItem[];
   onLogout: () => void;
+  loading?: boolean;
+  logoutLoading?: boolean;
 }) {
-  const { onReload, favoriteMovies, watchlistMovies, onMoviePress, profile, sessionUser, reminders, onLogout } = props;
+  const { onReload, profile, sessionUser, reminders, onLogout, loading = false, logoutLoading = false } = props;
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -1022,7 +1184,7 @@ export function ProfileScreen(props: {
       <View style={styles.accountRow}>
         <Text style={styles.accountTitle}>Tài khoản</Text>
         <Text style={styles.accountDetail}>{sessionUser ? `Đang đăng nhập với vai trò ${sessionUser.role}.` : "Đăng nhập hoặc đăng ký để dùng dữ liệu cá nhân và voucher."}</Text>
-        <NeonButton label="Đăng xuất" variant="secondary" onPress={onLogout} />
+        <NeonButton label="Đăng xuất" variant="secondary" onPress={onLogout} loading={logoutLoading} />
       </View>
 
       {profile ? (
@@ -1032,13 +1194,21 @@ export function ProfileScreen(props: {
             <Text style={styles.summaryValue}>{profile.stats.favorites}</Text>
           </View>
           <View style={styles.checkoutSummaryCell}>
+            <Text style={styles.summaryLabel}>Xem sau</Text>
+            <Text style={styles.summaryValue}>{profile.stats.watchlist}</Text>
+          </View>
+          <View style={styles.checkoutSummaryCell}>
             <Text style={styles.summaryLabel}>Vé đã đặt</Text>
             <Text style={styles.summaryValue}>{profile.stats.bookings}</Text>
           </View>
-          <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>Chi tiêu</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(profile.stats.spending)}</Text>
-          </View>
+        </View>
+      ) : null}
+
+      {profile ? (
+        <View style={styles.accountRow}>
+          <Text style={styles.accountTitle}>Chi tiêu tích lũy</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(profile.stats.spending)}</Text>
+          <Text style={styles.accountDetail}>Theo dõi tổng chi tiêu để tối ưu voucher và lịch xem phim.</Text>
         </View>
       ) : null}
 
@@ -1055,48 +1225,156 @@ export function ProfileScreen(props: {
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Yêu thích</Text>
-        <View style={styles.profileMovieList}>
-          {favoriteMovies.length === 0 ? <Text style={styles.accountDetail}>Chưa có phim yêu thích.</Text> : null}
-          {favoriteMovies.map((movie) => (
-            <Pressable key={`fav-${movie.id}`} onPress={() => onMoviePress(movie)} style={styles.profileMovieChip}>
-              <Text style={styles.profileMovieChipText}>{movie.title}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Xem sau</Text>
-        <View style={styles.profileMovieList}>
-          {watchlistMovies.length === 0 ? <Text style={styles.accountDetail}>Chưa có phim trong danh sách xem sau.</Text> : null}
-          {watchlistMovies.map((movie) => (
-            <Pressable key={`watch-${movie.id}`} onPress={() => onMoviePress(movie)} style={styles.profileMovieChip}>
-              <Text style={styles.profileMovieChipText}>{movie.title}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.accountRow}>
         <Text style={styles.accountTitle}>Dữ liệu tài khoản</Text>
         <Text style={styles.accountDetail}>Tải lại để đồng bộ vé, ưu đãi và nhắc lịch mới nhất.</Text>
-        <NeonButton label="Tải lại dữ liệu" onPress={onReload} />
+        <NeonButton label="Tải lại dữ liệu" onPress={onReload} loading={loading} />
       </View>
     </ScrollView>
   );
 }
 
-export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onBook: (showtime: ShowtimeItem) => void; showtimesData: ShowtimeItem[]; isFavorite: boolean; isInWatchlist: boolean; onToggleFavorite: () => void; onToggleWatchlist: () => void; }) {
-  const { movie, onBack, onBook, showtimesData, isFavorite, isInWatchlist, onToggleFavorite, onToggleWatchlist } = props;
+export function UserMovieListScreen(props: {
+  title: string;
+  description: string;
+  emptyMessage: string;
+  movies: Movie[];
+  onMoviePress: (movie: Movie) => void;
+}) {
+  const { title, description, emptyMessage, movies, onMoviePress } = props;
+
+  return (
+    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.exploreHero}>
+        <Text style={styles.eyebrow}>THƯ VIỆN CÁ NHÂN</Text>
+        <Text style={styles.authTitle}>{title}</Text>
+        <Text style={styles.accountDetail}>{description}</Text>
+      </View>
+
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>Danh sách phim</Text>
+        <Text style={styles.accountDetail}>
+          {movies.length > 0 ? `${movies.length} phim đang được lưu trong mục này.` : emptyMessage}
+        </Text>
+        <View style={styles.profileMovieList}>
+          {movies.map((movie) => (
+            <Pressable key={`${title}-${movie.id}`} onPress={() => onMoviePress(movie)} style={styles.profileMovieChip}>
+              <MovieStateBadges isFavorite={title === "Yêu thích"} isInWatchlist={title === "Xem sau"} compact />
+              <Text style={styles.profileMovieChipText}>{movie.title}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {movies.length > 0 ? (
+        <View style={styles.homeGrid}>
+          {movies.map((movie) => (
+            <Pressable key={`grid-${title}-${movie.id}`} style={styles.homeGridCard} onPress={() => onMoviePress(movie)}>
+              <View style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}>
+                {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.homeGridPosterImage} resizeMode="cover" /> : null}
+                <View style={styles.posterTopRow}>
+                  <Text style={styles.posterBadge}>{movie.badge}</Text>
+                  <MovieStateBadges isFavorite={title === "Yêu thích"} isInWatchlist={title === "Xem sau"} compact />
+                </View>
+              </View>
+              <View style={styles.homeGridBody}>
+                <Text style={styles.homeGridTitle}>{movie.title}</Text>
+                <Text style={styles.homeGridMeta}>{movie.genre} • {movie.runtime}</Text>
+                <View style={styles.homeGridFooter}>
+                  <Text style={styles.movieScore}>IMDb {movie.score}</Text>
+                  <Text style={styles.homeGridAction}>Xem chi tiết</Text>
+                </View>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </ScrollView>
+  );
+}
+
+export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onBook: (showtime: ShowtimeItem) => void; showtimesData: ShowtimeItem[]; isFavorite: boolean; isInWatchlist: boolean; onToggleFavorite: () => void; onToggleWatchlist: () => void; favoriteLoading?: boolean; watchlistLoading?: boolean; bookingLoadingMovieId?: number | null; bookingLoadingShowtimeId?: number | null; }) {
+  const { movie, onBack, onBook, showtimesData, isFavorite, isInWatchlist, onToggleFavorite, onToggleWatchlist, favoriteLoading = false, watchlistLoading = false, bookingLoadingMovieId = null, bookingLoadingShowtimeId = null } = props;
   const now = useMinuteNow();
   const [trailerVisible, setTrailerVisible] = React.useState(false);
   const movieShowtimes = showtimesData.filter((item) => item.movieId === movie.id);
+  const cinemaOptions = React.useMemo(
+    () => Array.from(new Set(movieShowtimes.map((item) => item.cinemaName))).sort((a, b) => a.localeCompare(b, "vi")),
+    [movieShowtimes]
+  );
+  const [selectedCinema, setSelectedCinema] = React.useState<string | null>(null);
+  const [selectedDateKey, setSelectedDateKey] = React.useState<string | null>(null);
+  const [selectedShowtimeId, setSelectedShowtimeId] = React.useState<number | null>(null);
   const activeShowtimeId = movieShowtimes
     .filter((item) => new Date(item.startTime).getTime() >= now)
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0]?.id ?? null;
   const featuredShowtime = movieShowtimes.find((item) => item.id === activeShowtimeId) ?? movieShowtimes[0];
+  const effectiveCinema = selectedCinema ?? featuredShowtime?.cinemaName ?? cinemaOptions[0] ?? null;
+  const cinemaShowtimes = React.useMemo(
+    () => movieShowtimes.filter((item) => item.cinemaName === effectiveCinema),
+    [effectiveCinema, movieShowtimes]
+  );
+  const dateOptions = React.useMemo(
+    () =>
+      Array.from(new Set(cinemaShowtimes.map((item) => toDateKey(item.startTime))))
+        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime()),
+    [cinemaShowtimes]
+  );
+  const effectiveDateKey = selectedDateKey ?? dateOptions[0] ?? null;
+  const filteredShowtimes = React.useMemo(
+    () =>
+      cinemaShowtimes
+        .filter((item) => toDateKey(item.startTime) === effectiveDateKey)
+        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
+    [cinemaShowtimes, effectiveDateKey]
+  );
+  const groupedShowtimes = React.useMemo(() => {
+    const groups: Array<{ label: "Sáng" | "Chiều" | "Tối"; items: ShowtimeItem[] }> = [
+      { label: "Sáng", items: [] },
+      { label: "Chiều", items: [] },
+      { label: "Tối", items: [] },
+    ];
+    for (const item of filteredShowtimes) {
+      const label = showtimeBucketLabel(item.startTime) as "Sáng" | "Chiều" | "Tối";
+      groups.find((group) => group.label === label)?.items.push(item);
+    }
+    return groups.filter((group) => group.items.length > 0);
+  }, [filteredShowtimes]);
+  const primaryShowtime =
+    filteredShowtimes.find((item) => item.id === selectedShowtimeId) ??
+    filteredShowtimes.find((item) => new Date(item.startTime).getTime() >= now) ??
+    filteredShowtimes[0] ??
+    featuredShowtime;
   const trailerUrl = normalizeTrailerUrl(movie.trailerUrl);
+
+  React.useEffect(() => {
+    if (!effectiveCinema && cinemaOptions[0]) {
+      setSelectedCinema(cinemaOptions[0]);
+      return;
+    }
+    if (effectiveCinema && !cinemaOptions.includes(effectiveCinema)) {
+      setSelectedCinema(cinemaOptions[0] ?? null);
+    }
+  }, [cinemaOptions, effectiveCinema]);
+
+  React.useEffect(() => {
+    if (!effectiveDateKey && dateOptions[0]) {
+      setSelectedDateKey(dateOptions[0]);
+      return;
+    }
+    if (effectiveDateKey && !dateOptions.includes(effectiveDateKey)) {
+      setSelectedDateKey(dateOptions[0] ?? null);
+    }
+  }, [dateOptions, effectiveDateKey]);
+
+  React.useEffect(() => {
+    if (!primaryShowtime) {
+      setSelectedShowtimeId(null);
+      return;
+    }
+    if (!filteredShowtimes.some((item) => item.id === selectedShowtimeId)) {
+      setSelectedShowtimeId(primaryShowtime.id);
+    }
+  }, [filteredShowtimes, primaryShowtime, selectedShowtimeId]);
 
   return (
     <>
@@ -1133,11 +1411,11 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
             <Text style={styles.detailMediaPlayText}>Trailer</Text>
           </Pressable>
           <View style={styles.detailMediaFacts}>
-            <Text style={styles.detailMediaFactText}>{featuredShowtime ? featuredShowtime.startTime.slice(11, 16) : "Cập nhật sớm"}</Text>
+            <Text style={styles.detailMediaFactText}>{primaryShowtime ? primaryShowtime.startTime.slice(11, 16) : "Cập nhật sớm"}</Text>
             <Text style={styles.detailMediaFactDivider}>•</Text>
-            <Text style={styles.detailMediaFactText}>{featuredShowtime ? featuredShowtime.formatLabel : movie.runtime}</Text>
+            <Text style={styles.detailMediaFactText}>{primaryShowtime ? primaryShowtime.formatLabel : movie.runtime}</Text>
             <Text style={styles.detailMediaFactDivider}>•</Text>
-            <Text style={styles.detailMediaFactText}>{featuredShowtime ? featuredShowtime.languageLabel : movie.genre}</Text>
+            <Text style={styles.detailMediaFactText}>{primaryShowtime ? primaryShowtime.languageLabel : movie.genre}</Text>
           </View>
         </View>
       </View>
@@ -1147,8 +1425,14 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
       <Text style={styles.detailDescription}>{movie.description}</Text>
 
       <View style={styles.detailActionsRow}>
-        <NeonButton label={isFavorite ? "Bỏ yêu thích" : "Thêm yêu thích"} variant="secondary" onPress={onToggleFavorite} />
-        <NeonButton label={isInWatchlist ? "Bỏ xem sau" : "Lưu xem sau"} variant="secondary" onPress={onToggleWatchlist} />
+        <Pressable style={[styles.listToggleButton, isFavorite ? styles.listToggleButtonFavoriteOn : styles.listToggleButtonFavoriteOff]} onPress={favoriteLoading ? undefined : onToggleFavorite}>
+          {favoriteLoading ? <ActivityIndicator size="small" color="#fff4ef" /> : <MaterialCommunityIcons name={isFavorite ? "heart" : "heart-outline"} size={18} color={isFavorite ? "#ffe8ee" : "#ff9ab3"} />}
+          <Text style={[styles.listToggleButtonText, isFavorite ? styles.listToggleButtonTextOn : styles.listToggleButtonTextOff]}>{isFavorite ? "Đã yêu thích" : "Thêm yêu thích"}</Text>
+        </Pressable>
+        <Pressable style={[styles.listToggleButton, isInWatchlist ? styles.listToggleButtonWatchlistOn : styles.listToggleButtonWatchlistOff]} onPress={watchlistLoading ? undefined : onToggleWatchlist}>
+          {watchlistLoading ? <ActivityIndicator size="small" color="#effff9" /> : <MaterialCommunityIcons name={isInWatchlist ? "bookmark" : "bookmark-outline"} size={18} color={isInWatchlist ? "#e2fff6" : "#7df2d9"} />}
+          <Text style={[styles.listToggleButtonText, isInWatchlist ? styles.listToggleButtonTextOn : styles.listToggleButtonTextOff]}>{isInWatchlist ? "Đã lưu xem sau" : "Lưu xem sau"}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.detailStatsRow}>
@@ -1166,47 +1450,104 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
         </View>
       </View>
 
-      <SectionHeader title="Lịch chiếu hôm nay" action={`${movieShowtimes.length} suất`} />
-      <View style={styles.showtimeGrid}>
-        {movieShowtimes.map((item) => {
-          const showtimeTimestamp = new Date(item.startTime).getTime();
-          const isDisabled = showtimeTimestamp < now;
-          const isActive = item.id === activeShowtimeId;
-          const countdownLevel = getCountdownLevel(item.startTime, now);
-          return (
-            <Pressable
-              key={`${item.id}-${item.roomName}`}
-              disabled={isDisabled}
-              style={[styles.showtimeCard, isActive && styles.showtimeCardActive, isDisabled && styles.showtimeCardDisabled]}
-              onPress={() => onBook(item)}
-            >
-              <View style={styles.showtimePillRow}>
-                <Text style={[styles.showtimePill, isActive && styles.showtimePillActive, isDisabled && styles.showtimePillDisabled]}>{item.formatLabel}</Text>
-                <Text style={[styles.showtimePillSecondary, isDisabled && styles.showtimePillSecondaryDisabled]}>{item.languageLabel}</Text>
-              </View>
-              <Text style={[styles.showtimeTime, isDisabled && styles.showtimeTimeDisabled]}>{item.startTime.slice(11, 16)}</Text>
-              <Text style={[styles.showtimeCinema, isDisabled && styles.showtimeCinemaDisabled]}>{item.cinemaName}</Text>
-              <Text style={styles.showtimeInfo}>{item.roomName}</Text>
-              <View style={styles.showtimeFooterRow}>
-                <Text style={[styles.showtimePrice, isDisabled && styles.showtimePriceDisabled]}>{formatCurrency(item.basePrice)}</Text>
-                <Text
-                  style={[
-                    styles.showtimeState,
-                    isActive && styles.showtimeStateActive,
-                    isActive && countdownLevel === "soon" && styles.showtimeStateSoon,
-                    isActive && countdownLevel === "boarding" && styles.showtimeStateBoarding,
-                    isDisabled && styles.showtimeStateDisabled,
-                  ]}
-                >
-                  {isDisabled ? "Hết giờ" : isActive ? formatCountdownLabel(item.startTime, now) : "Mở bán"}
-                </Text>
-              </View>
+      <SectionHeader title="Chọn lịch chiếu" action={`${movieShowtimes.length} suất`} />
+
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>1. Chọn rạp</Text>
+        <View style={styles.paymentWrap}>
+          {cinemaOptions.map((cinema) => (
+            <Pressable key={cinema} style={[styles.paymentMethod, effectiveCinema === cinema && styles.paymentMethodActive]} onPress={() => setSelectedCinema(cinema)}>
+              <Text style={[styles.paymentMethodText, effectiveCinema === cinema && styles.paymentMethodTextActive]}>{cinema}</Text>
             </Pressable>
-          );
-        })}
+          ))}
+        </View>
       </View>
 
-      {featuredShowtime ? <NeonButton label="Chọn ghế" onPress={() => onBook(featuredShowtime)} /> : null}
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>2. Chọn ngày</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+          {dateOptions.map((dateKey) => (
+            <Pressable key={dateKey} style={[styles.dateMiniCard, effectiveDateKey === dateKey && styles.dateMiniCardActive]} onPress={() => setSelectedDateKey(dateKey)}>
+              <Text style={[styles.dateMiniWeekday, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeWeekday(dateKey)}</Text>
+              <Text style={[styles.dateMiniDay, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeDayNumber(dateKey)}</Text>
+              <Text style={[styles.dateMiniMonth, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeDateLabel(dateKey)}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>3. Chọn khung giờ</Text>
+        <Text style={styles.accountDetail}>
+          {effectiveCinema && effectiveDateKey ? `${effectiveCinema} • ${formatShowtimeDateLabel(effectiveDateKey)}` : "Chọn rạp và ngày để xem suất chiếu."}
+        </Text>
+      </View>
+
+      {groupedShowtimes.map((group) => (
+        <View key={group.label} style={styles.showtimeGroupSection}>
+          <View style={styles.showtimeGroupHeader}>
+            <Text style={styles.showtimeGroupTitle}>{group.label}</Text>
+            <Text style={styles.showtimeGroupMeta}>{group.items.length} suất</Text>
+          </View>
+          <View style={styles.showtimeGrid}>
+            {group.items.map((item) => {
+              const showtimeTimestamp = new Date(item.startTime).getTime();
+              const isDisabled = showtimeTimestamp < now;
+              const isActive = item.id === (primaryShowtime?.id ?? activeShowtimeId);
+              const countdownLevel = getCountdownLevel(item.startTime, now);
+              const availableSeats = Number(item.availableSeats ?? 0);
+              const totalSeats = Number(item.totalSeats ?? item.seatLayout.flat().length ?? 0);
+              return (
+                <Pressable
+                  key={`${item.id}-${item.roomName}`}
+                  disabled={isDisabled}
+                  style={[styles.showtimeCard, isActive && styles.showtimeCardActive, isDisabled && styles.showtimeCardDisabled]}
+                  onPress={() => setSelectedShowtimeId(item.id)}
+                >
+                  <View style={styles.showtimePillRow}>
+                    <Text style={[styles.showtimePill, isActive && styles.showtimePillActive, isDisabled && styles.showtimePillDisabled]}>{item.formatLabel}</Text>
+                    <Text style={[styles.showtimePillSecondary, isDisabled && styles.showtimePillSecondaryDisabled]}>{item.languageLabel}</Text>
+                  </View>
+                  <Text style={[styles.showtimeTime, isDisabled && styles.showtimeTimeDisabled]}>{item.startTime.slice(11, 16)}</Text>
+                  <Text style={[styles.showtimeCinema, isDisabled && styles.showtimeCinemaDisabled]}>{item.cinemaName}</Text>
+                  <Text style={styles.showtimeInfo}>{item.roomName}</Text>
+                  <View style={styles.showtimeMetaStack}>
+                    <Text style={[styles.showtimePrice, isDisabled && styles.showtimePriceDisabled]}>Từ {formatCurrency(item.basePrice)}</Text>
+                    <Text style={styles.showtimeSeatsLeft}>{availableSeats > 0 ? `Còn ${availableSeats}/${totalSeats} ghế` : "Đã kín chỗ"}</Text>
+                  </View>
+                  <View style={styles.showtimeFooterRow}>
+                    {bookingLoadingShowtimeId === item.id ? (
+                      <View style={styles.showtimeLoadingWrap}>
+                        <ActivityIndicator size="small" color={palette.cyan} />
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.showtimeState,
+                          isActive && styles.showtimeStateActive,
+                          isActive && countdownLevel === "soon" && styles.showtimeStateSoon,
+                          isActive && countdownLevel === "boarding" && styles.showtimeStateBoarding,
+                          isDisabled && styles.showtimeStateDisabled,
+                        ]}
+                      >
+                        {isDisabled ? "Hết giờ" : isActive ? formatCountdownLabel(item.startTime, now) : "Mở bán"}
+                      </Text>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ))}
+
+      {filteredShowtimes.length === 0 ? (
+        <View style={styles.accountRow}>
+          <Text style={styles.accountDetail}>Hiện chưa có suất chiếu phù hợp cho lựa chọn này.</Text>
+        </View>
+      ) : null}
+
+      {primaryShowtime ? <NeonButton label="Chọn ghế" onPress={() => onBook(primaryShowtime)} loading={bookingLoadingMovieId === movie.id} /> : null}
       </ScrollView>
 
       <Modal visible={trailerVisible} animationType="slide" transparent onRequestClose={() => setTrailerVisible(false)}>
@@ -1379,8 +1720,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
             <Text style={styles.stickySecondaryValue}>Tạm tính {formatCurrency(subtotal)}</Text>
           </View>
           <View style={styles.stickyActionBlock}>
-            {holding ? <ActivityIndicator color={palette.cyan} /> : null}
-            <NeonButton label="Tiếp tục" onPress={onContinue} />
+            <NeonButton label="Tiếp tục" onPress={onContinue} loading={holding} />
           </View>
         </BlurView>
       </View>
@@ -1518,8 +1858,7 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
             <Text style={styles.stickySecondaryValue}>Tạm tính {formatCurrency(subtotal)} • Giảm {formatCurrency(estimatedDiscount)}</Text>
           </View>
           <View style={styles.stickyActionBlock}>
-            {confirming ? <ActivityIndicator color={palette.cyan} /> : null}
-            <NeonButton label={`Thanh toán với ${selectedPaymentProvider}`} onPress={onConfirm} />
+            <NeonButton label={`Thanh toán với ${selectedPaymentProvider}`} onPress={onConfirm} loading={confirming} />
           </View>
         </BlurView>
       </View>
@@ -1527,7 +1866,7 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
   );
 }
 
-export function TicketDetailScreen({ ticket, onBack, onScheduleReminder, onCancelReminder }: { ticket: TicketDetail; onBack: () => void; onScheduleReminder: () => void; onCancelReminder: () => void; }) {
+export function TicketDetailScreen({ ticket, onBack, onScheduleReminder, onCancelReminder, reminderLoading = null }: { ticket: TicketDetail; onBack: () => void; onScheduleReminder: () => void; onCancelReminder: () => void; reminderLoading?: "schedule" | "cancel" | null; }) {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <Pressable onPress={onBack}>
@@ -1571,12 +1910,8 @@ export function TicketDetailScreen({ ticket, onBack, onScheduleReminder, onCance
         <Text style={styles.accountDetail}>Voucher: {ticket.voucherCode ?? "Không áp dụng"} • Giảm {formatCurrency(ticket.discountAmount ?? 0)}</Text>
         <Text style={styles.accountDetail}>Mã QR: {ticket.qrPayload ?? "Chưa tạo"}</Text>
         <View style={styles.paymentWrap}>
-          <Pressable style={styles.paymentMethod} onPress={onScheduleReminder}>
-            <Text style={styles.paymentMethodText}>Nhắc trước 1 giờ</Text>
-          </Pressable>
-          <Pressable style={styles.paymentMethod} onPress={onCancelReminder}>
-            <Text style={styles.paymentMethodText}>Hủy nhắc</Text>
-          </Pressable>
+          <NeonButton label="Nhắc trước 1 giờ" variant="secondary" onPress={onScheduleReminder} loading={reminderLoading === "schedule"} />
+          <NeonButton label="Hủy nhắc" variant="secondary" onPress={onCancelReminder} loading={reminderLoading === "cancel"} />
         </View>
         <Text style={styles.accountDetail}>Lịch nhắc: {ticket.reminder ? `${formatDateTime(ticket.reminder.remindAt)} • ${ticket.reminder.status}` : "Chưa đặt lịch nhắc"}</Text>
       </View>

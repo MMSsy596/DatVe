@@ -18,6 +18,7 @@ import {
   TicketDetailScreen,
   TicketsScreen,
   Toast,
+  UserMovieListScreen,
 } from "./src/components";
 import { palette, styles } from "./src/theme";
 import {
@@ -45,6 +46,13 @@ const DEFAULT_API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || "https://datve.up.railway.app/api/v1";
 const SESSION_STORAGE_KEY = "datve.mobile.session";
 const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+const APP_DISPLAY_NAME = "PhimBook";
+const TOAST_HIDE_BUFFER_MS = 260;
+
+function estimateToastVisibleMs(message: string) {
+  const trimmedLength = message.trim().length;
+  return Math.min(7600, Math.max(2400, 2200 + Math.max(0, trimmedLength - 24) * 72));
+}
 
 function demoMediaUrl(path: string) {
   return path.startsWith("/") ? `${DEFAULT_API_ORIGIN}${path}` : `${DEFAULT_API_ORIGIN}/${path}`;
@@ -98,7 +106,9 @@ type RouteState = {
 const tabItems: Array<{ id: TabId; label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; activeIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = [
   { id: "home", label: "Trang chủ", icon: "home-variant-outline", activeIcon: "home-variant" },
   { id: "explore", label: "Khám phá", icon: "compass-outline", activeIcon: "compass" },
-  { id: "tickets", label: "Vé của tôi", icon: "ticket-confirmation-outline", activeIcon: "ticket-confirmation" },
+  { id: "favorites", label: "Yêu thích", icon: "heart-outline", activeIcon: "heart" },
+  { id: "watchlist", label: "Xem sau", icon: "bookmark-outline", activeIcon: "bookmark" },
+  { id: "tickets", label: "Vé", icon: "ticket-confirmation-outline", activeIcon: "ticket-confirmation" },
   { id: "profile", label: "Tài khoản", icon: "account-circle-outline", activeIcon: "account-circle" },
 ];
 
@@ -106,6 +116,8 @@ export default function App() {
   const [activeTab, setActiveTab] = React.useState<TabId>("home");
   const [screen, setScreen] = React.useState<ScreenId>("tabs");
   const [apiBaseUrl, setApiBaseUrl] = React.useState(DEFAULT_API_BASE_URL);
+  const [clockNow, setClockNow] = React.useState(() => new Date());
+  const [networkStatus, setNetworkStatus] = React.useState<"online" | "offline">("offline");
   const [selectedMovie, setSelectedMovie] = React.useState<Movie>(fallbackMovies[0]);
   const [bannersData, setBannersData] = React.useState<Banner[]>(fallbackBanners);
   const [moviesData, setMoviesData] = React.useState<Movie[]>(fallbackMovies);
@@ -123,6 +135,7 @@ export default function App() {
   const [authPhone, setAuthPhone] = React.useState("0900000002");
   const [authPassword, setAuthPassword] = React.useState("User@123");
   const [authLoading, setAuthLoading] = React.useState(false);
+  const [logoutLoading, setLogoutLoading] = React.useState(false);
   const [authReady, setAuthReady] = React.useState(false);
   const [pushToken, setPushToken] = React.useState<string | null>(null);
   const [vouchersData, setVouchersData] = React.useState<Voucher[]>([]);
@@ -140,6 +153,12 @@ export default function App() {
   const [exploreHourFilter, setExploreHourFilter] = React.useState("ALL");
   const [holding, setHolding] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
+  const [favoriteSubmitting, setFavoriteSubmitting] = React.useState(false);
+  const [watchlistSubmitting, setWatchlistSubmitting] = React.useState(false);
+  const [ticketOpeningId, setTicketOpeningId] = React.useState<number | null>(null);
+  const [seatLoadingMovieId, setSeatLoadingMovieId] = React.useState<number | null>(null);
+  const [seatLoadingShowtimeId, setSeatLoadingShowtimeId] = React.useState<number | null>(null);
+  const [reminderLoading, setReminderLoading] = React.useState<"schedule" | "cancel" | null>(null);
   const [heldBookingId, setHeldBookingId] = React.useState<number | null>(null);
   const [selectedComboIds, setSelectedComboIds] = React.useState<number[]>([]);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = React.useState<PaymentProvider>("MOMO");
@@ -177,14 +196,15 @@ export default function App() {
     if (toastHideTimerRef.current) clearTimeout(toastHideTimerRef.current);
 
     const id = Date.now();
-    setToast({ id, message, tone, kind, closing: false });
+    const visibleMs = estimateToastVisibleMs(message);
+    setToast({ id, message, tone, kind, closing: false, visibleMs });
 
     toastCloseTimerRef.current = setTimeout(() => {
       setToast((prev) => (prev?.id === id ? { ...prev, closing: true } : prev));
-    }, 2200);
+    }, visibleMs);
     toastHideTimerRef.current = setTimeout(() => {
       setToast((prev) => (prev?.id === id ? null : prev));
-    }, 2460);
+    }, visibleMs + TOAST_HIDE_BUFFER_MS);
   }, []);
 
   const applyRoute = React.useCallback((route: RouteState) => {
@@ -265,6 +285,16 @@ export default function App() {
   );
 
   const apiOrigin = React.useMemo(() => apiBaseUrl.replace(/\/api\/v1\/?$/, ""), [apiBaseUrl]);
+  const healthcheckUrl = React.useMemo(() => `${apiOrigin}/api/health`, [apiOrigin]);
+  const liveClockLabel = React.useMemo(
+    () =>
+      clockNow.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+    [clockNow]
+  );
 
   const absolutizeAssetUrl = React.useCallback(
     (value?: string | null) => {
@@ -328,19 +358,25 @@ export default function App() {
       setMoviesData(remoteMovies.length > 0 ? remoteMovies : fallbackMovies);
       setSelectedMovie((prev) => remoteMovies.find((item) => item.id === prev.id) ?? remoteMovies[0] ?? prev);
       setShowtimesData(
-        (catalog.showtimes ?? []).map((item: any) => ({
-          id: item.id,
-          movieId: item.movieId,
-          cinemaId: item.cinemaId,
-          roomId: item.roomId,
-          cinemaName: item.cinemaName,
-          roomName: item.roomName,
-          startTime: item.startTime,
-          formatLabel: item.formatLabel,
-          languageLabel: item.languageLabel,
-          basePrice: item.basePrice,
-          seatLayout: item.seatLayout ?? fallbackShowtimes[0].seatLayout,
-        }))
+        (catalog.showtimes ?? []).map((item: any) => {
+          const seatLayout = item.seatLayout ?? fallbackShowtimes[0].seatLayout;
+          const totalSeats = Number(item.totalSeats ?? seatLayout.flat().length ?? 0);
+          return {
+            id: item.id,
+            movieId: item.movieId,
+            cinemaId: item.cinemaId,
+            roomId: item.roomId,
+            cinemaName: item.cinemaName,
+            roomName: item.roomName,
+            startTime: item.startTime,
+            formatLabel: item.formatLabel,
+            languageLabel: item.languageLabel,
+            basePrice: item.basePrice,
+            seatLayout,
+            totalSeats,
+            availableSeats: Number(item.availableSeats ?? totalSeats),
+          };
+        })
       );
       setCombosData(
         ((catalog.foods ?? []).length > 0 ? catalog.foods : fallbackCombos).map((item: any) => ({
@@ -434,6 +470,23 @@ export default function App() {
     });
   }, [authToken, requestJson]);
 
+  const pingHealthcheck = React.useCallback(async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    try {
+      const response = await fetch(healthcheckUrl, {
+        method: "GET",
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      });
+      setNetworkStatus(response.ok ? "online" : "offline");
+    } catch {
+      setNetworkStatus("offline");
+    } finally {
+      clearTimeout(timeout);
+    }
+  }, [healthcheckUrl]);
+
   const fetchSeatMap = React.useCallback(
     async (showtimeId: number, silent = false) => {
       try {
@@ -478,6 +531,19 @@ export default function App() {
     if (!authReady) return;
     loadRemoteData();
   }, [authReady, loadRemoteData]);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => setClockNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  React.useEffect(() => {
+    pingHealthcheck();
+    const interval = setInterval(() => {
+      pingHealthcheck().catch(() => null);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [pingHealthcheck]);
 
   React.useEffect(() => {
     if (pushToken) return;
@@ -571,11 +637,14 @@ export default function App() {
 
   const openSeats = React.useCallback(
     async (movie: Movie, showtime?: ShowtimeItem) => {
+      if (seatLoadingMovieId === movie.id) return;
       if (!sessionUser) {
         promptAuth("Hãy đăng nhập để đặt vé và giữ ghế.", { screen, tab: activeTab });
         return;
       }
       const nextShowtime = showtime ?? showtimesData.find((item) => item.movieId === movie.id) ?? fallbackShowtimes[0];
+      setSeatLoadingMovieId(movie.id);
+      setSeatLoadingShowtimeId(nextShowtime.id);
       setSelectedMovie(movie);
       setSelectedShowtime(nextShowtime);
       setSelectedSeats([]);
@@ -583,27 +652,36 @@ export default function App() {
       setSelectedPaymentProvider("MOMO");
       setSelectedPaymentGatewayMode("SANDBOX");
       setHeldBookingId(null);
-      await fetchSeatMap(nextShowtime.id);
-      navigate({ screen: "seats", tab: activeTab });
+      try {
+        await fetchSeatMap(nextShowtime.id);
+        navigate({ screen: "seats", tab: activeTab });
+      } finally {
+        setSeatLoadingMovieId(null);
+        setSeatLoadingShowtimeId(null);
+      }
     },
-    [activeTab, fetchSeatMap, navigate, promptAuth, screen, sessionUser, showtimesData]
+    [activeTab, fetchSeatMap, navigate, promptAuth, screen, seatLoadingMovieId, sessionUser, showtimesData]
   );
 
   const openTicketDetail = React.useCallback(
     async (ticket: TicketItem) => {
+      if (ticketOpeningId === ticket.bookingId) return;
       if (!sessionUser) {
         promptAuth("Hãy đăng nhập để xem vé của bạn.", { screen: "tabs", tab: activeTab });
         return;
       }
+      setTicketOpeningId(ticket.bookingId);
       try {
         const json = await requestJson(`/bookings/${ticket.bookingId}`);
         setSelectedTicketDetail(json);
         navigate({ screen: "ticket", tab: activeTab });
       } catch (error) {
         showToast(error instanceof Error ? error.message : "Không thể tải chi tiết vé", "error", "ticket");
+      } finally {
+        setTicketOpeningId(null);
       }
     },
-    [activeTab, navigate, promptAuth, requestJson, sessionUser, showToast]
+    [activeTab, navigate, promptAuth, requestJson, sessionUser, showToast, ticketOpeningId]
   );
 
   const syncMovieListToggle = React.useCallback(
@@ -653,13 +731,16 @@ export default function App() {
   }, [showToast]);
 
   const logout = async () => {
+    if (logoutLoading) return;
+    setLogoutLoading(true);
     try {
-      if (authToken) {
-        await requestJson("/auth/logout", { method: "POST" });
+      try {
+        if (authToken) {
+          await requestJson("/auth/logout", { method: "POST" });
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    } finally {
       setAuthToken(null);
       setSessionUser(null);
       setProfileData(null);
@@ -671,15 +752,19 @@ export default function App() {
       setAuthReturnRoute(null);
       resetNavigation({ screen: "tabs", tab: "home" });
       showToast("Đã đăng xuất.", "info", "auth");
+    } finally {
+      setLogoutLoading(false);
     }
   };
 
   const toggleFavorite = async () => {
+    if (favoriteSubmitting) return;
     if (!sessionUser) {
       promptAuth("Hãy đăng nhập để thêm phim vào yêu thích.", { screen, tab: activeTab });
       return;
     }
     const enabled = !favoriteMovieIds.includes(selectedMovie.id);
+    setFavoriteSubmitting(true);
     try {
       await syncMovieListToggle("favorites", selectedMovie.id, enabled);
       setFavoriteMovieIds((prev) =>
@@ -688,15 +773,19 @@ export default function App() {
       showToast(enabled ? "Đã thêm vào yêu thích." : "Đã bỏ khỏi yêu thích.", "success", "favorite");
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Không thể cập nhật yêu thích", "error", "favorite");
+    } finally {
+      setFavoriteSubmitting(false);
     }
   };
 
   const toggleWatchlist = async () => {
+    if (watchlistSubmitting) return;
     if (!sessionUser) {
       promptAuth("Hãy đăng nhập để lưu phim vào xem sau.", { screen, tab: activeTab });
       return;
     }
     const enabled = !watchlistMovieIds.includes(selectedMovie.id);
+    setWatchlistSubmitting(true);
     try {
       await syncMovieListToggle("watchlist", selectedMovie.id, enabled);
       setWatchlistMovieIds((prev) =>
@@ -705,6 +794,8 @@ export default function App() {
       showToast(enabled ? "Đã thêm vào xem sau." : "Đã bỏ khỏi xem sau.", "success", "favorite");
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Không thể cập nhật xem sau", "error", "favorite");
+    } finally {
+      setWatchlistSubmitting(false);
     }
   };
 
@@ -717,6 +808,7 @@ export default function App() {
   }, []);
 
   const holdCurrentSeats = async () => {
+    if (holding) return;
     if (!sessionUser) {
       promptAuth("Hãy đăng nhập để tiếp tục đặt vé.", { screen: "seats", tab: activeTab });
       return;
@@ -744,6 +836,7 @@ export default function App() {
   };
 
   const confirmBooking = async () => {
+    if (confirming) return;
     if (!sessionUser) {
       promptAuth("Hãy đăng nhập để thanh toán vé.", { screen: "checkout", tab: activeTab });
       return;
@@ -812,6 +905,7 @@ export default function App() {
   };
 
   const scheduleReminder = async () => {
+    if (reminderLoading) return;
     if (!sessionUser) {
       promptAuth("Hãy đăng nhập để dùng nhắc lịch cho vé.", { screen, tab: activeTab });
       return;
@@ -819,6 +913,7 @@ export default function App() {
     if (!selectedTicketDetail) return;
     const showtime = new Date(selectedTicketDetail.showtime.startTime);
     const remindAt = new Date(showtime.getTime() - 60 * 60_000).toISOString().slice(0, 19).replace("T", " ");
+    setReminderLoading("schedule");
     try {
       await requestJson(`/bookings/${selectedTicketDetail.id}/reminder`, {
         method: "POST",
@@ -838,15 +933,19 @@ export default function App() {
       await loadRemoteData();
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Không thể đặt nhắc lịch", "error", "reminder");
+    } finally {
+      setReminderLoading(null);
     }
   };
 
   const cancelTicketReminder = async () => {
+    if (reminderLoading) return;
     if (!sessionUser) {
       promptAuth("Hãy đăng nhập để quản lý nhắc lịch.", { screen, tab: activeTab });
       return;
     }
     if (!selectedTicketDetail) return;
+    setReminderLoading("cancel");
     try {
       await requestJson(`/bookings/${selectedTicketDetail.id}/reminder`, { method: "DELETE" });
       showToast("Đã hủy nhắc lịch.", "info", "reminder");
@@ -863,6 +962,8 @@ export default function App() {
       await loadRemoteData();
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Không thể hủy nhắc lịch", "error", "reminder");
+    } finally {
+      setReminderLoading(null);
     }
   };
 
@@ -920,11 +1021,15 @@ export default function App() {
 
   const handleTabPress = React.useCallback(
     (tab: TabId) => {
-      if (!sessionUser && (tab === "tickets" || tab === "profile")) {
+      if (!sessionUser && (tab === "tickets" || tab === "profile" || tab === "favorites" || tab === "watchlist")) {
         promptAuth(
           tab === "tickets"
             ? "Hãy đăng nhập để xem vé của bạn."
-            : "Hãy đăng nhập để xem tài khoản của bạn.",
+            : tab === "favorites"
+              ? "Hãy đăng nhập để xem danh sách yêu thích của bạn."
+              : tab === "watchlist"
+                ? "Hãy đăng nhập để xem danh sách xem sau của bạn."
+                : "Hãy đăng nhập để xem tài khoản của bạn.",
           { screen: "tabs", tab: activeTab }
         );
         return;
@@ -977,6 +1082,10 @@ export default function App() {
         isInWatchlist={watchlistMovieIds.includes(selectedMovie.id)}
         onToggleFavorite={toggleFavorite}
         onToggleWatchlist={toggleWatchlist}
+        favoriteLoading={favoriteSubmitting}
+        watchlistLoading={watchlistSubmitting}
+        bookingLoadingMovieId={seatLoadingMovieId}
+        bookingLoadingShowtimeId={seatLoadingShowtimeId}
       />
     );
   } else if (screen === "seats") {
@@ -993,7 +1102,7 @@ export default function App() {
       />
     );
   } else if (screen === "ticket" && selectedTicketDetail) {
-    content = <TicketDetailScreen ticket={selectedTicketDetail} onBack={() => goBack()} onScheduleReminder={scheduleReminder} onCancelReminder={cancelTicketReminder} />;
+    content = <TicketDetailScreen ticket={selectedTicketDetail} onBack={() => goBack()} onScheduleReminder={scheduleReminder} onCancelReminder={cancelTicketReminder} reminderLoading={reminderLoading} />;
   } else if (screen === "checkout") {
     content = (
       <CheckoutScreen
@@ -1033,6 +1142,9 @@ export default function App() {
         moviesData={moviesData}
         loading={loadingRemote}
         fallbackMovie={fallbackMovies[0]}
+        loadingSeatMovieId={seatLoadingMovieId}
+        favoriteMovieIds={favoriteMovieIds}
+        watchlistMovieIds={watchlistMovieIds}
       />
     );
   } else if (activeTab === "explore") {
@@ -1051,6 +1163,8 @@ export default function App() {
         setHourFilter={setExploreHourFilter}
         cinemaOptions={cinemaOptions}
         genreOptions={genreOptions}
+        favoriteMovieIds={favoriteMovieIds}
+        watchlistMovieIds={watchlistMovieIds}
       />
     );
   } else if (activeTab === "tickets") {
@@ -1062,19 +1176,42 @@ export default function App() {
         moviesData={moviesData}
         loading={loadingRemote}
         fallbackMovie={fallbackMovies[0]}
+        loadingTicketId={ticketOpeningId}
+        loadingSeatMovieId={seatLoadingMovieId}
+        favoriteMovieIds={favoriteMovieIds}
+        watchlistMovieIds={watchlistMovieIds}
+      />
+    );
+  } else if (activeTab === "favorites") {
+    content = (
+      <UserMovieListScreen
+        title="Yêu thích"
+        description="Những phim bạn đánh dấu để quay lại nhanh khi muốn đặt vé hoặc xem lại thông tin."
+        emptyMessage="Chưa có phim yêu thích."
+        movies={favoriteMovies}
+        onMoviePress={openMovie}
+      />
+    );
+  } else if (activeTab === "watchlist") {
+    content = (
+      <UserMovieListScreen
+        title="Xem sau"
+        description="Danh sách phim bạn lưu lại để cân nhắc lịch chiếu, rủ bạn bè hoặc săn suất đẹp sau."
+        emptyMessage="Chưa có phim trong danh sách xem sau."
+        movies={watchlistMovies}
+        onMoviePress={openMovie}
       />
     );
   } else {
     content = (
       <ProfileScreen
         onReload={loadRemoteData}
-        favoriteMovies={favoriteMovies}
-        watchlistMovies={watchlistMovies}
-        onMoviePress={openMovie}
         profile={profileData}
         sessionUser={sessionUser}
         reminders={remindersData}
         onLogout={logout}
+        loading={loadingRemote}
+        logoutLoading={logoutLoading}
       />
     );
   }
@@ -1085,10 +1222,24 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" translucent={false} />
       <View style={[styles.topBar, { paddingTop: 14 + androidTopInset }]}>
-        <Text style={styles.brand}>ĐẶT VÉ</Text>
-        {loadingRemote ? <ActivityIndicator color={palette.cyan} /> : <View style={styles.avatarMini} />}
+        <View style={styles.brandWrap}>
+          <View style={styles.brandLogo}>
+            <MaterialCommunityIcons name="play" size={16} color="#fff7f3" />
+          </View>
+          <View style={styles.brandMeta}>
+            <Text style={styles.brandCaption}>MOVIE BOOKING</Text>
+            <Text style={styles.brand}>{APP_DISPLAY_NAME}</Text>
+          </View>
+        </View>
+        <View style={styles.topBarStatusWrap}>
+          <View style={[styles.networkIndicator, networkStatus === "online" ? styles.networkIndicatorOnline : styles.networkIndicatorOffline]}>
+            <View style={[styles.networkIndicatorCore, networkStatus === "online" ? styles.networkIndicatorCoreOnline : styles.networkIndicatorCoreOffline]} />
+          </View>
+          <Text style={styles.liveClock}>{liveClockLabel}</Text>
+          {loadingRemote ? <ActivityIndicator size="small" color={palette.cyan} /> : null}
+        </View>
       </View>
-      {toast ? <Toast toastId={toast.id} message={toast.message} tone={toast.tone} kind={toast.kind} closing={toast.closing} /> : null}
+      {toast ? <Toast toastId={toast.id} message={toast.message} tone={toast.tone} kind={toast.kind} closing={toast.closing} visibleMs={toast.visibleMs} /> : null}
       {content}
       {screen === "tabs" ? (
         <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event) => setBottomBarWidth(event.nativeEvent.layout.width)}>
