@@ -1701,7 +1701,24 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
 }
 
 export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seats: SeatSelection[]) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
-  const layout = [...seatMapRows].sort((left, right) => left.rowLabel.localeCompare(right.rowLabel, "vi"));
+  const layout = React.useMemo(
+    () =>
+      [...seatMapRows]
+        .sort((left, right) => left.rowLabel.localeCompare(right.rowLabel, "vi"))
+        .map((row) => {
+          const seen = new Set<string>();
+          const seats = row.seats.filter((seat) => {
+            const dedupeKey = `${seat.seatCode}-${seat.seatType}-${String(seat.columnIndex ?? "x")}`;
+            if (seen.has(dedupeKey)) {
+              return false;
+            }
+            seen.add(dedupeKey);
+            return true;
+          });
+          return { ...row, seats };
+        }),
+    [seatMapRows]
+  );
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0);
   const [seatTapHint, setSeatTapHint] = React.useState<{ anchorKey: string; label: string; detail: string; price: number } | null>(null);
@@ -2102,7 +2119,6 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
           <View style={styles.seatSection}>
             {layout.map((row) => renderSeatRow(row))}
           </View>
-          {renderColumnHeader("bottom")}
         </View>
 
         <View style={styles.legendGrid}>
