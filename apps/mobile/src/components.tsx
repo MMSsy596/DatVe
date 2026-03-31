@@ -547,6 +547,15 @@ export function HomeScreen(props: {
   const nowShowingFeatured = nowShowing.slice(0, 12);
   const nowShowingExtended = nowShowing.slice(12);
   const comingSoon = moviesData.filter((movie) => movie.status === "COMING_SOON").slice(0, 10);
+  const hotToday = nowShowing.slice(0, 5);
+  const genrePicks = moviesData.reduce<Movie[]>((acc, movie) => {
+    const mainGenre = movie.genre.split(",")[0]?.trim().toLowerCase();
+    if (!mainGenre || acc.some((item) => item.genre.split(",")[0]?.trim().toLowerCase() === mainGenre)) {
+      return acc;
+    }
+    acc.push(movie);
+    return acc;
+  }, []).slice(0, 6);
   const featuredBanner = bannersData[0];
 
   if (loading && moviesData.length === 0) {
@@ -654,6 +663,55 @@ export function HomeScreen(props: {
                   <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
                 </View>
                 <Text style={styles.rankActionText}>Mở</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
+
+      {hotToday.length > 0 ? (
+        <>
+          <SectionHeader title="Top đặt nhiều hôm nay" action="Ưu tiên ghế đẹp" />
+          <View style={styles.rankingWrap}>
+            {hotToday.map((movie, index) => (
+              <Pressable key={`hot-${movie.id}`} style={styles.rankingRow} onPress={() => onSeatPress(movie)}>
+                <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
+                  {movie.posterUrl ? <Image source={{ uri: movie.posterUrl }} style={styles.explorePosterImage} resizeMode="cover" /> : null}
+                </View>
+                <View style={styles.rankMain}>
+                  <Text style={styles.rankMovie}>{`#${index + 1} ${movie.title}`}</Text>
+                  <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
+                </View>
+                <Text style={styles.rankActionText}>Đặt</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
+
+      {genrePicks.length > 0 ? (
+        <>
+          <SectionHeader title="Phim theo gu" action="Grid 2 cột" />
+          <View style={styles.homeGrid}>
+            {genrePicks.map((movie) => (
+              <Pressable key={`genre-${movie.id}`} style={styles.homeGridCard} onPress={() => onMoviePress(movie)}>
+                <ImageBackground
+                  source={movie.posterUrl ? { uri: movie.posterUrl } : undefined}
+                  imageStyle={styles.posterImage}
+                  style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}
+                >
+                  <View style={styles.posterScrim} />
+                  <Text style={styles.posterBadge}>{movie.badge}</Text>
+                </ImageBackground>
+                <View style={styles.homeGridBody}>
+                  <Text style={styles.homeGridTitle}>{movie.title}</Text>
+                  <Text style={styles.homeGridMeta}>{movie.genre}</Text>
+                  <Text style={styles.homeGridMeta}>{movie.runtime} • IMDb {movie.score}</Text>
+                  <View style={styles.homeGridFooter}>
+                    <Text style={styles.movieScore}>Hot</Text>
+                    <Text style={styles.homeGridAction}>Xem nhanh</Text>
+                  </View>
+                </View>
               </Pressable>
             ))}
           </View>
