@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -1340,8 +1340,8 @@ export function TicketsScreen({ onSeatPress, onTicketPress, tickets, moviesData,
               )}
             </View>
             <Text style={styles.ticketInfo}>{ticket.cinema}</Text>
-            <Text style={styles.ticketInfo}>{ticket.time.replace("T", " • ")} • Ghế {ticket.seat}</Text>
-            <Text style={styles.ticketInfo}>Mã vé {ticket.bookingCode}</Text>
+            <Text style={styles.ticketInfoHighlight}>{ticket.time.replace("T", " • ")} • Ghế {ticket.seat}</Text>
+            <Text style={styles.ticketInfoCode}>Mã vé {ticket.bookingCode}</Text>
           </View>
           <NeonButton label={index === 0 ? "Mở vé" : "Đặt lại"} variant="secondary" onPress={() => onSeatPress(ticketMovie)} loading={loadingSeatMovieId === ticketMovie.id} />
               </>
@@ -1526,8 +1526,8 @@ export function ProfileScreen(props: {
       <View style={styles.accountRow}>
         <Text style={styles.accountTitle}>Nhắc lịch vé</Text>
         {reminders.length === 0 ? <Text style={styles.accountDetail}>Chưa có lịch nhắc nào.</Text> : null}
-        {reminders.slice(0, 4).map((item) => (
-          <View key={`reminder-${item.id}`} style={styles.activityRow}>
+        {reminders.slice(0, 4).map((item, idx) => (
+          <View key={`reminder-${item.id}`} style={[styles.activityRow, idx % 2 === 1 && styles.activityRowAlt]}>
             <Text style={styles.activityTitle}>{item.movie_title}</Text>
             <Text style={styles.activityMeta}>{item.cinema_name} • {formatDateTime(item.start_time)}</Text>
             <Text style={styles.activityTime}>Nhắc lúc {formatDateTime(item.remind_at)} • {item.status}</Text>
