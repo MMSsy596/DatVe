@@ -877,9 +877,36 @@ export default function App() {
 
   const buildAssistantSeatSelection = React.useCallback((rows: SeatMapRow[], ticketCount: number): SeatSelection[] => {
     const normalizedCount = Math.max(1, Math.min(8, Number(ticketCount) || 1));
-    for (const row of rows) {
+
+    // Ưu tiên: VIP > COUPLE > STANDARD
+    const seatTypePriority = (type: string) => {
+      const t = String(type).toUpperCase();
+      if (t === "VIP") return 3;
+      if (t === "COUPLE") return 2;
+      return 1;
+    };
+
+    // Sắp xếp rows: ưu tiên hàng giữa rạp (index gần tổng/2)
+    const totalRows = rows.length;
+    const sortedRows = [...rows].sort((a, b) => {
+      const aIdx = rows.indexOf(a);
+      const bIdx = rows.indexOf(b);
+      const aMidDist = Math.abs(aIdx - totalRows / 2);
+      const bMidDist = Math.abs(bIdx - totalRows / 2);
+      // Ưu tiên hàng giữa, trong cùng khoảng cách ưu tiên ghế xịn hơn
+      return aMidDist - bMidDist;
+    });
+
+    // Tìm cụm ghế liền kề tốt nhất (ưu tiên VIP/COUPLE ở giữa)
+    let bestChunk: typeof rows[0]["seats"] | null = null;
+    let bestScore = -1;
+
+    for (const row of sortedRows) {
       const available = row.seats.filter((seat) => seat.status === "AVAILABLE");
       if (available.length < normalizedCount) continue;
+
+      // Sắp xếp available theo ghế xịn xuất hiện nhiều hơn
+      const totalCols = row.seats.length;
       for (let start = 0; start <= available.length - normalizedCount; start += 1) {
         const chunk = available.slice(start, start + normalizedCount);
         const contiguous = chunk.every((seat, idx) => {
@@ -888,17 +915,38 @@ export default function App() {
           return Number(seat.columnIndex ?? idx) - Number(prev.columnIndex ?? idx - 1) === 1;
         });
         if (!contiguous) continue;
-        return chunk.map((seat) => ({
-          seatCode: seat.seatCode,
-          seatType: String(seat.seatType).toUpperCase() as "STANDARD" | "VIP" | "COUPLE",
-          price: Number(seat.price),
-        }));
+
+        // Score: ưu tiên loại ghế xịn, ghế giữa cột
+        const typeScore = chunk.reduce((s, seat) => s + seatTypePriority(seat.seatType), 0);
+        const firstColIdx = Number(chunk[0].columnIndex ?? start);
+        const lastColIdx = Number(chunk[chunk.length - 1].columnIndex ?? start + normalizedCount - 1);
+        const chunkMid = (firstColIdx + lastColIdx) / 2;
+        const colMidDist = Math.abs(chunkMid - totalCols / 2);
+        const rowIdx = rows.indexOf(row);
+        const rowMidDist = Math.abs(rowIdx - totalRows / 2);
+
+        // Score cao hơn = tốt hơn: ghế xịn * 100 - khoảng cách giữa cột * 5 - khoảng cách giữa hàng * 3
+        const score = typeScore * 100 - colMidDist * 5 - rowMidDist * 3;
+        if (score > bestScore) {
+          bestScore = score;
+          bestChunk = chunk;
+        }
       }
     }
 
+    if (bestChunk) {
+      return bestChunk.map((seat) => ({
+        seatCode: seat.seatCode,
+        seatType: String(seat.seatType).toUpperCase() as "STANDARD" | "VIP" | "COUPLE",
+        price: Number(seat.price),
+      }));
+    }
+
+    // Fallback: lấy ghế bất kỳ còn trống
     const fallback = rows
       .flatMap((row) => row.seats)
       .filter((seat) => seat.status === "AVAILABLE")
+      .sort((a, b) => seatTypePriority(b.seatType) - seatTypePriority(a.seatType))
       .slice(0, normalizedCount);
     return fallback.map((seat) => ({
       seatCode: seat.seatCode,
@@ -993,21 +1041,22 @@ export default function App() {
           return;
         }
 
+        // AI chọn ghế xịn nhất → cho người dùng xem lại sơ đồ ghế trước khi thanh toán
         setSelectedSeats(autoSeats);
-        setHolding(true);
-        const held = await holdAssistantSelection(showtime, autoSeats);
-        setHeldBookingId(held.id);
-        navigate({ screen: "checkout", tab: activeTab });
+        navigate({ screen: "seats", tab: activeTab });
+        const seatTypeLabel = autoSeats.every((s) => s.seatType === "VIP")
+          ? "VIP"
+          : autoSeats.every((s) => s.seatType === "COUPLE")
+          ? "Đôi"
+          : "Standard";
         showToast(
-          comboId
-            ? "AI đã giữ ghế và áp combo đề xuất. Bạn kiểm tra lại trước khi thanh toán."
-            : "AI đã giữ ghế đề xuất. Bạn kiểm tra lại trước khi thanh toán.",
+          `AI đã chọn ${autoSeats.length} ghế ${seatTypeLabel} tốt nhất cho bạn. Bạn có thể điều chỉnh lại rồi nhấn Tiếp tục.`,
           "success",
           "seat"
         );
       } catch (error) {
         navigate({ screen: "seats", tab: activeTab });
-        showToast(error instanceof Error ? error.message : "Không thể giữ ghế tự động.", "error", "seat");
+        showToast(error instanceof Error ? error.message : "Không thể chọn ghế tự động.", "error", "seat");
       } finally {
         setHolding(false);
         setSeatLoadingMovieId(null);
@@ -1951,7 +2000,7 @@ export default function App() {
           </View>
         </View>
       </Modal>
-      {screen === "tabs" ? (
+      {(screen === "tabs" || screen === "auth") ? (
         <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event: any) => setBottomBarWidth(event.nativeEvent.layout.width)}>
           {bottomBarWidth > 0 ? (
             <>

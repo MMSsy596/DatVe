@@ -3,7 +3,7 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { ActivityIndicator, Animated, Easing, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SvgUri } from "react-native-svg";
 import { WebView } from "react-native-webview";
@@ -1177,95 +1177,107 @@ export function AssistantScreen(props: {
   compact?: boolean;
 }) {
   const { messages, input, setInput, sending, seedPrompts, onPromptPress, onSend, onSuggestionPress, trustByDefault, onToggleTrustByDefault, compact = false } = props;
+  const keyboardVerticalOffset = Platform.OS === "ios" ? (compact ? 18 : 108) : 0;
 
   return (
-    <ScrollView contentContainerStyle={[styles.scrollContent, compact && styles.aiCompactScrollContent]} showsVerticalScrollIndicator={false}>
-      <View style={styles.exploreHero}>
-        <Text style={styles.eyebrow}>AI AGENT</Text>
-        <Text style={styles.sectionTitle}>Trợ lý đặt vé, combo và lịch chiếu theo dữ liệu thật.</Text>
-        <Text style={styles.accountDetail}>Bạn có thể hỏi theo giờ rảnh, ngân sách, thể loại yêu thích, hoặc ra lệnh đặt vé nhanh.</Text>
-      </View>
-
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Câu hỏi gợi ý</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-          {seedPrompts.map((prompt) => (
-            <Pressable key={prompt} style={styles.paymentMethod} onPress={() => onPromptPress(prompt)}>
-              <Text style={styles.paymentMethodText}>{prompt}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Tin AI mặc định</Text>
-        <Text style={styles.accountDetail}>Bật để AI bỏ qua bước xác nhận popup khi giữ ghế theo gợi ý.</Text>
-        <Pressable
-          style={[styles.paymentMethod, trustByDefault && styles.paymentMethodActive]}
-          onPress={onToggleTrustByDefault}
-        >
-          <Text style={[styles.paymentMethodText, trustByDefault && styles.paymentMethodTextActive]}>
-            {trustByDefault ? "Đang bật" : "Đang tắt"}
-          </Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Hướng dẫn nhanh</Text>
-        <Text style={styles.accountDetail}>1. Viết nhu cầu cụ thể: giờ rảnh, số người, ngân sách.</Text>
-        <Text style={styles.accountDetail}>2. AI gợi ý phim + suất chiếu + combo phù hợp.</Text>
-        <Text style={styles.accountDetail}>3. Bấm vào gợi ý để đi thẳng sang luồng chọn ghế.</Text>
-      </View>
-
-      <View style={styles.aiChatWrap}>
-        <Text style={styles.accountTitle}>Hội thoại</Text>
-        {messages.length === 0 ? (
-          <Text style={styles.accountDetail}>Chưa có hội thoại. Hãy thử một câu hỏi ở trên.</Text>
-        ) : null}
-        <View style={styles.aiMessageStack}>
-          {messages.map((item) => (
-            <View key={item.id} style={[styles.aiMessageBubble, item.role === "user" ? styles.aiMessageBubbleUser : styles.aiMessageBubbleAssistant]}>
-              <Text style={styles.aiMessageRole}>{item.role === "user" ? "Bạn" : "AI"}</Text>
-              <Text style={styles.aiMessageText}>{item.text}</Text>
-              {item.suggestions?.length ? (
-                <View style={styles.aiSuggestionStack}>
-                  {item.suggestions.map((suggestion) => (
-                    <Pressable
-                      key={`${item.id}-${suggestion.showtimeId}`}
-                      style={styles.aiSuggestionCard}
-                      onPress={() => onSuggestionPress(suggestion.movieId, suggestion.showtimeId, suggestion.comboId, suggestion.ticketCount)}
-                    >
-                      <Text style={styles.aiSuggestionTitle}>{suggestion.movieTitle}</Text>
-                      <Text style={styles.aiSuggestionMeta}>
-                        {suggestion.cinemaName} • {formatDateTime(suggestion.startTime)}
-                      </Text>
-                      <Text style={styles.aiSuggestionMeta}>
-                        Tạm tính: {formatCurrency(suggestion.estimatedTotal)}{suggestion.comboName ? ` • ${suggestion.comboName}` : ""}
-                      </Text>
-                      <Text style={styles.aiSuggestionReason}>{suggestion.reason}</Text>
-                      <Text style={styles.homeGridAction}>Chạm để đặt suất này</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-            </View>
-          ))}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={keyboardVerticalOffset}
+    >
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, compact && styles.aiCompactScrollContent]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
+        <View style={styles.exploreHero}>
+          <Text style={styles.eyebrow}>AI AGENT</Text>
+          <Text style={styles.sectionTitle}>Trợ lý đặt vé, combo và lịch chiếu theo dữ liệu thật.</Text>
+          <Text style={styles.accountDetail}>Bạn có thể hỏi theo giờ rảnh, ngân sách, thể loại yêu thích, hoặc ra lệnh đặt vé nhanh.</Text>
         </View>
-      </View>
 
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Nhập câu hỏi</Text>
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder="Ví dụ: Mình rảnh 20:00 tối mai, 2 người, thích kinh dị, ngân sách 350k..."
-          placeholderTextColor={palette.muted}
-          style={[styles.input, styles.aiInput]}
-          multiline
-        />
-        <NeonButton label={sending ? "AI đang xử lý..." : "Gửi cho AI"} onPress={onSend} loading={sending} />
-      </View>
-    </ScrollView>
+        <View style={styles.accountRow}>
+          <Text style={styles.accountTitle}>Câu hỏi gợi ý</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+            {seedPrompts.map((prompt) => (
+              <Pressable key={prompt} style={styles.paymentMethod} onPress={() => onPromptPress(prompt)}>
+                <Text style={styles.paymentMethodText}>{prompt}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.accountRow}>
+          <Text style={styles.accountTitle}>Tin AI mặc định</Text>
+          <Text style={styles.accountDetail}>Bật để AI bỏ qua bước xác nhận popup khi giữ ghế theo gợi ý.</Text>
+          <Pressable
+            style={[styles.paymentMethod, trustByDefault && styles.paymentMethodActive]}
+            onPress={onToggleTrustByDefault}
+          >
+            <Text style={[styles.paymentMethodText, trustByDefault && styles.paymentMethodTextActive]}>
+              {trustByDefault ? "Đang bật" : "Đang tắt"}
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.accountRow}>
+          <Text style={styles.accountTitle}>Hướng dẫn nhanh</Text>
+          <Text style={styles.accountDetail}>1. Viết nhu cầu cụ thể: giờ rảnh, số người, ngân sách.</Text>
+          <Text style={styles.accountDetail}>2. AI gợi ý phim + suất chiếu + combo phù hợp.</Text>
+          <Text style={styles.accountDetail}>3. Bấm vào gợi ý để đi thẳng sang luồng chọn ghế.</Text>
+        </View>
+
+        <View style={styles.aiChatWrap}>
+          <Text style={styles.accountTitle}>Hội thoại</Text>
+          {messages.length === 0 ? (
+            <Text style={styles.accountDetail}>Chưa có hội thoại. Hãy thử một câu hỏi ở trên.</Text>
+          ) : null}
+          <View style={styles.aiMessageStack}>
+            {messages.map((item) => (
+              <View key={item.id} style={[styles.aiMessageBubble, item.role === "user" ? styles.aiMessageBubbleUser : styles.aiMessageBubbleAssistant]}>
+                <Text style={styles.aiMessageRole}>{item.role === "user" ? "Bạn" : "AI"}</Text>
+                <Text style={styles.aiMessageText}>{item.text}</Text>
+                {item.suggestions?.length ? (
+                  <View style={styles.aiSuggestionStack}>
+                    {item.suggestions.map((suggestion) => (
+                      <Pressable
+                        key={`${item.id}-${suggestion.showtimeId}`}
+                        style={styles.aiSuggestionCard}
+                        onPress={() => onSuggestionPress(suggestion.movieId, suggestion.showtimeId, suggestion.comboId, suggestion.ticketCount)}
+                      >
+                        <Text style={styles.aiSuggestionTitle}>{suggestion.movieTitle}</Text>
+                        <Text style={styles.aiSuggestionMeta}>
+                          {suggestion.cinemaName} • {formatDateTime(suggestion.startTime)}
+                        </Text>
+                        <Text style={styles.aiSuggestionMeta}>
+                          Tạm tính: {formatCurrency(suggestion.estimatedTotal)}{suggestion.comboName ? ` • ${suggestion.comboName}` : ""}
+                        </Text>
+                        <Text style={styles.aiSuggestionReason}>{suggestion.reason}</Text>
+                        <Text style={styles.homeGridAction}>Chạm để đặt suất này</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.accountRow}>
+          <Text style={styles.accountTitle}>Nhập câu hỏi</Text>
+          <TextInput
+            value={input}
+            onChangeText={setInput}
+            placeholder="Ví dụ: Mình rảnh 20:00 tối mai, 2 người, thích kinh dị, ngân sách 350k..."
+            placeholderTextColor={palette.muted}
+            style={[styles.input, styles.aiInput]}
+            multiline
+          />
+          <NeonButton label={sending ? "AI đang xử lý..." : "Gửi cho AI"} onPress={onSend} loading={sending} />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
