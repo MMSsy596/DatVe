@@ -1,12 +1,13 @@
-﻿import React from "react";
+import React from "react";
 import * as SecureStore from "expo-secure-store";
+import * as Haptics from "expo-haptics";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { ActivityIndicator, Animated, BackHandler, Image, Linking, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
+import { ActivityIndicator, Animated, BackHandler, Dimensions, Image, Linking, PanResponder, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
 import {
   CheckoutScreen,
   ExploreScreen,
@@ -48,6 +49,9 @@ const SESSION_STORAGE_KEY = "phimbook.mobile.session";
 const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 const APP_DISPLAY_NAME = "PhimBook";
 const TOAST_HIDE_BUFFER_MS = 260;
+const SWIPE_BACK_EDGE_WIDTH = 24;
+const SWIPE_BACK_TRIGGER_X = 78;
+const SWIPE_BACK_MIN_VELOCITY = 0.18;
 
 function estimateToastVisibleMs(message: string) {
   const trimmedLength = message.trim().length;
@@ -176,6 +180,13 @@ export default function App() {
   const toastHideTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabHighlightX = React.useRef(new Animated.Value(0)).current;
   const tabPressScales = React.useRef(tabItems.map(() => new Animated.Value(1))).current;
+  const routeOpacity = React.useRef(new Animated.Value(1)).current;
+  const routeTranslateX = React.useRef(new Animated.Value(0)).current;
+  const routeTranslateY = React.useRef(new Animated.Value(0)).current;
+  const routeScale = React.useRef(new Animated.Value(1)).current;
+  const swipeBackTranslateX = React.useRef(new Animated.Value(0)).current;
+  const routeDirectionRef = React.useRef<1 | -1 | 0>(0);
+  const previousRouteKeyRef = React.useRef(`${screen}:${activeTab}`);
   const persistSession = React.useCallback(
     async (nextToken: string | null, nextUser: SessionUser | null) => {
       if (!nextToken || !nextUser) {
@@ -219,6 +230,7 @@ export default function App() {
       const currentRoute: RouteState = { screen, tab: activeTab };
       if (currentRoute.screen === route.screen && currentRoute.tab === route.tab) return;
       historyRef.current.push(currentRoute);
+      routeDirectionRef.current = 1;
       applyRoute(route);
     },
     [activeTab, applyRoute, screen]
@@ -227,6 +239,7 @@ export default function App() {
   const resetNavigation = React.useCallback(
     (route: RouteState) => {
       historyRef.current = [];
+      routeDirectionRef.current = 0;
       applyRoute(route);
     },
     [applyRoute]
@@ -235,6 +248,8 @@ export default function App() {
   const goBack = React.useCallback(() => {
     const previousRoute = historyRef.current.pop();
     if (!previousRoute) return false;
+    routeDirectionRef.current = -1;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
     applyRoute(previousRoute);
     return true;
   }, [applyRoute]);
@@ -578,6 +593,54 @@ export default function App() {
       useNativeDriver: true,
     }).start();
   }, [activeTab, bottomBarWidth, tabHighlightX]);
+
+  const routeKey = `${screen}:${activeTab}`;
+
+  React.useEffect(() => {
+    if (previousRouteKeyRef.current === routeKey) return;
+    const direction = routeDirectionRef.current;
+    previousRouteKeyRef.current = routeKey;
+    routeDirectionRef.current = 0;
+    const startX = direction === 0 ? 0 : direction > 0 ? 22 : -22;
+    const startY = direction === 0 ? 8 : 0;
+
+    routeOpacity.setValue(direction === 0 ? 0.88 : 0.82);
+    routeScale.setValue(direction === 0 ? 0.992 : 0.98);
+    routeTranslateX.setValue(startX);
+    routeTranslateY.setValue(startY);
+
+    Animated.parallel([
+      Animated.timing(routeOpacity, {
+        toValue: 1,
+        duration: direction === 0 ? 180 : 220,
+        useNativeDriver: true,
+      }),
+      Animated.spring(routeScale, {
+        toValue: 1,
+        tension: 110,
+        friction: 14,
+        useNativeDriver: true,
+      }),
+      Animated.spring(routeTranslateX, {
+        toValue: 0,
+        tension: 92,
+        friction: 15,
+        useNativeDriver: true,
+      }),
+      Animated.spring(routeTranslateY, {
+        toValue: 0,
+        tension: 96,
+        friction: 13,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [activeTab, routeKey, routeOpacity, routeScale, routeTranslateX, routeTranslateY, screen]);
+
+  React.useEffect(() => {
+    if (screen === "tabs") {
+      swipeBackTranslateX.setValue(0);
+    }
+  }, [screen, swipeBackTranslateX]);
 
   const animateTabPress = React.useCallback(
     (index: number, pressed: boolean) => {
@@ -1040,6 +1103,65 @@ export default function App() {
     });
   }, [exploreCinemaFilter, exploreFavoriteFilter, exploreGenreFilter, exploreHourFilter, exploreStatusFilter, exploreWatchlistFilter, favoriteMovieIds, moviesData, showtimesData, watchlistMovieIds]);
 
+  const canSwipeBack = screen !== "tabs" && historyRef.current.length > 0;
+
+  const swipeBackPanResponder = React.useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          canSwipeBack &&
+          gestureState.moveX <= SWIPE_BACK_EDGE_WIDTH &&
+          gestureState.dx > 14 &&
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.25,
+        onPanResponderMove: (_, gestureState) => {
+          swipeBackTranslateX.setValue(Math.max(0, gestureState.dx));
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          const screenWidth = Dimensions.get("window").width;
+          const shouldGoBack =
+            gestureState.dx >= SWIPE_BACK_TRIGGER_X ||
+            (gestureState.vx > SWIPE_BACK_MIN_VELOCITY && gestureState.dx > 20);
+
+          if (shouldGoBack) {
+            Animated.timing(swipeBackTranslateX, {
+              toValue: screenWidth * 0.26,
+              duration: 120,
+              useNativeDriver: true,
+            }).start(() => {
+              goBack();
+              swipeBackTranslateX.setValue(0);
+            });
+            return;
+          }
+
+          Animated.spring(swipeBackTranslateX, {
+            toValue: 0,
+            tension: 130,
+            friction: 16,
+            useNativeDriver: true,
+          }).start();
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(swipeBackTranslateX, {
+            toValue: 0,
+            tension: 130,
+            friction: 16,
+            useNativeDriver: true,
+          }).start();
+        },
+      }),
+    [canSwipeBack, goBack, swipeBackTranslateX]
+  );
+
+  const contentAnimatedStyle = {
+    opacity: routeOpacity,
+    transform: [
+      { translateX: Animated.add(routeTranslateX, swipeBackTranslateX) },
+      { translateY: routeTranslateY },
+      { scale: routeScale },
+    ],
+  };
+
   let content: React.ReactNode = null;
   const activePillWidth = bottomBarWidth > 0 ? (bottomBarWidth - 24) / tabItems.length : 0;
 
@@ -1268,9 +1390,14 @@ export default function App() {
         </View>
       </View>
       {toast ? <Toast toastId={toast.id} message={toast.message} tone={toast.tone} kind={toast.kind} closing={toast.closing} visibleMs={toast.visibleMs} topOffset={androidTopInset + 14} /> : null}
-      {content}
+      <Animated.View style={[styles.routeFrame, contentAnimatedStyle]} {...(canSwipeBack ? swipeBackPanResponder.panHandlers : {})}>
+        {content}
+      </Animated.View>
+      {canSwipeBack ? (
+        <Animated.View pointerEvents="none" style={[styles.swipeBackCue, { opacity: swipeBackTranslateX.interpolate({ inputRange: [0, 44], outputRange: [0.16, 0.55], extrapolate: "clamp" }) }]} />
+      ) : null}
       {screen === "tabs" ? (
-        <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event) => setBottomBarWidth(event.nativeEvent.layout.width)}>
+        <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event: any) => setBottomBarWidth(event.nativeEvent.layout.width)}>
           {bottomBarWidth > 0 ? (
             <>
               <Animated.View
@@ -1299,7 +1426,10 @@ export default function App() {
             <Pressable
               key={item.id}
               onPress={() => handleTabPress(item.id)}
-              onPressIn={() => animateTabPress(index, true)}
+              onPressIn={() => {
+                Haptics.selectionAsync().catch(() => null);
+                animateTabPress(index, true);
+              }}
               onPressOut={() => animateTabPress(index, false)}
               style={styles.tabPressable}
               hitSlop={10}

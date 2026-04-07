@@ -22,6 +22,22 @@ export const palette = {
 
 export const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: palette.bg },
+  routeFrame: { flex: 1 },
+  swipeBackCue: {
+    position: "absolute",
+    left: 0,
+    top: 84,
+    bottom: 18,
+    width: 5,
+    borderTopRightRadius: 999,
+    borderBottomRightRadius: 999,
+    backgroundColor: "rgba(115,246,221,0.7)",
+    shadowColor: palette.cyan,
+    shadowOpacity: 0.42,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 12,
+  },
   topBar: {
     paddingHorizontal: 20,
     paddingTop: 14,
