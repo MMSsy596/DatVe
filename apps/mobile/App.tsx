@@ -9,6 +9,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { ActivityIndicator, Animated, BackHandler, Dimensions, Image, Linking, PanResponder, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
 import {
+  AssistantScreen,
   CheckoutScreen,
   ExploreScreen,
   AuthScreen,
@@ -23,6 +24,7 @@ import {
 } from "./src/components";
 import { palette, styles } from "./src/theme";
 import {
+  AssistantMessage,
   Banner,
   ComboItem,
   Movie,
@@ -52,6 +54,13 @@ const TOAST_HIDE_BUFFER_MS = 260;
 const SWIPE_BACK_EDGE_WIDTH = Platform.OS === "android" ? 30 : 24;
 const SWIPE_BACK_TRIGGER_X = Platform.OS === "android" ? 94 : 78;
 const SWIPE_BACK_MIN_VELOCITY = Platform.OS === "android" ? 0.24 : 0.18;
+const ASSISTANT_BUBBLE_SIZE = 58;
+const ASSISTANT_SEED_PROMPTS = [
+  "Mình rảnh 20:00 tối nay, gợi ý phim đang hot.",
+  "Ngân sách 350k cho 2 người, chọn phim + combo giúp mình.",
+  "Mình thích hành động, rạp nào còn nhiều ghế đẹp?",
+  "Gợi ý suất chiếu ngày mai sau 19:30.",
+];
 
 function estimateToastVisibleMs(message: string) {
   const trimmedLength = message.trim().length;
@@ -110,6 +119,7 @@ type RouteState = {
 const tabItems: Array<{ id: TabId; label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; activeIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = [
   { id: "home", label: "Trang chủ", icon: "home-variant-outline", activeIcon: "home-variant" },
   { id: "explore", label: "Khám phá", icon: "compass-outline", activeIcon: "compass" },
+  { id: "assistant", label: "AI", icon: "robot-outline", activeIcon: "robot" },
   { id: "favorites", label: "Yêu thích", icon: "heart-outline", activeIcon: "heart" },
   { id: "watchlist", label: "Xem sau", icon: "bookmark-outline", activeIcon: "bookmark" },
   { id: "tickets", label: "Vé", icon: "ticket-confirmation-outline", activeIcon: "ticket-confirmation" },
@@ -176,6 +186,17 @@ export default function App() {
   const [bottomBarWidth, setBottomBarWidth] = React.useState(0);
   const [authGateMessage, setAuthGateMessage] = React.useState<string | null>(null);
   const [authReturnRoute, setAuthReturnRoute] = React.useState<RouteState | null>(null);
+  const [assistantMessages, setAssistantMessages] = React.useState<AssistantMessage[]>([
+    {
+      id: "assistant-welcome",
+      role: "assistant",
+      text: "Xin chào NanBao 男宝, mình là trợ lý AI đặt vé. Bạn có thể hỏi theo giờ rảnh, gu phim, ngân sách hoặc yêu cầu gợi ý combo.",
+      createdAt: new Date().toISOString(),
+    },
+  ]);
+  const [assistantInput, setAssistantInput] = React.useState("");
+  const [assistantSending, setAssistantSending] = React.useState(false);
+  const [assistantMiniOpen, setAssistantMiniOpen] = React.useState(false);
   const historyRef = React.useRef<RouteState[]>([]);
   const toastCloseTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastHideTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -188,6 +209,10 @@ export default function App() {
   const swipeBackTranslateX = React.useRef(new Animated.Value(0)).current;
   const routeDirectionRef = React.useRef<1 | -1 | 0>(0);
   const previousRouteKeyRef = React.useRef(`${screen}:${activeTab}`);
+  const assistantBubblePos = React.useRef(new Animated.ValueXY({
+    x: Math.max(12, Dimensions.get("window").width - 12 - ASSISTANT_BUBBLE_SIZE),
+    y: Math.max(96, Dimensions.get("window").height - 210 - ASSISTANT_BUBBLE_SIZE),
+  })).current;
   const persistSession = React.useCallback(
     async (nextToken: string | null, nextUser: SessionUser | null) => {
       if (!nextToken || !nextUser) {
@@ -773,6 +798,83 @@ export default function App() {
     [apiBaseUrl, apiHeaders]
   );
 
+  const openAssistantSuggestion = React.useCallback(
+    (movieId: number, showtimeId: number) => {
+      const movie = moviesData.find((item) => item.id === movieId);
+      const showtime = showtimesData.find((item) => item.id === showtimeId);
+      if (!movie || !showtime) {
+        showToast("Suất chiếu AI gợi ý không còn khả dụng. Bạn thử làm mới dữ liệu nhé.", "error", "system");
+        return;
+      }
+      setAssistantMiniOpen(false);
+      openSeats(movie, showtime);
+    },
+    [moviesData, openSeats, showtimesData, showToast]
+  );
+
+  const askAssistant = React.useCallback(
+    async (forcedMessage?: string) => {
+      const text = (forcedMessage ?? assistantInput).trim();
+      if (!text || assistantSending) return;
+
+      const userMessage: AssistantMessage = {
+        id: `${Date.now()}-user`,
+        role: "user",
+        text,
+        createdAt: new Date().toISOString(),
+      };
+      setAssistantMessages((prev) => [...prev, userMessage]);
+      setAssistantInput("");
+      setAssistantSending(true);
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/ai/assistant`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...apiHeaders(),
+          },
+          body: JSON.stringify({
+            message: text,
+            context: {
+              now: new Date().toISOString(),
+              favoriteMovieIds,
+              watchlistMovieIds,
+              selectedMovieId: selectedMovie.id,
+            },
+          }),
+        });
+        const json = await response.json();
+        if (!response.ok) {
+          throw new Error(json.error ?? "AI đang bận, vui lòng thử lại.");
+        }
+
+        const assistantMessage: AssistantMessage = {
+          id: `${Date.now()}-assistant`,
+          role: "assistant",
+          text: String(json.answer ?? "Mình chưa có đề xuất phù hợp ở lúc này."),
+          createdAt: new Date().toISOString(),
+          suggestions: Array.isArray(json.suggestions) ? json.suggestions : [],
+          source: json.source === "llm" ? "llm" : "rule-based",
+        };
+        setAssistantMessages((prev) => [...prev, assistantMessage]);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "AI đang tạm lỗi.";
+        showToast(message, "error", "system");
+        const assistantMessage: AssistantMessage = {
+          id: `${Date.now()}-assistant-error`,
+          role: "assistant",
+          text: "Mình chưa xử lý được yêu cầu vừa rồi. Bạn thử nói cụ thể hơn: giờ rảnh, số người, ngân sách và thể loại nhé.",
+          createdAt: new Date().toISOString(),
+        };
+        setAssistantMessages((prev) => [...prev, assistantMessage]);
+      } finally {
+        setAssistantSending(false);
+      }
+    },
+    [apiBaseUrl, apiHeaders, assistantInput, assistantSending, favoriteMovieIds, selectedMovie.id, showToast, watchlistMovieIds]
+  );
+
   const submitAuth = async () => {
     setAuthLoading(true);
     try {
@@ -1164,6 +1266,35 @@ export default function App() {
     ],
   };
 
+  const assistantBubblePanResponder = React.useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 6 || Math.abs(gestureState.dy) > 6,
+        onPanResponderGrant: () => {
+          assistantBubblePos.extractOffset();
+        },
+        onPanResponderMove: Animated.event([null, { dx: assistantBubblePos.x, dy: assistantBubblePos.y }], {
+          useNativeDriver: false,
+        }),
+        onPanResponderRelease: () => {
+          assistantBubblePos.flattenOffset();
+          const { width, height } = Dimensions.get("window");
+          const rawX = Number((assistantBubblePos.x as unknown as { _value?: number })._value ?? 0);
+          const rawY = Number((assistantBubblePos.y as unknown as { _value?: number })._value ?? 0);
+          const clampedX = Math.min(Math.max(rawX, 12), width - ASSISTANT_BUBBLE_SIZE - 12);
+          const clampedY = Math.min(Math.max(rawY, 96), height - ASSISTANT_BUBBLE_SIZE - 116);
+          Animated.spring(assistantBubblePos, {
+            toValue: { x: clampedX, y: clampedY },
+            useNativeDriver: false,
+            tension: 120,
+            friction: 12,
+          }).start();
+        },
+      }),
+    [assistantBubblePos]
+  );
+
   let content: React.ReactNode = null;
   const activePillWidth = bottomBarWidth > 0 ? (bottomBarWidth - 24) / tabItems.length : 0;
 
@@ -1320,6 +1451,19 @@ export default function App() {
         watchlistMovieIds={watchlistMovieIds}
       />
     );
+  } else if (activeTab === "assistant") {
+    content = (
+      <AssistantScreen
+        messages={assistantMessages}
+        input={assistantInput}
+        setInput={setAssistantInput}
+        sending={assistantSending}
+        seedPrompts={ASSISTANT_SEED_PROMPTS}
+        onPromptPress={(prompt) => askAssistant(prompt)}
+        onSend={() => askAssistant()}
+        onSuggestionPress={openAssistantSuggestion}
+      />
+    );
   } else if (activeTab === "tickets") {
     content = (
       <TicketsScreen
@@ -1399,6 +1543,41 @@ export default function App() {
       {canSwipeBack ? (
         <Animated.View pointerEvents="none" style={[styles.swipeBackCue, { opacity: swipeBackTranslateX.interpolate({ inputRange: [0, 44], outputRange: [0.16, 0.55], extrapolate: "clamp" }) }]} />
       ) : null}
+      {assistantMiniOpen ? (
+        <View style={styles.aiMiniPanel}>
+          <View style={styles.aiMiniHeader}>
+            <Text style={styles.aiMiniTitle}>Trợ lý AI</Text>
+            <Pressable onPress={() => setAssistantMiniOpen(false)}>
+              <Text style={styles.backLink}>Đóng</Text>
+            </Pressable>
+          </View>
+          <AssistantScreen
+            compact
+            messages={assistantMessages}
+            input={assistantInput}
+            setInput={setAssistantInput}
+            sending={assistantSending}
+            seedPrompts={ASSISTANT_SEED_PROMPTS}
+            onPromptPress={(prompt) => askAssistant(prompt)}
+            onSend={() => askAssistant()}
+            onSuggestionPress={openAssistantSuggestion}
+          />
+        </View>
+      ) : null}
+      <Animated.View
+        style={[
+          styles.aiFab,
+          {
+            transform: [{ translateX: assistantBubblePos.x }, { translateY: assistantBubblePos.y }],
+          },
+        ]}
+        {...assistantBubblePanResponder.panHandlers}
+      >
+        <Pressable onPress={() => setAssistantMiniOpen((prev) => !prev)} style={{ alignItems: "center", gap: 1 }} hitSlop={8}>
+          <MaterialCommunityIcons name="robot" size={22} color="#fff7f2" />
+          <Text style={styles.aiFabLabel}>AI</Text>
+        </Pressable>
+      </Animated.View>
       {screen === "tabs" ? (
         <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event: any) => setBottomBarWidth(event.nativeEvent.layout.width)}>
           {bottomBarWidth > 0 ? (

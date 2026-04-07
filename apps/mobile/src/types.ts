@@ -1,6 +1,6 @@
 import React from "react";
 
-export type TabId = "home" | "explore" | "favorites" | "watchlist" | "tickets" | "profile";
+export type TabId = "home" | "explore" | "assistant" | "favorites" | "watchlist" | "tickets" | "profile";
 export type ScreenId = "tabs" | "movie" | "seats" | "checkout" | "ticket" | "auth";
 export type PaymentProvider = "MOMO" | "ZALOPAY" | "VNPAY";
 export type ToastTone = "info" | "success" | "error";
@@ -175,6 +175,29 @@ export type ReminderItem = {
   remind_at: string;
   status: string;
   start_time: string;
+};
+
+export type AssistantSuggestion = {
+  movieId: number;
+  showtimeId: number;
+  comboId: number | null;
+  movieTitle: string;
+  cinemaName: string;
+  startTime: string;
+  estimatedTotal: number;
+  reason: string;
+  comboName?: string | null;
+};
+
+export type AssistantSource = "llm" | "rule-based";
+
+export type AssistantMessage = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  createdAt: string;
+  suggestions?: AssistantSuggestion[];
+  source?: AssistantSource;
 };
 
 export type Setter<T> = React.Dispatch<React.SetStateAction<T>>;
