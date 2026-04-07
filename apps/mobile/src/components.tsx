@@ -873,18 +873,24 @@ export function HomeScreen(props: {
 
       <StaggerSection index={1}>
         <View style={styles.quickStrip}>
-        <View style={styles.quickStripItem}>
-          <Text style={styles.quickStripLabel}>Đang chiếu</Text>
-          <Text style={styles.quickStripValue}>{moviesData.filter((movie) => movie.status !== "COMING_SOON").length}</Text>
-        </View>
-        <View style={styles.quickStripItem}>
-          <Text style={styles.quickStripLabel}>Sắp chiếu</Text>
-          <Text style={styles.quickStripValue}>{moviesData.filter((movie) => movie.status === "COMING_SOON").length}</Text>
-        </View>
-        <View style={styles.quickStripItem}>
-          <Text style={styles.quickStripLabel}>Thanh toán</Text>
-          <Text style={styles.quickStripValue}>MoMo • ZaloPay</Text>
-        </View>
+          <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
+            <View style={styles.quickStripItem}>
+              <Text style={styles.quickStripLabel}>Đang chiếu</Text>
+              <Text style={styles.quickStripValue}>{moviesData.filter((movie) => movie.status !== "COMING_SOON").length}</Text>
+            </View>
+          </BlurView>
+          <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
+            <View style={styles.quickStripItem}>
+              <Text style={styles.quickStripLabel}>Sắp chiếu</Text>
+              <Text style={styles.quickStripValue}>{moviesData.filter((movie) => movie.status === "COMING_SOON").length}</Text>
+            </View>
+          </BlurView>
+          <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
+            <View style={styles.quickStripItem}>
+              <Text style={styles.quickStripLabel}>Thanh toán</Text>
+              <Text style={styles.quickStripValue}>MoMo • ZaloPay</Text>
+            </View>
+          </BlurView>
         </View>
       </StaggerSection>
 
@@ -908,9 +914,12 @@ export function HomeScreen(props: {
           return (
           <Pressable key={movie.id} style={[styles.movieCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
             <MediaBackground uri={movie.posterUrl} mediaStyle={styles.posterImage} style={[styles.poster, { backgroundColor: movie.tone }]}>
+              <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
               <View style={styles.posterScrim} />
               <View style={styles.posterTopRow}>
-                <Text style={styles.posterBadge}>{movie.badge}</Text>
+                <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
+                  <Text style={styles.posterBadge}>{movie.badge}</Text>
+                </BlurView>
                 <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
               </View>
             </MediaBackground>
@@ -983,9 +992,12 @@ export function HomeScreen(props: {
               return (
               <Pressable key={`genre-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
                 <MediaBackground uri={movie.posterUrl} mediaStyle={styles.posterImage} style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}>
+                  <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
                   <View style={styles.posterScrim} />
                   <View style={styles.posterTopRow}>
-                    <Text style={styles.posterBadge}>{movie.badge}</Text>
+                    <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
+                      <Text style={styles.posterBadge}>{movie.badge}</Text>
+                    </BlurView>
                     <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                   </View>
                 </MediaBackground>
@@ -1585,8 +1597,11 @@ export function UserMovieListScreen(props: {
             <Pressable key={`grid-${title}-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
               <View style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}>
                 <MediaAsset uri={movie.posterUrl} style={styles.homeGridPosterImage} />
+                <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
                 <View style={styles.posterTopRow}>
-                  <Text style={styles.posterBadge}>{movie.badge}</Text>
+                  <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
+                    <Text style={styles.posterBadge}>{movie.badge}</Text>
+                  </BlurView>
                   <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                 </View>
               </View>
@@ -1759,7 +1774,9 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
       <View style={[styles.detailPoster, { backgroundColor: movie.tone }]}>
         <MediaAsset uri={movie.bannerUrl} style={styles.detailPosterImage} />
         <View style={styles.detailPosterScrim} />
-        <Text style={styles.posterBadge}>{movie.badge}</Text>
+        <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
+          <Text style={styles.posterBadge}>{movie.badge}</Text>
+        </BlurView>
         <View style={styles.detailOverlayMeta}>
           <Text style={styles.detailOverlayText}>IMDb {movie.score}</Text>
           <Text style={styles.detailOverlayText}>{movie.status === "COMING_SOON" ? "Sắp chiếu" : "Đang chiếu"}</Text>

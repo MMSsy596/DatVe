@@ -22,6 +22,14 @@ import {
   Toast,
   UserMovieListScreen,
 } from "./src/components";
+import {
+  useFonts,
+  BeVietnamPro_400Regular,
+  BeVietnamPro_500Medium,
+  BeVietnamPro_700Bold,
+  BeVietnamPro_800ExtraBold,
+  BeVietnamPro_900Black,
+} from "@expo-google-fonts/be-vietnam-pro";
 import { palette, styles } from "./src/theme";
 import {
   AssistantMessage,
@@ -145,6 +153,13 @@ const tabItems: Array<{ id: TabId; label: string; icon: React.ComponentProps<typ
 ];
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    "BeVietnamPro-Regular": BeVietnamPro_400Regular,
+    "BeVietnamPro-Medium": BeVietnamPro_500Medium,
+    "BeVietnamPro-Bold": BeVietnamPro_700Bold,
+    "BeVietnamPro-ExtraBold": BeVietnamPro_800ExtraBold,
+    "BeVietnamPro-Black": BeVietnamPro_900Black,
+  });
   const [activeTab, setActiveTab] = React.useState<TabId>("home");
   const [screen, setScreen] = React.useState<ScreenId>("tabs");
   const [apiBaseUrl, setApiBaseUrl] = React.useState(DEFAULT_API_BASE_URL);
@@ -1635,11 +1650,11 @@ export default function App() {
     [activeTab, navigate, promptAuth, sessionUser]
   );
 
-  if (!authReady) {
+  if (!authReady || !fontsLoaded) {
     content = (
       <View style={[styles.scrollContent, { flex: 1, justifyContent: "center", alignItems: "center" }]}>
-        <ActivityIndicator color={palette.cyan} />
-        <Text style={styles.accountDetail}>Đang khôi phục phiên đăng nhập...</Text>
+        <ActivityIndicator color={palette.red} />
+        <Text style={{ color: palette.muted, fontSize: 13, marginTop: 12 }}>Đang chuẩn bị dữ liệu...</Text>
       </View>
     );
   } else if (screen === "auth") {
