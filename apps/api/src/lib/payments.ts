@@ -128,12 +128,16 @@ export async function getPaymentDetail(providerTxnRef: string) {
   const pool = getPool();
   const [[payment]] = await pool.query<RowDataPacket[]>(
     `SELECT p.id, p.booking_id, p.provider, p.mode, p.gateway_mode, p.provider_txn_ref, p.provider_order_id, p.amount, p.status, p.checkout_url, p.return_url,
-            b.booking_code, m.title AS movie_title, c.name AS cinema_name, s.start_time
+            b.booking_code, b.voucher_code, b.discount_amount,
+            m.title AS movie_title, c.name AS cinema_name,
+            s.start_time, s.format_label, s.language_label,
+            r.name AS room_name
      FROM payments p
      INNER JOIN bookings b ON b.id = p.booking_id
      INNER JOIN showtimes s ON s.id = b.showtime_id
      INNER JOIN movies m ON m.id = s.movie_id
      INNER JOIN cinemas c ON c.id = s.cinema_id
+     INNER JOIN rooms r ON r.id = s.room_id
      WHERE p.provider_txn_ref = ?
      LIMIT 1`,
     [providerTxnRef]
@@ -142,6 +146,19 @@ export async function getPaymentDetail(providerTxnRef: string) {
   if (!payment) {
     return null;
   }
+
+  const [seats] = await pool.query<RowDataPacket[]>(
+    `SELECT seat_code, seat_type, price FROM booking_seats WHERE booking_id = ? ORDER BY seat_code ASC`,
+    [payment.booking_id]
+  );
+
+  const [items] = await pool.query<RowDataPacket[]>(
+    `SELECT bi.quantity, bi.price, f.name
+     FROM booking_items bi
+     INNER JOIN foods f ON f.id = bi.food_id
+     WHERE bi.booking_id = ?`,
+    [payment.booking_id]
+  );
 
   return {
     id: payment.id,
@@ -156,9 +173,24 @@ export async function getPaymentDetail(providerTxnRef: string) {
     checkoutUrl: payment.checkout_url,
     returnUrl: payment.return_url,
     bookingCode: payment.booking_code,
+    voucherCode: payment.voucher_code ?? null,
+    discountAmount: Number(payment.discount_amount ?? 0),
     movieTitle: payment.movie_title,
     cinemaName: payment.cinema_name,
+    roomName: payment.room_name,
     startTime: payment.start_time,
+    formatLabel: payment.format_label ?? null,
+    languageLabel: payment.language_label ?? null,
+    seats: (seats as RowDataPacket[]).map((s) => ({
+      seatCode: s.seat_code as string,
+      seatType: s.seat_type as string,
+      price: Number(s.price),
+    })),
+    items: (items as RowDataPacket[]).map((i) => ({
+      name: i.name as string,
+      quantity: Number(i.quantity),
+      price: Number(i.price),
+    })),
   };
 }
 
