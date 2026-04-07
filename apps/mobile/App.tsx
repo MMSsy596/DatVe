@@ -49,9 +49,9 @@ const SESSION_STORAGE_KEY = "phimbook.mobile.session";
 const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 const APP_DISPLAY_NAME = "PhimBook";
 const TOAST_HIDE_BUFFER_MS = 260;
-const SWIPE_BACK_EDGE_WIDTH = 24;
-const SWIPE_BACK_TRIGGER_X = 78;
-const SWIPE_BACK_MIN_VELOCITY = 0.18;
+const SWIPE_BACK_EDGE_WIDTH = Platform.OS === "android" ? 30 : 24;
+const SWIPE_BACK_TRIGGER_X = Platform.OS === "android" ? 94 : 78;
+const SWIPE_BACK_MIN_VELOCITY = Platform.OS === "android" ? 0.24 : 0.18;
 
 function estimateToastVisibleMs(message: string) {
   const trimmedLength = message.trim().length;
@@ -123,6 +123,7 @@ export default function App() {
   const [clockNow, setClockNow] = React.useState(() => new Date());
   const [networkStatus, setNetworkStatus] = React.useState<"online" | "offline">("offline");
   const [selectedMovie, setSelectedMovie] = React.useState<Movie>(fallbackMovies[0]);
+  const [movieEntrySource, setMovieEntrySource] = React.useState<"home" | "default">("default");
   const [bannersData, setBannersData] = React.useState<Banner[]>(fallbackBanners);
   const [moviesData, setMoviesData] = React.useState<Movie[]>(fallbackMovies);
   const [showtimesData, setShowtimesData] = React.useState<ShowtimeItem[]>(fallbackShowtimes);
@@ -249,7 +250,7 @@ export default function App() {
     const previousRoute = historyRef.current.pop();
     if (!previousRoute) return false;
     routeDirectionRef.current = -1;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
+    Haptics.impactAsync(Platform.OS === "android" ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => null);
     applyRoute(previousRoute);
     return true;
   }, [applyRoute]);
@@ -701,7 +702,8 @@ export default function App() {
     return () => clearInterval(interval);
   }, [fetchSeatMap, screen, selectedShowtime, showToast]);
 
-  const openMovie = React.useCallback((movie: Movie) => {
+  const openMovie = React.useCallback((movie: Movie, source: "home" | "default" = "default") => {
+    setMovieEntrySource(source);
     setSelectedMovie(movie);
     navigate({ screen: "movie", tab: activeTab });
   }, [activeTab, navigate]);
@@ -1224,6 +1226,7 @@ export default function App() {
         onBack={() => goBack()}
         onBook={(showtime) => openSeats(selectedMovie, showtime)}
         showtimesData={showtimesData}
+        entrySource={movieEntrySource}
         isFavorite={favoriteMovieIds.includes(selectedMovie.id)}
         isInWatchlist={watchlistMovieIds.includes(selectedMovie.id)}
         onToggleFavorite={toggleFavorite}
@@ -1427,7 +1430,11 @@ export default function App() {
               key={item.id}
               onPress={() => handleTabPress(item.id)}
               onPressIn={() => {
-                Haptics.selectionAsync().catch(() => null);
+                if (Platform.OS === "android") {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
+                } else {
+                  Haptics.selectionAsync().catch(() => null);
+                }
                 animateTabPress(index, true);
               }}
               onPressOut={() => animateTabPress(index, false)}
