@@ -57,10 +57,10 @@ const SWIPE_BACK_TRIGGER_X = Platform.OS === "android" ? 94 : 78;
 const SWIPE_BACK_MIN_VELOCITY = Platform.OS === "android" ? 0.24 : 0.18;
 const ASSISTANT_BUBBLE_SIZE = 58;
 const ASSISTANT_SEED_PROMPTS = [
-  "MÃ¬nh ráº£nh 20:00 tá»‘i nay, gá»£i Ã½ phim Ä‘ang hot.",
-  "NgÃ¢n sÃ¡ch 350k cho 2 ngÆ°á»i, chá»n phim + combo giÃºp mÃ¬nh.",
-  "MÃ¬nh thÃ­ch hÃ nh Ä‘á»™ng, ráº¡p nÃ o cÃ²n nhiá»u gháº¿ Ä‘áº¹p?",
-  "Gá»£i Ã½ suáº¥t chiáº¿u ngÃ y mai sau 19:30.",
+  "Mình rảnh 20:00 tối nay, gợi ý phim đang hot.",
+  "Ngân sách 350k cho 2 người, chọn phim + combo giúp mình.",
+  "Mình thích hành động, rạp nào còn nhiều ghế đẹp?",
+  "Gợi ý suất chiếu ngày mai sau 19:30.",
 ];
 
 type AssistantApiResponse = {
@@ -99,27 +99,27 @@ Notifications.setNotificationHandler({
 });
 
 const fallbackBanners: Banner[] = [
-  { id: 1, eyebrow: "Khuyáº¿n máº¡i toÃ n há»‡ thá»‘ng", title: "Tuáº§n lá»… Ä‘iá»‡n áº£nh", text: "Mua 2 vÃ© táº·ng 1 combo mini trong khung giá» vÃ ng.", accent: "#1f2f73", imageUrl: demoMediaUrl("/demo-media/promos/banner-1.svg") },
-  { id: 2, eyebrow: "Suáº¥t chiáº¿u sá»›m", title: "ÄÃªm cÃ´ng chiáº¿u", text: "Äáº·t trÆ°á»›c phim hot vÃ  nháº­n Æ°u Ä‘Ã£i há»™i viÃªn.", accent: "#5a1826", imageUrl: demoMediaUrl("/demo-media/promos/banner-2.svg") },
+  { id: 1, eyebrow: "Khuyến mại toàn hệ thống", title: "Tuần lễ điện ảnh", text: "Mua 2 vé tặng 1 combo mini trong khung giờ vàng.", accent: "#1f2f73", imageUrl: demoMediaUrl("/demo-media/promos/banner-1.svg") },
+  { id: 2, eyebrow: "Suất chiếu sớm", title: "Đêm công chiếu", text: "Đặt trước phim hot và nhận ưu đãi hội viên.", accent: "#5a1826", imageUrl: demoMediaUrl("/demo-media/promos/banner-2.svg") },
 ];
 
 const fallbackMovies: Movie[] = [
-  { id: 1, slug: "lat-mat-8", title: "Láº­t Máº·t 8", subtitle: "TrÃªn Ä‘Æ°á»ng Ä‘ua doanh thu", genre: "HÃ nh Ä‘á»™ng", runtime: "118 phÃºt", score: "7.6", badge: "Ná»•i báº­t", tone: "#6d28d9", description: "Chuyá»‡n gia Ä‘Ã¬nh vá»›i nhiá»u tÃ¬nh huá»‘ng báº¥t ngá», hÃ i hÆ°á»›c vÃ  cáº£m xÃºc.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/lat-mat-8.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/lat-mat-8.svg"), trailerUrl: "https://www.youtube.com/embed/EXeTwQWrcwY?playsinline=1" },
-  { id: 2, slug: "nguoi-nhen-da-vu-tru", title: "NgÆ°á»i Nhá»‡n Äa VÅ© Trá»¥", subtitle: "Cuá»™c Ä‘ua vÃ¡ láº¡i Ä‘a vÅ© trá»¥", genre: "HÃ nh Ä‘á»™ng, Viá»…n tÆ°á»Ÿng", runtime: "142 phÃºt", score: "8.7", badge: "Äáº·t nhiá»u", tone: "#0f766e", description: "Peter vÃ  cÃ¡c Ä‘á»“ng Ä‘á»™i pháº£i vÃ¡ láº¡i váº¿t ná»©t Ä‘a vÅ© trá»¥ trÆ°á»›c khi má»i thá»±c táº¡i sá»¥p Ä‘á»•.", status: "TRENDING", posterUrl: demoMediaUrl("/demo-media/posters/nguoi-nhen-da-vu-tru.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/nguoi-nhen-da-vu-tru.svg"), trailerUrl: "https://www.youtube.com/embed/TcMBFSGVi1c?playsinline=1" },
-  { id: 3, slug: "mat-ma-bien-dem", title: "Máº­t MÃ£ Biá»ƒn ÄÃªm", subtitle: "Truy Ä‘uá»•i xuyÃªn biÃªn giá»›i", genre: "HÃ nh Ä‘á»™ng, Tá»™i pháº¡m", runtime: "123 phÃºt", score: "8.2", badge: "Hot", tone: "#9333ea", description: "Äá»™i Ä‘iá»u tra truy Ä‘uá»•i Ä‘Æ°á»ng dÃ¢y rá»­a tiá»n xuyÃªn quá»‘c gia.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/mat-ma-bien-dem.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/mat-ma-bien-dem.svg"), trailerUrl: "https://www.youtube.com/embed/8ugaeA-nMTc?playsinline=1" },
-  { id: 4, slug: "hanh-tinh-thu-chin", title: "HÃ nh Tinh Thá»© ChÃ­n", subtitle: "BÃ­ máº­t ngoÃ i Há»‡ Máº·t Trá»i", genre: "Viá»…n tÆ°á»Ÿng, Khoa há»c", runtime: "131 phÃºt", score: "8.1", badge: "Ná»•i báº­t", tone: "#c41010", description: "Chuyáº¿n bay thÄƒm dÃ² xa nháº¥t loÃ i ngÆ°á»i má»Ÿ ra bÃ­ máº­t ngoÃ i Há»‡ Máº·t Trá»i.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/hanh-tinh-thu-chin.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/hanh-tinh-thu-chin.svg"), trailerUrl: "https://www.youtube.com/embed/hA6hldpSTF8?playsinline=1" },
-  { id: 5, slug: "chien-tuyen-do", title: "Chiáº¿n Tuyáº¿n Äá»", subtitle: "Nhiá»‡m vá»¥ sÃ¡t biÃªn giá»›i", genre: "Chiáº¿n tranh, ChÃ­nh ká»‹ch", runtime: "133 phÃºt", score: "7.4", badge: "Sáº¯p chiáº¿u", tone: "#0f4c81", description: "Tiá»ƒu Ä‘á»™i Ä‘áº·c nhiá»‡m nháº­n nhiá»‡m vá»¥ khÃ´ng tÆ°á»Ÿng á»Ÿ biÃªn giá»›i.", status: "COMING_SOON", posterUrl: demoMediaUrl("/demo-media/posters/chien-tuyen-do.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/chien-tuyen-do.svg"), trailerUrl: "https://www.youtube.com/embed/qSqVVswa420?playsinline=1" },
-  { id: 6, slug: "mua-he-cua-chung-ta", title: "MÃ¹a HÃ¨ Cá»§a ChÃºng Ta", subtitle: "Thanh xuÃ¢n gáº·p láº¡i", genre: "Thanh xuÃ¢n, TÃ¬nh cáº£m", runtime: "113 phÃºt", score: "7.8", badge: "Theo dÃµi", tone: "#8a1f3d", description: "NhÃ³m báº¡n cÅ© gáº·p láº¡i sau 10 nÄƒm trong chuyáº¿n Ä‘i cuá»‘i hÃ¨.", status: "COMING_SOON", posterUrl: demoMediaUrl("/demo-media/posters/mua-he-cua-chung-ta.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/mua-he-cua-chung-ta.svg"), trailerUrl: "https://www.youtube.com/embed/6ZfuNTqbHE8?playsinline=1" },
+  { id: 1, slug: "lat-mat-8", title: "Lật Mặt 8", subtitle: "Trên đường đua doanh thu", genre: "Hành động", runtime: "118 phút", score: "7.6", badge: "Nổi bật", tone: "#6d28d9", description: "Chuyện gia đình với nhiều tình huống bất ngờ, hài hước và cảm xúc.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/lat-mat-8.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/lat-mat-8.svg"), trailerUrl: "https://www.youtube.com/embed/EXeTwQWrcwY?playsinline=1" },
+  { id: 2, slug: "nguoi-nhen-da-vu-tru", title: "Người Nhện Đa Vũ Trụ", subtitle: "Cuộc đua vá lại đa vũ trụ", genre: "Hành động, Viễn tưởng", runtime: "142 phút", score: "8.7", badge: "Đặt nhiều", tone: "#0f766e", description: "Peter và các đồng đội phải vá lại vết nứt đa vũ trụ trước khi mọi thực tại sụp đổ.", status: "TRENDING", posterUrl: demoMediaUrl("/demo-media/posters/nguoi-nhen-da-vu-tru.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/nguoi-nhen-da-vu-tru.svg"), trailerUrl: "https://www.youtube.com/embed/TcMBFSGVi1c?playsinline=1" },
+  { id: 3, slug: "mat-ma-bien-dem", title: "Mật Mã Biển Đêm", subtitle: "Truy đuổi xuyên biên giới", genre: "Hành động, Tội phạm", runtime: "123 phút", score: "8.2", badge: "Hot", tone: "#9333ea", description: "Đội điều tra truy đuổi đường dây rửa tiền xuyên quốc gia.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/mat-ma-bien-dem.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/mat-ma-bien-dem.svg"), trailerUrl: "https://www.youtube.com/embed/8ugaeA-nMTc?playsinline=1" },
+  { id: 4, slug: "hanh-tinh-thu-chin", title: "Hành Tinh Thứ Chín", subtitle: "Bí mật ngoài Hệ Mặt Trời", genre: "Viễn tưởng, Khoa học", runtime: "131 phút", score: "8.1", badge: "Nổi bật", tone: "#c41010", description: "Chuyến bay thăm dò xa nhất loài người mở ra bí mật ngoài Hệ Mặt Trời.", status: "NOW_SHOWING", posterUrl: demoMediaUrl("/demo-media/posters/hanh-tinh-thu-chin.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/hanh-tinh-thu-chin.svg"), trailerUrl: "https://www.youtube.com/embed/hA6hldpSTF8?playsinline=1" },
+  { id: 5, slug: "chien-tuyen-do", title: "Chiến Tuyến Đỏ", subtitle: "Nhiệm vụ sát biên giới", genre: "Chiến tranh, Chính kịch", runtime: "133 phút", score: "7.4", badge: "Sắp chiếu", tone: "#0f4c81", description: "Tiểu đội đặc nhiệm nhận nhiệm vụ không tưởng ở biên giới.", status: "COMING_SOON", posterUrl: demoMediaUrl("/demo-media/posters/chien-tuyen-do.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/chien-tuyen-do.svg"), trailerUrl: "https://www.youtube.com/embed/qSqVVswa420?playsinline=1" },
+  { id: 6, slug: "mua-he-cua-chung-ta", title: "Mùa Hè Của Chúng Ta", subtitle: "Thanh xuân gặp lại", genre: "Thanh xuân, Tình cảm", runtime: "113 phút", score: "7.8", badge: "Theo dõi", tone: "#8a1f3d", description: "Nhóm bạn cũ gặp lại sau 10 năm trong chuyến đi cuối hè.", status: "COMING_SOON", posterUrl: demoMediaUrl("/demo-media/posters/mua-he-cua-chung-ta.svg"), bannerUrl: demoMediaUrl("/demo-media/banners/mua-he-cua-chung-ta.svg"), trailerUrl: "https://www.youtube.com/embed/6ZfuNTqbHE8?playsinline=1" },
 ];
 
 const fallbackShowtimes: ShowtimeItem[] = [
-  { id: 1, movieId: 1, cinemaId: 1, roomId: 1, cinemaName: "CGV Landmark 81", roomName: "PhÃ²ng 01", startTime: "2026-03-30T18:45:00", formatLabel: "IMAX", languageLabel: "Phá»¥ Ä‘á»", basePrice: 120000, seatLayout: [["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"], ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8"], ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"], ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"]] },
+  { id: 1, movieId: 1, cinemaId: 1, roomId: 1, cinemaName: "CGV Landmark 81", roomName: "Phòng 01", startTime: "2026-03-30T18:45:00", formatLabel: "IMAX", languageLabel: "Phụ đề", basePrice: 120000, seatLayout: [["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"], ["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8"], ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"], ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"]] },
 ];
 
 const fallbackCombos: ComboItem[] = [
-  { id: 1, name: "Combo Cáº·p Ä‘Ã´i", detail: "2 nÆ°á»›c lá»›n + 1 báº¯p phÃ´ mai", price: "159.000Ä‘", unitPrice: 159000 },
-  { id: 2, name: "Combo Gia Ä‘Ã¬nh", detail: "4 nÆ°á»›c + 2 báº¯p caramel", price: "289.000Ä‘", unitPrice: 289000 },
-  { id: 3, name: "Combo ÄÃªm", detail: "1 hotdog + 1 nÆ°á»›c + 1 báº¯p caramel", price: "119.000Ä‘", unitPrice: 119000 },
+  { id: 1, name: "Combo Cặp đôi", detail: "2 nước lớn + 1 bắp phô mai", price: "159.000đ", unitPrice: 159000 },
+  { id: 2, name: "Combo Gia đình", detail: "4 nước + 2 bắp caramel", price: "289.000đ", unitPrice: 289000 },
+  { id: 3, name: "Combo Đêm", detail: "1 hotdog + 1 nước + 1 bắp caramel", price: "119.000đ", unitPrice: 119000 },
 ];
 
 function hourBucket(startTime: string) {
@@ -135,13 +135,13 @@ type RouteState = {
 };
 
 const tabItems: Array<{ id: TabId; label: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; activeIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"] }> = [
-  { id: "home", label: "Trang chá»§", icon: "home-variant-outline", activeIcon: "home-variant" },
-  { id: "explore", label: "KhÃ¡m phÃ¡", icon: "compass-outline", activeIcon: "compass" },
+  { id: "home", label: "Trang chủ", icon: "home-variant-outline", activeIcon: "home-variant" },
+  { id: "explore", label: "Khám phá", icon: "compass-outline", activeIcon: "compass" },
   { id: "assistant", label: "AI", icon: "robot-outline", activeIcon: "robot" },
-  { id: "favorites", label: "YÃªu thÃ­ch", icon: "heart-outline", activeIcon: "heart" },
+  { id: "favorites", label: "Yêu thích", icon: "heart-outline", activeIcon: "heart" },
   { id: "watchlist", label: "Xem sau", icon: "bookmark-outline", activeIcon: "bookmark" },
-  { id: "tickets", label: "VÃ©", icon: "ticket-confirmation-outline", activeIcon: "ticket-confirmation" },
-  { id: "profile", label: "TÃ i khoáº£n", icon: "account-circle-outline", activeIcon: "account-circle" },
+  { id: "tickets", label: "Vé", icon: "ticket-confirmation-outline", activeIcon: "ticket-confirmation" },
+  { id: "profile", label: "Tài khoản", icon: "account-circle-outline", activeIcon: "account-circle" },
 ];
 
 export default function App() {
@@ -163,7 +163,7 @@ export default function App() {
   const [sessionUser, setSessionUser] = React.useState<SessionUser | null>(null);
   const [authToken, setAuthToken] = React.useState<string | null>(null);
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
-  const [authName, setAuthName] = React.useState("Nguyá»…n VÄƒn A");
+  const [authName, setAuthName] = React.useState("Nguyễn Văn A");
   const [authEmail, setAuthEmail] = React.useState("user@phimbook.local");
   const [authPhone, setAuthPhone] = React.useState("0900000002");
   const [authPassword, setAuthPassword] = React.useState("User@123");
@@ -198,7 +198,7 @@ export default function App() {
   const [selectedComboIds, setSelectedComboIds] = React.useState<number[]>([]);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = React.useState<PaymentProvider>("MOMO");
   const [selectedPaymentGatewayMode, setSelectedPaymentGatewayMode] = React.useState<"SANDBOX" | "REAL">("SANDBOX");
-  const [customerName, setCustomerName] = React.useState("Nguyá»…n VÄƒn A");
+  const [customerName, setCustomerName] = React.useState("Nguyễn Văn A");
   const [customerEmail, setCustomerEmail] = React.useState("user@phimbook.local");
   const [customerPhone, setCustomerPhone] = React.useState("0900000002");
   const [bottomBarWidth, setBottomBarWidth] = React.useState(0);
@@ -208,7 +208,7 @@ export default function App() {
     {
       id: "assistant-welcome",
       role: "assistant",
-      text: "Xin chÃ o NanBao ç”·å®, mÃ¬nh lÃ  trá»£ lÃ½ AI Ä‘áº·t vÃ©. Báº¡n cÃ³ thá»ƒ há»i theo giá» ráº£nh, gu phim, ngÃ¢n sÃ¡ch hoáº·c yÃªu cáº§u gá»£i Ã½ combo.",
+      text: "Xin chào NanBao 男宝, mình là trợ lý AI đặt vé. Bạn có thể hỏi theo giờ rảnh, gu phim, ngân sách hoặc yêu cầu gợi ý combo.",
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -356,7 +356,7 @@ export default function App() {
       });
       const json = await response.json();
       if (!response.ok) {
-        throw new Error(json.error ?? "YÃªu cáº§u tháº¥t báº¡i");
+        throw new Error(json.error ?? "Yêu cầu thất bại");
       }
       return json;
     },
@@ -413,11 +413,11 @@ export default function App() {
         title: item.title,
         subtitle: item.subtitle ?? "",
         genre: item.genre,
-        runtime: `${item.durationMinutes} phÃºt`,
+        runtime: `${item.durationMinutes} phút`,
         score: String(item.rating),
-        badge: item.badge ?? "Äang chiáº¿u",
+        badge: item.badge ?? "Đang chiếu",
         tone: item.highlightColor ?? "#c41010",
-        description: item.subtitle ?? "Phim Ä‘ang Ä‘Æ°á»£c quáº£n lÃ½ tá»« backend Äáº·t VÃ©.",
+        description: item.subtitle ?? "Phim đang được quản lý từ backend Đặt Vé.",
         status: String(item.status ?? "NOW_SHOWING").toUpperCase(),
         posterUrl: absolutizeAssetUrl(item.posterUrl),
         bannerUrl: absolutizeAssetUrl(item.bannerUrl),
@@ -427,9 +427,9 @@ export default function App() {
       setBannersData(
         ((catalog.banners ?? []).length > 0 ? catalog.banners : fallbackBanners).map((item: any) => ({
           id: item.id,
-          eyebrow: item.eyebrow ?? "Khuyáº¿n máº¡i toÃ n há»‡ thá»‘ng",
+          eyebrow: item.eyebrow ?? "Khuyến mại toàn hệ thống",
           title: item.title,
-          text: item.subtitle ?? item.text ?? "Æ¯u Ä‘Ã£i má»›i dÃ nh cho thÃ nh viÃªn Äáº·t VÃ©.",
+          text: item.subtitle ?? item.text ?? "Ưu đãi mới dành cho thành viên Đặt Vé.",
           accent: item.accentColor ?? item.accent ?? "#1f2f73",
           imageUrl: absolutizeAssetUrl(item.imageUrl) ?? null,
         }))
@@ -461,8 +461,8 @@ export default function App() {
         ((catalog.foods ?? []).length > 0 ? catalog.foods : fallbackCombos).map((item: any) => ({
           id: item.id,
           name: item.name,
-          detail: item.description ?? item.detail ?? "Combo Äáº·t VÃ©",
-          price: typeof item.price === "string" ? item.price : `${Number(item.price).toLocaleString("vi-VN")}Ä‘`,
+          detail: item.description ?? item.detail ?? "Combo Đặt Vé",
+          price: typeof item.price === "string" ? item.price : `${Number(item.price).toLocaleString("vi-VN")}đ`,
           unitPrice: Number(item.unitPrice ?? item.price),
         }))
       );
@@ -503,8 +503,8 @@ export default function App() {
       setVouchersData(voucherJson.vouchers ?? []);
       setRemindersData(reminderJson.reminders ?? []);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "KhÃ´ng táº£i Ä‘Æ°á»£c dá»¯ liá»‡u";
-      if (authToken && /unauthorized|token|Ä‘Äƒng nháº­p|phiÃªn/i.test(message.toLowerCase())) {
+      const message = error instanceof Error ? error.message : "Không tải được dữ liệu";
+      if (authToken && /unauthorized|token|đăng nhập|phiên/i.test(message.toLowerCase())) {
         setAuthToken(null);
         setSessionUser(null);
         setProfileData(null);
@@ -575,7 +575,7 @@ export default function App() {
         return rows;
       } catch (error) {
         if (!silent) {
-          showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ táº£i sÆ¡ Ä‘á»“ gháº¿", "error", "seat");
+          showToast(error instanceof Error ? error.message : "Không thể tải sơ đồ ghế", "error", "seat");
         }
         setSeatMapRows([]);
         return null;
@@ -769,8 +769,8 @@ export default function App() {
       if (parsed.pathname.replace(/^\//, "") !== "payment-result") return;
       const status = String(parsed.searchParams.get("status") ?? "");
       const provider = String(parsed.searchParams.get("provider") ?? "");
-      if (status === "SUCCESS") showToast(`${provider} Ä‘Ã£ cáº­p nháº­t vÃ© cá»§a báº¡n sang tráº¡ng thÃ¡i Ä‘Ã£ thanh toÃ¡n.`, "success", "payment");
-      else if (status) showToast(`${provider} tráº£ vá» tráº¡ng thÃ¡i ${status}.`, "error", "payment");
+      if (status === "SUCCESS") showToast(`${provider} đã cập nhật vé của bạn sang trạng thái đã thanh toán.`, "success", "payment");
+      else if (status) showToast(`${provider} trả về trạng thái ${status}.`, "error", "payment");
       resetNavigation({ screen: "tabs", tab: "tickets" });
       loadRemoteData();
     };
@@ -795,7 +795,7 @@ export default function App() {
       setSelectedSeats((prev) => {
         const next = prev.filter((seat) => availableSeats.has(`${seat.seatCode}:${seat.seatType}`));
         if (next.length !== prev.length) {
-          showToast("CÃ³ gháº¿ vá»«a Ä‘Æ°á»£c giá»¯ á»Ÿ thiáº¿t bá»‹ khÃ¡c. Danh sÃ¡ch gháº¿ Ä‘Ã£ Ä‘Æ°á»£c lÃ m má»›i.", "info", "seat");
+          showToast("Có ghế vừa được giữ ở thiết bị khác. Danh sách ghế đã được làm mới.", "info", "seat");
         }
         return next;
       });
@@ -814,7 +814,7 @@ export default function App() {
     async (movie: Movie, showtime?: ShowtimeItem) => {
       if (seatLoadingMovieId === movie.id) return;
       if (!sessionUser) {
-        promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ Ä‘áº·t vÃ© vÃ  giá»¯ gháº¿.", { screen, tab: activeTab });
+        promptAuth("Hãy đăng nhập để đặt vé và giữ ghế.", { screen, tab: activeTab });
         return;
       }
       const nextShowtime = showtime ?? showtimesData.find((item) => item.movieId === movie.id) ?? fallbackShowtimes[0];
@@ -842,7 +842,7 @@ export default function App() {
     async (ticket: TicketItem) => {
       if (ticketOpeningId === ticket.bookingId) return;
       if (!sessionUser) {
-        promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ xem vÃ© cá»§a báº¡n.", { screen: "tabs", tab: activeTab });
+        promptAuth("Hãy đăng nhập để xem vé của bạn.", { screen: "tabs", tab: activeTab });
         return;
       }
       setTicketOpeningId(ticket.bookingId);
@@ -851,7 +851,7 @@ export default function App() {
         setSelectedTicketDetail(json);
         navigate({ screen: "ticket", tab: activeTab });
       } catch (error) {
-        showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ táº£i chi tiáº¿t vÃ©", "error", "ticket");
+        showToast(error instanceof Error ? error.message : "Không thể tải chi tiết vé", "error", "ticket");
       } finally {
         setTicketOpeningId(null);
       }
@@ -869,7 +869,7 @@ export default function App() {
       });
       if (!response.ok) {
         const json = await response.json();
-        throw new Error(json.error ?? "KhÃ´ng thá»ƒ cáº­p nháº­t danh sÃ¡ch");
+        throw new Error(json.error ?? "Không thể cập nhật danh sách");
       }
     },
     [apiBaseUrl, apiHeaders]
@@ -916,7 +916,7 @@ export default function App() {
       });
       const json = await response.json();
       if (!response.ok) {
-        throw new Error(json.error ?? "KhÃ´ng thá»ƒ giá»¯ gháº¿ tá»« gá»£i Ã½ AI.");
+        throw new Error(json.error ?? "Không thể giữ ghế từ gợi ý AI.");
       }
       return json as { id: number };
     },
@@ -943,11 +943,11 @@ export default function App() {
       });
       const json = await response.json();
       if (!response.ok) {
-        throw new Error(json.error ?? "AI Ä‘ang báº­n, vui lÃ²ng thá»­ láº¡i.");
+        throw new Error(json.error ?? "AI đang bận, vui lòng thử lại.");
       }
 
       return {
-        answer: String(json.answer ?? "MÃ¬nh chÆ°a cÃ³ Ä‘á» xuáº¥t phÃ¹ há»£p á»Ÿ lÃºc nÃ y."),
+        answer: String(json.answer ?? "Mình chưa có đề xuất phù hợp ở lúc này."),
         suggestions: Array.isArray(json.suggestions) ? json.suggestions : [],
         source: json.source === "llm" ? "llm" : "rule-based",
       };
@@ -960,11 +960,11 @@ export default function App() {
       const movie = moviesData.find((item) => item.id === movieId);
       const showtime = showtimesData.find((item) => item.id === showtimeId);
       if (!movie || !showtime) {
-        showToast("Suáº¥t chiáº¿u AI gá»£i Ã½ khÃ´ng cÃ²n kháº£ dá»¥ng. Báº¡n thá»­ lÃ m má»›i dá»¯ liá»‡u nhÃ©.", "error", "system");
+        showToast("Suất chiếu AI gợi ý không còn khả dụng. Bạn thử làm mới dữ liệu nhé.", "error", "system");
         return;
       }
       if (!sessionUser) {
-        promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ AI giá»¯ gháº¿ vÃ  chuáº©n bá»‹ checkout cho báº¡n.", { screen, tab: activeTab });
+        promptAuth("Hãy đăng nhập để AI giữ ghế và chuẩn bị checkout cho bạn.", { screen, tab: activeTab });
         return;
       }
       setAssistantMiniOpen(false);
@@ -982,14 +982,14 @@ export default function App() {
         const rows = await fetchSeatMap(showtime.id);
         if (!rows || rows.length === 0) {
           navigate({ screen: "seats", tab: activeTab });
-          showToast("AI chÆ°a táº£i Ä‘Æ°á»£c sÆ¡ Ä‘á»“ gháº¿, báº¡n chá»n tay giÃºp mÃ¬nh nhÃ©.", "info", "seat");
+          showToast("AI chưa tải được sơ đồ ghế, bạn chọn tay giúp mình nhé.", "info", "seat");
           return;
         }
 
         const autoSeats = buildAssistantSeatSelection(rows, ticketCount);
         if (autoSeats.length === 0) {
           navigate({ screen: "seats", tab: activeTab });
-          showToast("Suáº¥t nÃ y khÃ´ng cÃ²n gháº¿ phÃ¹ há»£p, báº¡n thá»­ suáº¥t khÃ¡c nhÃ©.", "error", "seat");
+          showToast("Suất này không còn ghế phù hợp, bạn thử suất khác nhé.", "error", "seat");
           return;
         }
 
@@ -1000,14 +1000,14 @@ export default function App() {
         navigate({ screen: "checkout", tab: activeTab });
         showToast(
           comboId
-            ? "AI Ä‘Ã£ giá»¯ gháº¿ vÃ  Ã¡p combo Ä‘á» xuáº¥t. Báº¡n kiá»ƒm tra láº¡i trÆ°á»›c khi thanh toÃ¡n."
-            : "AI Ä‘Ã£ giá»¯ gháº¿ Ä‘á» xuáº¥t. Báº¡n kiá»ƒm tra láº¡i trÆ°á»›c khi thanh toÃ¡n.",
+            ? "AI đã giữ ghế và áp combo đề xuất. Bạn kiểm tra lại trước khi thanh toán."
+            : "AI đã giữ ghế đề xuất. Bạn kiểm tra lại trước khi thanh toán.",
           "success",
           "seat"
         );
       } catch (error) {
         navigate({ screen: "seats", tab: activeTab });
-        showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ giá»¯ gháº¿ tá»± Ä‘á»™ng.", "error", "seat");
+        showToast(error instanceof Error ? error.message : "Không thể giữ ghế tự động.", "error", "seat");
       } finally {
         setHolding(false);
         setSeatLoadingMovieId(null);
@@ -1047,7 +1047,7 @@ export default function App() {
       const suggestionMovie = moviesData.find((item) => item.id === movieId);
       const suggestionShowtime = showtimesData.find((item) => item.id === showtimeId);
       if (!suggestionMovie || !suggestionShowtime) {
-        showToast("Suáº¥t chiáº¿u AI gá»£i Ã½ Ä‘Ã£ thay Ä‘á»•i. Vui lÃ²ng thá»­ láº¡i.", "error", "system");
+        showToast("Suất chiếu AI gợi ý đã thay đổi. Vui lòng thử lại.", "error", "system");
         return;
       }
 
@@ -1075,25 +1075,25 @@ export default function App() {
   const runAssistantQuickBooking = React.useCallback(async () => {
     if (assistantQuickLoading || assistantSending) return;
     if (!sessionUser) {
-      promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ dÃ¹ng AI Ä‘áº·t nhanh.", { screen, tab: activeTab });
+      promptAuth("Hãy đăng nhập để dùng AI đặt nhanh.", { screen, tab: activeTab });
       return;
     }
 
     const nextHour = `${(clockNow.getHours() + 1) % 24}`.padStart(2, "0");
-    const quickPrompt = `MÃ¬nh muá»‘n Ä‘áº·t nhanh cho ${assistantQuickPeople} ngÆ°á»i lÃºc ${nextHour}:00 tá»‘i nay, ngÃ¢n sÃ¡ch ${Math.max(100000, assistantQuickBudget).toLocaleString("vi-VN")}Ä‘, Æ°u tiÃªn phim Ä‘ang chiáº¿u vÃ  combo há»£p lÃ½.`;
+    const quickPrompt = `Mình muốn đặt nhanh cho ${assistantQuickPeople} người lúc ${nextHour}:00 tối nay, ngân sách ${Math.max(100000, assistantQuickBudget).toLocaleString("vi-VN")}đ, ưu tiên phim đang chiếu và combo hợp lý.`;
 
     setAssistantQuickLoading(true);
     try {
       const result = await requestAssistant(quickPrompt);
       if (!result.suggestions.length) {
-        showToast("AI chÆ°a tÃ¬m Ä‘Æ°á»£c phÆ°Æ¡ng Ã¡n Ä‘áº·t nhanh phÃ¹ há»£p.", "info", "system");
+        showToast("AI chưa tìm được phương án đặt nhanh phù hợp.", "info", "system");
         return;
       }
 
       const top = result.suggestions[0];
       await handleAssistantSuggestionPress(top.movieId, top.showtimeId, top.comboId, top.ticketCount);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ cháº¡y AI Ä‘áº·t nhanh.", "error", "system");
+      showToast(error instanceof Error ? error.message : "Không thể chạy AI đặt nhanh.", "error", "system");
     } finally {
       setAssistantQuickLoading(false);
     }
@@ -1132,7 +1132,7 @@ export default function App() {
         const assistantMessage: AssistantMessage = {
           id: `${Date.now()}-assistant-error`,
           role: "assistant",
-          text: "Mï¿½nh chua x? lï¿½ du?c yï¿½u c?u v?a r?i. B?n th? nï¿½i c? th? hon: gi? r?nh, s? ngu?i, ngï¿½n sï¿½ch vï¿½ th? lo?i nhï¿½.",
+          text: "Mình chưa xử lý được yêu cầu vừa rồi. Bạn thử nói cụ thể hơn: giờ rảnh, số người, ngân sách và thể loại nhé.",
           createdAt: new Date().toISOString(),
         };
         setAssistantMessages((prev) => [...prev, assistantMessage]);
@@ -1151,7 +1151,7 @@ export default function App() {
         method: "POST",
         body: JSON.stringify(
           authMode === "login"
-            ? { email: authEmail, password: authPassword, deviceName: "Thiáº¿t bá»‹ Android" }
+            ? { email: authEmail, password: authPassword, deviceName: "Thiết bị Android" }
             : { fullName: authName, email: authEmail, phone: authPhone, password: authPassword }
         ),
       });
@@ -1160,17 +1160,17 @@ export default function App() {
       setCustomerName(json.user.fullName);
       setCustomerEmail(json.user.email);
       setCustomerPhone(json.user.phone ?? "");
-      showToast(authMode === "login" ? "ÄÄƒng nháº­p thÃ nh cÃ´ng." : "ÄÄƒng kÃ½ thÃ nh cÃ´ng.", "success", "auth");
+      showToast(authMode === "login" ? "Đăng nhập thành công." : "Đăng ký thành công.", "success", "auth");
       finishAuthGate();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ xÃ¡c thá»±c tÃ i khoáº£n", "error", "auth");
+      showToast(error instanceof Error ? error.message : "Không thể xác thực tài khoản", "error", "auth");
     } finally {
       setAuthLoading(false);
     }
   };
 
   const continueWithGoogle = React.useCallback(() => {
-    showToast("ÄÄƒng nháº­p Google Ä‘ang Ä‘Æ°á»£c táº¡m táº¯t Ä‘á»ƒ á»•n Ä‘á»‹nh báº£n Android má»›i.", "info", "auth");
+    showToast("Đăng nhập Google đang được tạm tắt để ổn định bản Android mới.", "info", "auth");
   }, [showToast]);
 
   const logout = async () => {
@@ -1194,7 +1194,7 @@ export default function App() {
       setAuthGateMessage(null);
       setAuthReturnRoute(null);
       resetNavigation({ screen: "tabs", tab: "home" });
-      showToast("ÄÃ£ Ä‘Äƒng xuáº¥t.", "info", "auth");
+      showToast("Đã đăng xuất.", "info", "auth");
     } finally {
       setLogoutLoading(false);
     }
@@ -1203,7 +1203,7 @@ export default function App() {
   const toggleFavorite = async () => {
     if (favoriteSubmitting) return;
     if (!sessionUser) {
-      promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ thÃªm phim vÃ o yÃªu thÃ­ch.", { screen, tab: activeTab });
+      promptAuth("Hãy đăng nhập để thêm phim vào yêu thích.", { screen, tab: activeTab });
       return;
     }
     const enabled = !favoriteMovieIds.includes(selectedMovie.id);
@@ -1213,9 +1213,9 @@ export default function App() {
       setFavoriteMovieIds((prev) =>
         enabled ? [...prev, selectedMovie.id] : prev.filter((id) => id !== selectedMovie.id)
       );
-      showToast(enabled ? "ÄÃ£ thÃªm vÃ o yÃªu thÃ­ch." : "ÄÃ£ bá» khá»i yÃªu thÃ­ch.", "success", "favorite");
+      showToast(enabled ? "Đã thêm vào yêu thích." : "Đã bỏ khỏi yêu thích.", "success", "favorite");
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ cáº­p nháº­t yÃªu thÃ­ch", "error", "favorite");
+      showToast(error instanceof Error ? error.message : "Không thể cập nhật yêu thích", "error", "favorite");
     } finally {
       setFavoriteSubmitting(false);
     }
@@ -1224,7 +1224,7 @@ export default function App() {
   const toggleWatchlist = async () => {
     if (watchlistSubmitting) return;
     if (!sessionUser) {
-      promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ lÆ°u phim vÃ o xem sau.", { screen, tab: activeTab });
+      promptAuth("Hãy đăng nhập để lưu phim vào xem sau.", { screen, tab: activeTab });
       return;
     }
     const enabled = !watchlistMovieIds.includes(selectedMovie.id);
@@ -1234,9 +1234,9 @@ export default function App() {
       setWatchlistMovieIds((prev) =>
         enabled ? [...prev, selectedMovie.id] : prev.filter((id) => id !== selectedMovie.id)
       );
-      showToast(enabled ? "ÄÃ£ thÃªm vÃ o xem sau." : "ÄÃ£ bá» khá»i xem sau.", "success", "favorite");
+      showToast(enabled ? "Đã thêm vào xem sau." : "Đã bỏ khỏi xem sau.", "success", "favorite");
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ cáº­p nháº­t xem sau", "error", "favorite");
+      showToast(error instanceof Error ? error.message : "Không thể cập nhật xem sau", "error", "favorite");
     } finally {
       setWatchlistSubmitting(false);
     }
@@ -1256,12 +1256,12 @@ export default function App() {
   const holdCurrentSeats = async () => {
     if (holding) return;
     if (!sessionUser) {
-      promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ tiáº¿p tá»¥c Ä‘áº·t vÃ©.", { screen: "seats", tab: activeTab });
+      promptAuth("Hãy đăng nhập để tiếp tục đặt vé.", { screen: "seats", tab: activeTab });
       return;
     }
-    if (selectedSeats.length === 0) return showToast("HÃ£y chá»n Ã­t nháº¥t 1 gháº¿ trÆ°á»›c khi tiáº¿p tá»¥c.", "error", "seat");
+    if (selectedSeats.length === 0) return showToast("Hãy chọn ít nhất 1 ghế trước khi tiếp tục.", "error", "seat");
     const showtime = selectedShowtime ?? showtimesData.find((item) => item.movieId === selectedMovie.id);
-    if (!showtime) return showToast("Hiá»‡n chÆ°a cÃ³ suáº¥t chiáº¿u phÃ¹ há»£p cho phim nÃ y.", "error", "seat");
+    if (!showtime) return showToast("Hiện chưa có suất chiếu phù hợp cho phim này.", "error", "seat");
     setHolding(true);
     try {
       const response = await fetch(`${apiBaseUrl}/bookings/hold`, {
@@ -1270,11 +1270,11 @@ export default function App() {
         body: JSON.stringify({ showtimeId: showtime.id, seats: selectedSeats }),
       });
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? "KhÃ´ng thá»ƒ giá»¯ gháº¿");
+      if (!response.ok) throw new Error(json.error ?? "Không thể giữ ghế");
       setHeldBookingId(json.id);
       navigate({ screen: "checkout", tab: activeTab });
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ giá»¯ gháº¿", "error", "seat");
+      showToast(error instanceof Error ? error.message : "Không thể giữ ghế", "error", "seat");
       await fetchSeatMap(showtime.id);
     } finally {
       setHolding(false);
@@ -1284,10 +1284,10 @@ export default function App() {
   const confirmBooking = async () => {
     if (confirming) return;
     if (!sessionUser) {
-      promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ thanh toÃ¡n vÃ©.", { screen: "checkout", tab: activeTab });
+      promptAuth("Hãy đăng nhập để thanh toán vé.", { screen: "checkout", tab: activeTab });
       return;
     }
-    if (!heldBookingId) return showToast("Cáº§n giá»¯ gháº¿ trÆ°á»›c khi táº¡o booking.", "error", "seat");
+    if (!heldBookingId) return showToast("Cần giữ ghế trước khi tạo booking.", "error", "seat");
     setConfirming(true);
     try {
       const response = await fetch(`${apiBaseUrl}/bookings`, {
@@ -1306,7 +1306,7 @@ export default function App() {
         }),
       });
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? "KhÃ´ng thá»ƒ táº¡o booking");
+      if (!response.ok) throw new Error(json.error ?? "Không thể tạo booking");
 
       const paymentResponse = await fetch(`${apiBaseUrl}/payments`, {
         method: "POST",
@@ -1319,7 +1319,7 @@ export default function App() {
         }),
       });
       const paymentJson = await paymentResponse.json();
-      if (!paymentResponse.ok) throw new Error(paymentJson.error ?? "KhÃ´ng thá»ƒ táº¡o thanh toÃ¡n");
+      if (!paymentResponse.ok) throw new Error(paymentJson.error ?? "Không thể tạo thanh toán");
 
       const seatLabel = (json.seats ?? []).map((item: any) => item.seatCode).join(", ");
       setTickets((prev) => [
@@ -1335,7 +1335,7 @@ export default function App() {
         },
         ...prev,
       ]);
-      showToast(`MÃ£ vÃ© ${json.bookingCode} Ä‘Ã£ Ä‘Æ°á»£c táº¡o. Äang má»Ÿ ${selectedPaymentProvider}.`, "success", "payment");
+      showToast(`Mã vé ${json.bookingCode} đã được tạo. Đang mở ${selectedPaymentProvider}.`, "success", "payment");
       await Linking.openURL(paymentJson.checkoutUrl);
       resetNavigation({ screen: "tabs", tab: "tickets" });
       setSelectedSeats([]);
@@ -1344,7 +1344,7 @@ export default function App() {
       setHeldBookingId(null);
       await loadRemoteData();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ táº¡o booking", "error", "payment");
+      showToast(error instanceof Error ? error.message : "Không thể tạo booking", "error", "payment");
     } finally {
       setConfirming(false);
     }
@@ -1353,7 +1353,7 @@ export default function App() {
   const scheduleReminder = async () => {
     if (reminderLoading) return;
     if (!sessionUser) {
-      promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ dÃ¹ng nháº¯c lá»‹ch cho vÃ©.", { screen, tab: activeTab });
+      promptAuth("Hãy đăng nhập để dùng nhắc lịch cho vé.", { screen, tab: activeTab });
       return;
     }
     if (!selectedTicketDetail) return;
@@ -1365,7 +1365,7 @@ export default function App() {
         method: "POST",
         body: JSON.stringify({ remindAt }),
       });
-      showToast("ÄÃ£ Ä‘áº·t nháº¯c trÆ°á»›c 1 giá».", "success", "reminder");
+      showToast("Đã đặt nhắc trước 1 giờ.", "success", "reminder");
       await openTicketDetail({
         id: selectedTicketDetail.id,
         bookingId: selectedTicketDetail.id,
@@ -1378,7 +1378,7 @@ export default function App() {
       });
       await loadRemoteData();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ Ä‘áº·t nháº¯c lá»‹ch", "error", "reminder");
+      showToast(error instanceof Error ? error.message : "Không thể đặt nhắc lịch", "error", "reminder");
     } finally {
       setReminderLoading(null);
     }
@@ -1387,14 +1387,14 @@ export default function App() {
   const cancelTicketReminder = async () => {
     if (reminderLoading) return;
     if (!sessionUser) {
-      promptAuth("HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ quáº£n lÃ½ nháº¯c lá»‹ch.", { screen, tab: activeTab });
+      promptAuth("Hãy đăng nhập để quản lý nhắc lịch.", { screen, tab: activeTab });
       return;
     }
     if (!selectedTicketDetail) return;
     setReminderLoading("cancel");
     try {
       await requestJson(`/bookings/${selectedTicketDetail.id}/reminder`, { method: "DELETE" });
-      showToast("ÄÃ£ há»§y nháº¯c lá»‹ch.", "info", "reminder");
+      showToast("Đã hủy nhắc lịch.", "info", "reminder");
       await openTicketDetail({
         id: selectedTicketDetail.id,
         bookingId: selectedTicketDetail.id,
@@ -1407,7 +1407,7 @@ export default function App() {
       });
       await loadRemoteData();
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "KhÃ´ng thá»ƒ há»§y nháº¯c lá»‹ch", "error", "reminder");
+      showToast(error instanceof Error ? error.message : "Không thể hủy nhắc lịch", "error", "reminder");
     } finally {
       setReminderLoading(null);
     }
@@ -1571,12 +1571,12 @@ export default function App() {
       if (!sessionUser && (tab === "tickets" || tab === "profile" || tab === "favorites" || tab === "watchlist")) {
         promptAuth(
           tab === "tickets"
-            ? "HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ xem vÃ© cá»§a báº¡n."
+            ? "Hãy đăng nhập để xem vé của bạn."
             : tab === "favorites"
-              ? "HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ xem danh sÃ¡ch yÃªu thÃ­ch cá»§a báº¡n."
+              ? "Hãy đăng nhập để xem danh sách yêu thích của bạn."
               : tab === "watchlist"
-                ? "HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ xem danh sÃ¡ch xem sau cá»§a báº¡n."
-                : "HÃ£y Ä‘Äƒng nháº­p Ä‘á»ƒ xem tÃ i khoáº£n cá»§a báº¡n.",
+                ? "Hãy đăng nhập để xem danh sách xem sau của bạn."
+                : "Hãy đăng nhập để xem tài khoản của bạn.",
           { screen: "tabs", tab: activeTab }
         );
         return;
@@ -1590,7 +1590,7 @@ export default function App() {
     content = (
       <View style={[styles.scrollContent, { flex: 1, justifyContent: "center", alignItems: "center" }]}>
         <ActivityIndicator color={palette.cyan} />
-        <Text style={styles.accountDetail}>Äang khÃ´i phá»¥c phiÃªn Ä‘Äƒng nháº­p...</Text>
+        <Text style={styles.accountDetail}>Đang khôi phục phiên đăng nhập...</Text>
       </View>
     );
   } else if (screen === "auth") {
@@ -1752,9 +1752,9 @@ export default function App() {
   } else if (activeTab === "favorites") {
     content = (
       <UserMovieListScreen
-        title="YÃªu thÃ­ch"
-        description="Nhá»¯ng phim báº¡n Ä‘Ã¡nh dáº¥u Ä‘á»ƒ quay láº¡i nhanh khi muá»‘n Ä‘áº·t vÃ© hoáº·c xem láº¡i thÃ´ng tin."
-        emptyMessage="ChÆ°a cÃ³ phim yÃªu thÃ­ch."
+        title="Yêu thích"
+        description="Những phim bạn đánh dấu để quay lại nhanh khi muốn đặt vé hoặc xem lại thông tin."
+        emptyMessage="Chưa có phim yêu thích."
         movies={favoriteMovies}
         onMoviePress={openMovie}
       />
@@ -1763,8 +1763,8 @@ export default function App() {
     content = (
       <UserMovieListScreen
         title="Xem sau"
-        description="Danh sÃ¡ch phim báº¡n lÆ°u láº¡i Ä‘á»ƒ cÃ¢n nháº¯c lá»‹ch chiáº¿u, rá»§ báº¡n bÃ¨ hoáº·c sÄƒn suáº¥t Ä‘áº¹p sau."
-        emptyMessage="ChÆ°a cÃ³ phim trong danh sÃ¡ch xem sau."
+        description="Danh sách phim bạn lưu lại để cân nhắc lịch chiếu, rủ bạn bè hoặc săn suất đẹp sau."
+        emptyMessage="Chưa có phim trong danh sách xem sau."
         movies={watchlistMovies}
         onMoviePress={openMovie}
       />
@@ -1810,7 +1810,7 @@ export default function App() {
             ) : (
               <MaterialCommunityIcons name="robot-love-outline" size={14} color="#fff7f2" />
             )}
-            <Text style={styles.aiQuickButtonText}>AI d?t nhanh</Text>
+            <Text style={styles.aiQuickButtonText}>AI đặt nhanh</Text>
           </Pressable>
           <View style={[styles.networkIndicator, networkStatus === "online" ? styles.networkIndicatorOnline : styles.networkIndicatorOffline]}>
             <View style={[styles.networkIndicatorCore, networkStatus === "online" ? styles.networkIndicatorCoreOnline : styles.networkIndicatorCoreOffline]} />
@@ -1829,9 +1829,9 @@ export default function App() {
       {assistantMiniOpen ? (
         <View style={styles.aiMiniPanel}>
           <View style={styles.aiMiniHeader}>
-            <Text style={styles.aiMiniTitle}>Trá»£ lÃ½ AI</Text>
+            <Text style={styles.aiMiniTitle}>Trợ lý AI</Text>
             <Pressable onPress={() => setAssistantMiniOpen(false)}>
-              <Text style={styles.backLink}>ÄÃ³ng</Text>
+              <Text style={styles.backLink}>Đóng</Text>
             </Pressable>
           </View>
           <AssistantScreen
@@ -2004,6 +2004,5 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
 
 
