@@ -1172,9 +1172,11 @@ export function AssistantScreen(props: {
   onPromptPress: (prompt: string) => void;
   onSend: () => void;
   onSuggestionPress: (movieId: number, showtimeId: number, comboId: number | null, ticketCount: number) => void;
+  trustByDefault: boolean;
+  onToggleTrustByDefault: () => void;
   compact?: boolean;
 }) {
-  const { messages, input, setInput, sending, seedPrompts, onPromptPress, onSend, onSuggestionPress, compact = false } = props;
+  const { messages, input, setInput, sending, seedPrompts, onPromptPress, onSend, onSuggestionPress, trustByDefault, onToggleTrustByDefault, compact = false } = props;
 
   return (
     <ScrollView contentContainerStyle={[styles.scrollContent, compact && styles.aiCompactScrollContent]} showsVerticalScrollIndicator={false}>
@@ -1193,6 +1195,19 @@ export function AssistantScreen(props: {
             </Pressable>
           ))}
         </ScrollView>
+      </View>
+
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>Tin AI mặc định</Text>
+        <Text style={styles.accountDetail}>Bật để AI bỏ qua bước xác nhận popup khi giữ ghế theo gợi ý.</Text>
+        <Pressable
+          style={[styles.paymentMethod, trustByDefault && styles.paymentMethodActive]}
+          onPress={onToggleTrustByDefault}
+        >
+          <Text style={[styles.paymentMethodText, trustByDefault && styles.paymentMethodTextActive]}>
+            {trustByDefault ? "Đang bật" : "Đang tắt"}
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.accountRow}>

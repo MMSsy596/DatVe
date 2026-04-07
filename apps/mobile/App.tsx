@@ -48,6 +48,7 @@ import {
 const DEFAULT_API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || "https://datve.up.railway.app/api/v1";
 const SESSION_STORAGE_KEY = "phimbook.mobile.session";
+const ASSISTANT_SETTINGS_STORAGE_KEY = "phimbook.mobile.assistant.settings";
 const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
 const APP_DISPLAY_NAME = "PhimBook";
 const TOAST_HIDE_BUFFER_MS = 260;
@@ -219,6 +220,7 @@ export default function App() {
   const [assistantQuickBudget, setAssistantQuickBudget] = React.useState(350000);
   const [assistantQuickConfigVisible, setAssistantQuickConfigVisible] = React.useState(false);
   const [assistantTrustSession, setAssistantTrustSession] = React.useState(false);
+  const [assistantSettingsHydrated, setAssistantSettingsHydrated] = React.useState(false);
   const [assistantConfirmVisible, setAssistantConfirmVisible] = React.useState(false);
   const [assistantConfirmRemember, setAssistantConfirmRemember] = React.useState(false);
   const [assistantPendingSuggestion, setAssistantPendingSuggestion] = React.useState<{
@@ -605,6 +607,35 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
+    let active = true;
+    SecureStore.getItemAsync(ASSISTANT_SETTINGS_STORAGE_KEY)
+      .then((raw) => {
+        if (!active || !raw) return;
+        const saved = JSON.parse(raw) as {
+          quickPeople?: number;
+          quickBudget?: number;
+          trustByDefault?: boolean;
+        };
+        if (typeof saved.quickPeople === "number" && Number.isFinite(saved.quickPeople)) {
+          setAssistantQuickPeople(Math.max(1, Math.min(8, Math.round(saved.quickPeople))));
+        }
+        if (typeof saved.quickBudget === "number" && Number.isFinite(saved.quickBudget)) {
+          setAssistantQuickBudget(Math.max(100000, Math.round(saved.quickBudget)));
+        }
+        if (typeof saved.trustByDefault === "boolean") {
+          setAssistantTrustSession(saved.trustByDefault);
+        }
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (active) setAssistantSettingsHydrated(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
     if (!authReady) return;
     loadRemoteData();
   }, [authReady, loadRemoteData]);
@@ -631,6 +662,18 @@ export default function App() {
     if (!authReady) return;
     persistSession(authToken, sessionUser).catch(() => null);
   }, [authReady, authToken, persistSession, sessionUser]);
+
+  React.useEffect(() => {
+    if (!assistantSettingsHydrated) return;
+    SecureStore.setItemAsync(
+      ASSISTANT_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        quickPeople: assistantQuickPeople,
+        quickBudget: assistantQuickBudget,
+        trustByDefault: assistantTrustSession,
+      })
+    ).catch(() => null);
+  }, [assistantQuickBudget, assistantQuickPeople, assistantSettingsHydrated, assistantTrustSession]);
 
   React.useEffect(() => () => {
     if (toastCloseTimerRef.current) clearTimeout(toastCloseTimerRef.current);
@@ -1687,6 +1730,8 @@ export default function App() {
         onPromptPress={(prompt) => askAssistant(prompt)}
         onSend={() => askAssistant()}
         onSuggestionPress={handleAssistantSuggestionPress}
+        trustByDefault={assistantTrustSession}
+        onToggleTrustByDefault={() => setAssistantTrustSession((prev) => !prev)}
       />
     );
   } else if (activeTab === "tickets") {
@@ -1799,6 +1844,8 @@ export default function App() {
             onPromptPress={(prompt) => askAssistant(prompt)}
             onSend={() => askAssistant()}
             onSuggestionPress={handleAssistantSuggestionPress}
+            trustByDefault={assistantTrustSession}
+            onToggleTrustByDefault={() => setAssistantTrustSession((prev) => !prev)}
           />
         </View>
       ) : null}
