@@ -7,7 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { ActivityIndicator, Animated, BackHandler, Dimensions, Image, Linking, PanResponder, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, BackHandler, Dimensions, Image, Linking, PanResponder, Platform, Pressable, SafeAreaView, StatusBar as NativeStatusBar, Text, View } from "react-native";
 import {
   AssistantScreen,
   CheckoutScreen,
@@ -61,6 +61,23 @@ const ASSISTANT_SEED_PROMPTS = [
   "Mình thích hành động, rạp nào còn nhiều ghế đẹp?",
   "Gợi ý suất chiếu ngày mai sau 19:30.",
 ];
+
+type AssistantApiResponse = {
+  answer: string;
+  suggestions: Array<{
+    movieId: number;
+    showtimeId: number;
+    comboId: number | null;
+    ticketCount: number;
+    movieTitle: string;
+    cinemaName: string;
+    startTime: string;
+    estimatedTotal: number;
+    reason: string;
+    comboName?: string | null;
+  }>;
+  source: "llm" | "rule-based";
+};
 
 function estimateToastVisibleMs(message: string) {
   const trimmedLength = message.trim().length;
@@ -197,6 +214,7 @@ export default function App() {
   const [assistantInput, setAssistantInput] = React.useState("");
   const [assistantSending, setAssistantSending] = React.useState(false);
   const [assistantMiniOpen, setAssistantMiniOpen] = React.useState(false);
+  const [assistantQuickLoading, setAssistantQuickLoading] = React.useState(false);
   const historyRef = React.useRef<RouteState[]>([]);
   const toastCloseTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastHideTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -798,19 +816,233 @@ export default function App() {
     [apiBaseUrl, apiHeaders]
   );
 
+  const buildAssistantSeatSelection = React.useCallback((rows: SeatMapRow[], ticketCount: number): SeatSelection[] => {
+    const normalizedCount = Math.max(1, Math.min(8, Number(ticketCount) || 1));
+    for (const row of rows) {
+      const available = row.seats.filter((seat) => seat.status === "AVAILABLE");
+      if (available.length < normalizedCount) continue;
+      for (let start = 0; start <= available.length - normalizedCount; start += 1) {
+        const chunk = available.slice(start, start + normalizedCount);
+        const contiguous = chunk.every((seat, idx) => {
+          if (idx === 0) return true;
+          const prev = chunk[idx - 1];
+          return Number(seat.columnIndex ?? idx) - Number(prev.columnIndex ?? idx - 1) === 1;
+        });
+        if (!contiguous) continue;
+        return chunk.map((seat) => ({
+          seatCode: seat.seatCode,
+          seatType: String(seat.seatType).toUpperCase() as "STANDARD" | "VIP" | "COUPLE",
+          price: Number(seat.price),
+        }));
+      }
+    }
+
+    const fallback = rows
+      .flatMap((row) => row.seats)
+      .filter((seat) => seat.status === "AVAILABLE")
+      .slice(0, normalizedCount);
+    return fallback.map((seat) => ({
+      seatCode: seat.seatCode,
+      seatType: String(seat.seatType).toUpperCase() as "STANDARD" | "VIP" | "COUPLE",
+      price: Number(seat.price),
+    }));
+  }, []);
+
+  const holdAssistantSelection = React.useCallback(
+    async (showtime: ShowtimeItem, seats: SeatSelection[]) => {
+      const response = await fetch(`${apiBaseUrl}/bookings/hold`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...apiHeaders() },
+        body: JSON.stringify({ showtimeId: showtime.id, seats }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error ?? "Không thể giữ ghế từ gợi ý AI.");
+      }
+      return json as { id: number };
+    },
+    [apiBaseUrl, apiHeaders]
+  );
+
+  const requestAssistant = React.useCallback(
+    async (message: string): Promise<AssistantApiResponse> => {
+      const response = await fetch(`${apiBaseUrl}/ai/assistant`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...apiHeaders(),
+        },
+        body: JSON.stringify({
+          message,
+          context: {
+            now: new Date().toISOString(),
+            favoriteMovieIds,
+            watchlistMovieIds,
+            selectedMovieId: selectedMovie.id,
+          },
+        }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error ?? "AI đang bận, vui lòng thử lại.");
+      }
+
+      return {
+        answer: String(json.answer ?? "Mình chưa có đề xuất phù hợp ở lúc này."),
+        suggestions: Array.isArray(json.suggestions) ? json.suggestions : [],
+        source: json.source === "llm" ? "llm" : "rule-based",
+      };
+    },
+    [apiBaseUrl, apiHeaders, favoriteMovieIds, selectedMovie.id, watchlistMovieIds]
+  );
+
+  const confirmAssistantHold = React.useCallback(
+    async (payload: { movieTitle: string; cinemaName: string; startTime: string; comboName?: string | null; ticketCount: number }) => {
+      return await new Promise<boolean>((resolve) => {
+        const startLabel = new Date(payload.startTime).toLocaleString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          day: "2-digit",
+          month: "2-digit",
+        });
+        Alert.alert(
+          "Xác nhận AI giữ ghế",
+          `${payload.movieTitle}\n${payload.cinemaName} • ${startLabel}\n${payload.ticketCount} vé${payload.comboName ? ` • ${payload.comboName}` : ""}\n\nAI sẽ giữ ghế và chuyển sang checkout. Bạn có đồng ý không?`,
+          [
+            { text: "Không", style: "cancel", onPress: () => resolve(false) },
+            { text: "Đồng ý", style: "default", onPress: () => resolve(true) },
+          ],
+          { cancelable: true, onDismiss: () => resolve(false) }
+        );
+      });
+    },
+    []
+  );
+
   const openAssistantSuggestion = React.useCallback(
-    (movieId: number, showtimeId: number) => {
+    async (movieId: number, showtimeId: number, comboId: number | null, ticketCount: number) => {
       const movie = moviesData.find((item) => item.id === movieId);
       const showtime = showtimesData.find((item) => item.id === showtimeId);
       if (!movie || !showtime) {
         showToast("Suất chiếu AI gợi ý không còn khả dụng. Bạn thử làm mới dữ liệu nhé.", "error", "system");
         return;
       }
+      if (!sessionUser) {
+        promptAuth("Hãy đăng nhập để AI giữ ghế và chuẩn bị checkout cho bạn.", { screen, tab: activeTab });
+        return;
+      }
       setAssistantMiniOpen(false);
-      openSeats(movie, showtime);
+      setSeatLoadingMovieId(movie.id);
+      setSeatLoadingShowtimeId(showtime.id);
+      setSelectedMovie(movie);
+      setSelectedShowtime(showtime);
+      setSelectedComboIds(comboId ? [comboId] : []);
+      setSelectedPaymentProvider("MOMO");
+      setSelectedPaymentGatewayMode("SANDBOX");
+      setSelectedSeats([]);
+      setHeldBookingId(null);
+
+      try {
+        const rows = await fetchSeatMap(showtime.id);
+        if (!rows || rows.length === 0) {
+          navigate({ screen: "seats", tab: activeTab });
+          showToast("AI chưa tải được sơ đồ ghế, bạn chọn tay giúp mình nhé.", "info", "seat");
+          return;
+        }
+
+        const autoSeats = buildAssistantSeatSelection(rows, ticketCount);
+        if (autoSeats.length === 0) {
+          navigate({ screen: "seats", tab: activeTab });
+          showToast("Suất này không còn ghế phù hợp, bạn thử suất khác nhé.", "error", "seat");
+          return;
+        }
+
+        setSelectedSeats(autoSeats);
+        setHolding(true);
+        const held = await holdAssistantSelection(showtime, autoSeats);
+        setHeldBookingId(held.id);
+        navigate({ screen: "checkout", tab: activeTab });
+        showToast(
+          comboId
+            ? "AI đã giữ ghế và áp combo đề xuất. Bạn kiểm tra lại trước khi thanh toán."
+            : "AI đã giữ ghế đề xuất. Bạn kiểm tra lại trước khi thanh toán.",
+          "success",
+          "seat"
+        );
+      } catch (error) {
+        navigate({ screen: "seats", tab: activeTab });
+        showToast(error instanceof Error ? error.message : "Không thể giữ ghế tự động.", "error", "seat");
+      } finally {
+        setHolding(false);
+        setSeatLoadingMovieId(null);
+        setSeatLoadingShowtimeId(null);
+      }
     },
-    [moviesData, openSeats, showtimesData, showToast]
+    [
+      activeTab,
+      apiBaseUrl,
+      buildAssistantSeatSelection,
+      fetchSeatMap,
+      holdAssistantSelection,
+      moviesData,
+      navigate,
+      promptAuth,
+      screen,
+      sessionUser,
+      showtimesData,
+      showToast,
+    ]
   );
+
+  const handleAssistantSuggestionPress = React.useCallback(
+    async (movieId: number, showtimeId: number, comboId: number | null, ticketCount: number) => {
+      const suggestionMovie = moviesData.find((item) => item.id === movieId);
+      const suggestionShowtime = showtimesData.find((item) => item.id === showtimeId);
+      if (!suggestionMovie || !suggestionShowtime) {
+        showToast("Suất chiếu AI gợi ý đã thay đổi. Vui lòng thử lại.", "error", "system");
+        return;
+      }
+
+      const approved = await confirmAssistantHold({
+        movieTitle: suggestionMovie.title,
+        cinemaName: suggestionShowtime.cinemaName,
+        startTime: suggestionShowtime.startTime,
+        comboName: comboId ? combosData.find((item) => item.id === comboId)?.name ?? null : null,
+        ticketCount,
+      });
+      if (!approved) return;
+
+      await openAssistantSuggestion(movieId, showtimeId, comboId, ticketCount);
+    },
+    [combosData, confirmAssistantHold, moviesData, openAssistantSuggestion, showtimesData, showToast]
+  );
+
+  const runAssistantQuickBooking = React.useCallback(async () => {
+    if (assistantQuickLoading || assistantSending) return;
+    if (!sessionUser) {
+      promptAuth("Hãy đăng nhập để dùng AI đặt nhanh.", { screen, tab: activeTab });
+      return;
+    }
+
+    const nextHour = `${(clockNow.getHours() + 1) % 24}`.padStart(2, "0");
+    const quickPrompt = `Mình muốn đặt nhanh cho 2 người lúc ${nextHour}:00 tối nay, ngân sách 350k, ưu tiên phim đang chiếu và combo hợp lý.`;
+
+    setAssistantQuickLoading(true);
+    try {
+      const result = await requestAssistant(quickPrompt);
+      if (!result.suggestions.length) {
+        showToast("AI chưa tìm được phương án đặt nhanh phù hợp.", "info", "system");
+        return;
+      }
+
+      const top = result.suggestions[0];
+      await handleAssistantSuggestionPress(top.movieId, top.showtimeId, top.comboId, top.ticketCount);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Không thể chạy AI đặt nhanh.", "error", "system");
+    } finally {
+      setAssistantQuickLoading(false);
+    }
+  }, [activeTab, assistantQuickLoading, assistantSending, clockNow, handleAssistantSuggestionPress, promptAuth, requestAssistant, screen, sessionUser, showToast]);
 
   const askAssistant = React.useCallback(
     async (forcedMessage?: string) => {
@@ -828,43 +1060,24 @@ export default function App() {
       setAssistantSending(true);
 
       try {
-        const response = await fetch(`${apiBaseUrl}/ai/assistant`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...apiHeaders(),
-          },
-          body: JSON.stringify({
-            message: text,
-            context: {
-              now: new Date().toISOString(),
-              favoriteMovieIds,
-              watchlistMovieIds,
-              selectedMovieId: selectedMovie.id,
-            },
-          }),
-        });
-        const json = await response.json();
-        if (!response.ok) {
-          throw new Error(json.error ?? "AI đang bận, vui lòng thử lại.");
-        }
+        const result = await requestAssistant(text);
 
         const assistantMessage: AssistantMessage = {
           id: `${Date.now()}-assistant`,
           role: "assistant",
-          text: String(json.answer ?? "Mình chưa có đề xuất phù hợp ở lúc này."),
+          text: result.answer,
           createdAt: new Date().toISOString(),
-          suggestions: Array.isArray(json.suggestions) ? json.suggestions : [],
-          source: json.source === "llm" ? "llm" : "rule-based",
+          suggestions: result.suggestions,
+          source: result.source,
         };
         setAssistantMessages((prev) => [...prev, assistantMessage]);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "AI đang tạm lỗi.";
+        const message = error instanceof Error ? error.message : "AI dang t?m l?i.";
         showToast(message, "error", "system");
         const assistantMessage: AssistantMessage = {
           id: `${Date.now()}-assistant-error`,
           role: "assistant",
-          text: "Mình chưa xử lý được yêu cầu vừa rồi. Bạn thử nói cụ thể hơn: giờ rảnh, số người, ngân sách và thể loại nhé.",
+          text: "M�nh chua x? l� du?c y�u c?u v?a r?i. B?n th? n�i c? th? hon: gi? r?nh, s? ngu?i, ng�n s�ch v� th? lo?i nh�.",
           createdAt: new Date().toISOString(),
         };
         setAssistantMessages((prev) => [...prev, assistantMessage]);
@@ -872,7 +1085,7 @@ export default function App() {
         setAssistantSending(false);
       }
     },
-    [apiBaseUrl, apiHeaders, assistantInput, assistantSending, favoriteMovieIds, selectedMovie.id, showToast, watchlistMovieIds]
+    [assistantInput, assistantSending, requestAssistant, showToast]
   );
 
   const submitAuth = async () => {
@@ -1461,7 +1674,7 @@ export default function App() {
         seedPrompts={ASSISTANT_SEED_PROMPTS}
         onPromptPress={(prompt) => askAssistant(prompt)}
         onSend={() => askAssistant()}
-        onSuggestionPress={openAssistantSuggestion}
+        onSuggestionPress={handleAssistantSuggestionPress}
       />
     );
   } else if (activeTab === "tickets") {
@@ -1529,6 +1742,14 @@ export default function App() {
           </View>
         </View>
         <View style={styles.topBarStatusWrap}>
+          <Pressable style={[styles.aiQuickButton, assistantQuickLoading && styles.aiQuickButtonDisabled]} onPress={runAssistantQuickBooking}>
+            {assistantQuickLoading ? (
+              <ActivityIndicator size="small" color="#fff7f2" />
+            ) : (
+              <MaterialCommunityIcons name="robot-love-outline" size={14} color="#fff7f2" />
+            )}
+            <Text style={styles.aiQuickButtonText}>AI d?t nhanh</Text>
+          </Pressable>
           <View style={[styles.networkIndicator, networkStatus === "online" ? styles.networkIndicatorOnline : styles.networkIndicatorOffline]}>
             <View style={[styles.networkIndicatorCore, networkStatus === "online" ? styles.networkIndicatorCoreOnline : styles.networkIndicatorCoreOffline]} />
           </View>
@@ -1560,7 +1781,7 @@ export default function App() {
             seedPrompts={ASSISTANT_SEED_PROMPTS}
             onPromptPress={(prompt) => askAssistant(prompt)}
             onSend={() => askAssistant()}
-            onSuggestionPress={openAssistantSuggestion}
+            onSuggestionPress={handleAssistantSuggestionPress}
           />
         </View>
       ) : null}
@@ -1631,5 +1852,6 @@ export default function App() {
     </SafeAreaView>
   );
 }
+
 
 
