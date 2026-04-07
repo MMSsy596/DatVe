@@ -1171,7 +1171,7 @@ export function AssistantScreen(props: {
   seedPrompts: string[];
   onPromptPress: (prompt: string) => void;
   onSend: () => void;
-  onSuggestionPress: (movieId: number, showtimeId: number) => void;
+  onSuggestionPress: (movieId: number, showtimeId: number, comboId: number | null, ticketCount: number) => void;
   compact?: boolean;
 }) {
   const { messages, input, setInput, sending, seedPrompts, onPromptPress, onSend, onSuggestionPress, compact = false } = props;
@@ -1218,7 +1218,7 @@ export function AssistantScreen(props: {
                     <Pressable
                       key={`${item.id}-${suggestion.showtimeId}`}
                       style={styles.aiSuggestionCard}
-                      onPress={() => onSuggestionPress(suggestion.movieId, suggestion.showtimeId)}
+                      onPress={() => onSuggestionPress(suggestion.movieId, suggestion.showtimeId, suggestion.comboId, suggestion.ticketCount)}
                     >
                       <Text style={styles.aiSuggestionTitle}>{suggestion.movieTitle}</Text>
                       <Text style={styles.aiSuggestionMeta}>

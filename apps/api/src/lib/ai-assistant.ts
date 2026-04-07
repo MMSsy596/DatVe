@@ -1,4 +1,4 @@
-import { getCatalogData } from "./catalog";
+﻿import { getCatalogData } from "./catalog";
 
 type AssistantContext = {
   now?: string;
@@ -11,6 +11,7 @@ type AssistantSuggestion = {
   movieId: number;
   showtimeId: number;
   comboId: number | null;
+  ticketCount: number;
   movieTitle: string;
   cinemaName: string;
   startTime: string;
@@ -94,15 +95,33 @@ function formatCurrency(value: number) {
   return `${Math.round(value).toLocaleString("vi-VN")}đ`;
 }
 
-async function maybeRewriteByLLM(input: {
+function getGeminiModelFallbacks() {
+  const raw = process.env.GEMINI_MODEL_LIST?.trim();
+  if (raw) {
+    return raw
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  }
+
+  return [
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+  ];
+}
+
+async function maybeRewriteByGemini(input: {
   message: string;
   baseAnswer: string;
   suggestions: AssistantSuggestion[];
 }) {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
 
-  const model = process.env.OPENAI_MODEL?.trim() || "gpt-4.1-mini";
+  const modelFallbacks = getGeminiModelFallbacks();
+  if (modelFallbacks.length === 0) return null;
+
   const suggestionText =
     input.suggestions.length > 0
       ? input.suggestions
@@ -122,35 +141,50 @@ async function maybeRewriteByLLM(input: {
     `Danh sách gợi ý: ${suggestionText}`,
   ].join("\n");
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      input: prompt,
-      temperature: 0.3,
-      max_output_tokens: 320,
-    }),
-  });
+  for (const model of modelFallbacks) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: prompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 320,
+            },
+          }),
+        }
+      );
 
-  if (!response.ok) return null;
-  const json = await response.json();
-  const outputText = String(json.output_text ?? "").trim();
-  if (outputText) return outputText;
+      if (!response.ok) {
+        continue;
+      }
 
-  const fallback =
-    Array.isArray(json.output) && json.output.length > 0
-      ? String(
-          json.output
-            .flatMap((item: any) => item.content ?? [])
-            .map((item: any) => item.text ?? "")
-            .join(" ")
-        ).trim()
-      : "";
-  return fallback || null;
+      const json = await response.json();
+      const text = String(
+        json?.candidates?.[0]?.content?.parts
+          ?.map((part: any) => String(part?.text ?? ""))
+          .join(" ") ?? ""
+      ).trim();
+
+      if (text) {
+        return { text, model };
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
 }
 
 function buildRuleAnswer(suggestions: AssistantSuggestion[], peopleCount: number, budget: number | null, genre: string | null) {
@@ -236,6 +270,7 @@ export async function generateAssistantReply(input: { message: string; context?:
           movieId: movie.id,
           showtimeId: showtime.id,
           comboId: selectedCombo?.id ?? null,
+          ticketCount: peopleCount,
           movieTitle: movie.title,
           cinemaName: showtime.cinemaName,
           startTime: String(showtime.startTime),
@@ -259,18 +294,20 @@ export async function generateAssistantReply(input: { message: string; context?:
   }
 
   const baseAnswer = buildRuleAnswer(suggestions, peopleCount, budget, genrePreference);
-  const llmAnswer = await maybeRewriteByLLM({ message, baseAnswer, suggestions }).catch(() => null);
+  const llmResult = await maybeRewriteByGemini({ message, baseAnswer, suggestions }).catch(() => null);
 
   return {
-    answer: llmAnswer ?? baseAnswer,
+    answer: llmResult?.text ?? baseAnswer,
     suggestions,
-    source: llmAnswer ? ("llm" as const) : ("rule-based" as const),
+    source: llmResult ? ("llm" as const) : ("rule-based" as const),
     meta: {
       preferredHour,
       peopleCount,
       budget,
       genrePreference,
       wantsCombo,
+      llmProvider: llmResult ? "gemini" : null,
+      llmModel: llmResult?.model ?? null,
     },
   };
 }

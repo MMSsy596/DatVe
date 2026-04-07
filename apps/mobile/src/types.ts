@@ -181,6 +181,7 @@ export type AssistantSuggestion = {
   movieId: number;
   showtimeId: number;
   comboId: number | null;
+  ticketCount: number;
   movieTitle: string;
   cinemaName: string;
   startTime: string;
