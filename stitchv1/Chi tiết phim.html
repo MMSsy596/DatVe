@@ -1,0 +1,483 @@
+<!doctype html>
+
+<html class="dark" lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>PhimBook - Chi tiết phim</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#131313",
+              "on-primary-fixed": "#410003",
+              "surface-container-lowest": "#0e0e0e",
+              "tertiary-fixed": "#ffdf9e",
+              outline: "#ab8985",
+              "on-primary-fixed-variant": "#930010",
+              "inverse-on-surface": "#313030",
+              "outline-variant": "#5b403d",
+              primary: "#ffb3ac",
+              "primary-fixed": "#ffdad6",
+              "on-secondary-fixed-variant": "#604100",
+              "secondary-fixed": "#ffdeac",
+              "primary-fixed-dim": "#ffb3ac",
+              "on-error": "#690005",
+              "on-secondary": "#432c00",
+              "on-tertiary-fixed-variant": "#5b4300",
+              "primary-container": "#d32f2f",
+              "on-background": "#e5e2e1",
+              "tertiary-fixed-dim": "#fabd00",
+              error: "#ffb4ab",
+              tertiary: "#fabd00",
+              "surface-dim": "#131313",
+              "on-tertiary-container": "#fff3e1",
+              "on-surface-variant": "#e4beba",
+              "secondary-fixed-dim": "#ffba38",
+              "inverse-surface": "#e5e2e1",
+              "tertiary-container": "#8e6a00",
+              "inverse-primary": "#ba1a20",
+              "on-secondary-fixed": "#281900",
+              "secondary-container": "#feb300",
+              secondary: "#ffd799",
+              "surface-container-high": "#2a2a2a",
+              "surface-tint": "#ffb3ac",
+              surface: "#131313",
+              "surface-container-highest": "#353534",
+              "on-surface": "#e5e2e1",
+              "on-secondary-container": "#6a4800",
+              "surface-container": "#201f1f",
+              "on-tertiary-fixed": "#261a00",
+              "surface-variant": "#353534",
+              "on-error-container": "#ffdad6",
+              "on-primary-container": "#fff2f0",
+              "on-tertiary": "#3f2e00",
+              "surface-container-low": "#1c1b1b",
+              "error-container": "#93000a",
+              "on-primary": "#680008",
+              "surface-bright": "#393939",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Be Vietnam Pro"],
+              body: ["Be Vietnam Pro"],
+              label: ["Be Vietnam Pro"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      body {
+        font-family: "Be Vietnam Pro", sans-serif;
+      }
+    </style>
+    <style>
+      body {
+        min-height: max(884px, 100dvh);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-background text-on-surface antialiased selection:bg-primary-container selection:text-white"
+  >
+    <!-- TopAppBar -->
+    <header
+      class="fixed top-0 w-full z-50 bg-[#131313]/60 backdrop-blur-md bg-gradient-to-b from-[#131313] to-transparent"
+    >
+      <div
+        class="flex justify-between items-center px-6 h-16 w-full max-w-full"
+      >
+        <div class="flex items-center gap-3">
+          <span
+            class="material-symbols-outlined text-[#E5E2E1] scale-95 active:duration-100 transition-transform cursor-pointer"
+            >arrow_back</span
+          >
+          <h1 class="text-xl font-black text-[#D32F2F] italic tracking-tighter">
+            PhimBook
+          </h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <span
+            class="material-symbols-outlined text-[#E5E2E1] scale-95 active:duration-100 transition-transform cursor-pointer"
+            >share</span
+          >
+          <span
+            class="material-symbols-outlined text-[#E5E2E1] scale-95 active:duration-100 transition-transform cursor-pointer"
+            >search</span
+          >
+        </div>
+      </div>
+    </header>
+    <main class="pb-32">
+      <!-- Hero Movie Poster Section -->
+      <section class="relative w-full h-[530px] overflow-hidden">
+        <div
+          class="absolute inset-0 bg-cover bg-center"
+          data-alt="cinematic wide shot of a futuristic cyberpunk city with neon red and amber lights reflecting on rain-slicked pavement at night"
+          style="
+            background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuCgBrHc5P5h80QbfJfMOWSgGZU8O9zyh5uY_d5RU81bNzzZ__r5-J6dP483M87m6nTHWniPjDNisevEFtHp1PoWN3_43gb7OWhLEkCWsFPdOAfNVF9vepDlrbzupC2iQhoWnB-uJWE4iCNkbDPu0GWahgewnX4m6g-Bx4jDBNkL1GewLgLeaTPFtJ3_VVnwC2iUYeixXxh3S-eqtqkhz1xE5PRKJvmdUhQsctGZTA45qk1i6VSGzeKWsYCRs7nOabDZPV-M9RU&quot;);
+          "
+        >
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"
+          ></div>
+          <div
+            class="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-transparent"
+          ></div>
+        </div>
+        <div
+          class="absolute bottom-0 left-0 w-full px-6 pb-8 flex flex-col items-start gap-3"
+        >
+          <div class="flex gap-2">
+            <span
+              class="px-3 py-1 bg-secondary-container/20 text-secondary border border-secondary/30 rounded-md text-[10px] font-bold uppercase tracking-widest"
+              >IMAX</span
+            >
+            <span
+              class="px-3 py-1 bg-primary-container/20 text-primary border border-primary/30 rounded-md text-[10px] font-bold uppercase tracking-widest"
+              >T16</span
+            >
+          </div>
+          <h2
+            class="text-4xl md:text-5xl font-extrabold text-on-surface tracking-tight leading-tight"
+          >
+            Chiến Binh Cuối Cùng: Kỷ Nguyên Mới
+          </h2>
+          <div
+            class="flex items-center gap-4 text-on-surface-variant text-sm font-medium"
+          >
+            <div class="flex items-center gap-1">
+              <span
+                class="material-symbols-outlined text-secondary text-base"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >star</span
+              >
+              <span>4.8 (1.2k lượt xem)</span>
+            </div>
+            <span>•</span>
+            <span>Hành động, Viễn tưởng</span>
+            <span>•</span>
+            <span>124 Phút</span>
+          </div>
+        </div>
+      </section>
+      <!-- Synopsis & Details Bento -->
+      <section class="px-6 mt-8 space-y-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="md:col-span-2 space-y-4">
+            <h3 class="text-lg font-bold text-on-surface">Nội dung phim</h3>
+            <p class="text-on-surface-variant leading-relaxed text-sm">
+              Lấy bối cảnh vào năm 2085, khi nguồn tài nguyên cuối cùng của Trái
+              Đất dần cạn kiệt. Một nhóm chiến binh tinh nhuệ phải thực hiện
+              nhiệm vụ cuối cùng vào không gian để tìm kiếm hy vọng mới. Liệu họ
+              có vượt qua được những thử thách khắc nghiệt và sự phản bội từ bên
+              trong?
+            </p>
+          </div>
+          <div class="bg-surface-container-low rounded-xl p-5 space-y-4">
+            <div
+              class="flex justify-between items-center border-b border-outline-variant/10 pb-3"
+            >
+              <span
+                class="text-xs text-on-surface-variant uppercase tracking-wider"
+                >Đạo diễn</span
+              >
+              <span class="text-sm font-semibold">Trần Anh Hùng</span>
+            </div>
+            <div
+              class="flex justify-between items-center border-b border-outline-variant/10 pb-3"
+            >
+              <span
+                class="text-xs text-on-surface-variant uppercase tracking-wider"
+                >Ngôn ngữ</span
+              >
+              <span class="text-sm font-semibold">Phụ đề tiếng Việt</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span
+                class="text-xs text-on-surface-variant uppercase tracking-wider"
+                >Ngày khởi chiếu</span
+              >
+              <span class="text-sm font-semibold">15 Th05, 2024</span>
+            </div>
+          </div>
+        </div>
+        <!-- Date Selection -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-bold text-on-surface">Chọn ngày</h3>
+          <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+            <button
+              class="flex flex-col items-center justify-center min-w-[70px] h-20 bg-primary-container text-on-primary-container rounded-xl transition-all"
+            >
+              <span class="text-[10px] uppercase font-bold opacity-80"
+                >Th 4</span
+              >
+              <span class="text-xl font-black">15</span>
+            </button>
+            <button
+              class="flex flex-col items-center justify-center min-w-[70px] h-20 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl transition-all"
+            >
+              <span
+                class="text-[10px] uppercase font-bold text-on-surface-variant"
+                >Th 5</span
+              >
+              <span class="text-xl font-black">16</span>
+            </button>
+            <button
+              class="flex flex-col items-center justify-center min-w-[70px] h-20 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl transition-all"
+            >
+              <span
+                class="text-[10px] uppercase font-bold text-on-surface-variant"
+                >Th 6</span
+              >
+              <span class="text-xl font-black">17</span>
+            </button>
+            <button
+              class="flex flex-col items-center justify-center min-w-[70px] h-20 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl transition-all"
+            >
+              <span
+                class="text-[10px] uppercase font-bold text-on-surface-variant"
+                >Th 7</span
+              >
+              <span class="text-xl font-black">18</span>
+            </button>
+            <button
+              class="flex flex-col items-center justify-center min-w-[70px] h-20 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl transition-all"
+            >
+              <span
+                class="text-[10px] uppercase font-bold text-on-surface-variant"
+                >CN</span
+              >
+              <span class="text-xl font-black">19</span>
+            </button>
+          </div>
+        </div>
+        <!-- Cinema Showtimes -->
+        <div class="space-y-6">
+          <div class="flex justify-between items-end">
+            <h3 class="text-lg font-bold text-on-surface">Lịch chiếu</h3>
+            <button
+              class="flex items-center gap-1 text-primary text-xs font-bold uppercase tracking-wider"
+            >
+              <span class="material-symbols-outlined text-sm">filter_list</span>
+              Bộ lọc
+            </button>
+          </div>
+          <!-- Cinema Card 1 -->
+          <div class="bg-surface-container-low rounded-2xl p-6 space-y-6">
+            <div class="flex justify-between items-start">
+              <div class="space-y-1">
+                <h4 class="font-bold text-on-surface">CGV Vincom Đồng Khởi</h4>
+                <p class="text-xs text-on-surface-variant">
+                  72 Lê Thánh Tôn, Quận 1, TP. HCM
+                </p>
+              </div>
+              <span class="material-symbols-outlined text-on-surface-variant"
+                >favorite</span
+              >
+            </div>
+            <div class="space-y-4">
+              <div class="space-y-3">
+                <span
+                  class="text-[10px] font-bold uppercase text-secondary tracking-widest bg-secondary/10 px-2 py-1 rounded"
+                  >2D Phụ Đề</span
+                >
+                <div class="flex flex-wrap gap-3">
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    09:30
+                  </button>
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    12:45
+                  </button>
+                  <button
+                    class="px-5 py-2.5 bg-primary-container text-on-primary-container rounded-lg text-sm font-bold shadow-lg shadow-primary-container/20"
+                  >
+                    15:15
+                  </button>
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    18:00
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-3">
+                <span
+                  class="text-[10px] font-bold uppercase text-primary tracking-widest bg-primary/10 px-2 py-1 rounded"
+                  >IMAX Lồng Tiếng</span
+                >
+                <div class="flex flex-wrap gap-3">
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    10:00
+                  </button>
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    14:20
+                  </button>
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    21:45
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Cinema Card 2 -->
+          <div class="bg-surface-container-low rounded-2xl p-6 space-y-6">
+            <div class="flex justify-between items-start">
+              <div class="space-y-1">
+                <h4 class="font-bold text-on-surface">Galaxy Nguyễn Du</h4>
+                <p class="text-xs text-on-surface-variant">
+                  116 Nguyễn Du, Quận 1, TP. HCM
+                </p>
+              </div>
+              <span class="material-symbols-outlined text-on-surface-variant"
+                >favorite</span
+              >
+            </div>
+            <div class="space-y-4">
+              <div class="space-y-3">
+                <span
+                  class="text-[10px] font-bold uppercase text-secondary tracking-widest bg-secondary/10 px-2 py-1 rounded"
+                  >2D Phụ Đề</span
+                >
+                <div class="flex flex-wrap gap-3">
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    11:15
+                  </button>
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    16:30
+                  </button>
+                  <button
+                    class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 rounded-lg text-sm font-bold transition-all"
+                  >
+                    19:50
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- Sticky Bottom CTA -->
+    <div class="fixed bottom-24 left-0 w-full px-6 z-40 pointer-events-none">
+      <div class="max-w-2xl mx-auto pointer-events-auto">
+        <button
+          class="w-full bg-gradient-to-r from-primary to-primary-container h-14 rounded-full flex items-center justify-between px-8 shadow-2xl shadow-primary-container/40 active:scale-95 transition-transform"
+        >
+          <div class="text-left">
+            <span
+              class="block text-[10px] font-bold uppercase opacity-80 text-on-primary-container"
+              >Tổng tiền tạm tính</span
+            >
+            <span
+              class="block text-lg font-black text-on-primary-container leading-none"
+              >125.000đ</span
+            >
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-on-primary-container">Tiếp tục</span>
+            <span class="material-symbols-outlined text-on-primary-container"
+              >arrow_forward</span
+            >
+          </div>
+        </button>
+      </div>
+    </div>
+    <!-- BottomNavBar -->
+    <nav
+      class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-6 pt-3 bg-[#1C1B1B]/80 backdrop-blur-lg rounded-t-[1.5rem] border-t border-[#353534]/30 shadow-[0_-4px_24px_rgba(211,47,47,0.06)]"
+    >
+      <div
+        class="flex flex-col items-center justify-center text-[#E5E2E1]/50 px-4 py-1.5 hover:text-[#FFB3AC] transition-colors tap-highlight-transparent active:scale-90 transition-all cursor-pointer"
+      >
+        <span class="material-symbols-outlined mb-1">home</span>
+        <span
+          class="font-['Be_Vietnam_Pro'] text-[10px] font-medium uppercase tracking-wider"
+          >Trang chủ</span
+        >
+      </div>
+      <div
+        class="flex flex-col items-center justify-center text-[#E5E2E1]/50 px-4 py-1.5 hover:text-[#FFB3AC] transition-colors tap-highlight-transparent active:scale-90 transition-all cursor-pointer"
+      >
+        <span class="material-symbols-outlined mb-1">explore</span>
+        <span
+          class="font-['Be_Vietnam_Pro'] text-[10px] font-medium uppercase tracking-wider"
+          >Khám phá</span
+        >
+      </div>
+      <div
+        class="flex flex-col items-center justify-center text-[#E5E2E1]/50 px-4 py-1.5 hover:text-[#FFB3AC] transition-colors tap-highlight-transparent active:scale-90 transition-all cursor-pointer"
+      >
+        <span class="material-symbols-outlined mb-1">smart_toy</span>
+        <span
+          class="font-['Be_Vietnam_Pro'] text-[10px] font-medium uppercase tracking-wider"
+          >AI Trợ lý</span
+        >
+      </div>
+      <div
+        class="flex flex-col items-center justify-center text-[#D32F2F] bg-[#D32F2F]/10 rounded-2xl px-4 py-1.5 tap-highlight-transparent active:scale-90 transition-all cursor-pointer"
+      >
+        <span
+          class="material-symbols-outlined mb-1"
+          style="font-variation-settings: &quot;FILL&quot; 1"
+          >confirmation_number</span
+        >
+        <span
+          class="font-['Be_Vietnam_Pro'] text-[10px] font-medium uppercase tracking-wider"
+          >Vé của tôi</span
+        >
+      </div>
+      <div
+        class="flex flex-col items-center justify-center text-[#E5E2E1]/50 px-4 py-1.5 hover:text-[#FFB3AC] transition-colors tap-highlight-transparent active:scale-90 transition-all cursor-pointer"
+      >
+        <span class="material-symbols-outlined mb-1">person</span>
+        <span
+          class="font-['Be_Vietnam_Pro'] text-[10px] font-medium uppercase tracking-wider"
+          >Tài khoản</span
+        >
+      </div>
+    </nav>
+  </body>
+</html>

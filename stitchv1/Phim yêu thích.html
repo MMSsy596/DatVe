@@ -1,0 +1,442 @@
+<!doctype html>
+
+<html class="dark" lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+      name="viewport"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100;300;400;500;600;700;800;900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed": "#ffdad6",
+              "surface-container-highest": "#353534",
+              "on-tertiary-container": "#fff3e1",
+              "on-surface": "#e5e2e1",
+              "surface-container-low": "#1c1b1b",
+              "outline-variant": "#5b403d",
+              "tertiary-fixed": "#ffdf9e",
+              error: "#ffb4ab",
+              "on-surface-variant": "#e4beba",
+              "primary-fixed-dim": "#ffb3ac",
+              "inverse-on-surface": "#313030",
+              "secondary-fixed-dim": "#ffba38",
+              "inverse-surface": "#e5e2e1",
+              "on-tertiary": "#3f2e00",
+              "on-secondary-fixed-variant": "#604100",
+              "on-secondary-fixed": "#281900",
+              surface: "#131313",
+              "on-secondary-container": "#6a4800",
+              "on-primary-fixed-variant": "#930010",
+              "inverse-primary": "#ba1a20",
+              "surface-container-lowest": "#0e0e0e",
+              "on-error-container": "#ffdad6",
+              primary: "#ffb3ac",
+              "surface-dim": "#131313",
+              "primary-container": "#d32f2f",
+              secondary: "#ffd799",
+              "on-secondary": "#432c00",
+              "tertiary-container": "#8e6a00",
+              "tertiary-fixed-dim": "#fabd00",
+              "surface-variant": "#353534",
+              "surface-tint": "#ffb3ac",
+              "error-container": "#93000a",
+              tertiary: "#fabd00",
+              "on-primary-fixed": "#410003",
+              outline: "#ab8985",
+              "on-primary": "#680008",
+              "on-primary-container": "#fff2f0",
+              background: "#131313",
+              "surface-container": "#201f1f",
+              "on-tertiary-fixed-variant": "#5b4300",
+              "secondary-container": "#feb300",
+              "on-background": "#e5e2e1",
+              "surface-container-high": "#2a2a2a",
+              "surface-bright": "#393939",
+              "secondary-fixed": "#ffdeac",
+              "on-tertiary-fixed": "#261a00",
+              "on-error": "#690005",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Be Vietnam Pro"],
+              body: ["Be Vietnam Pro"],
+              label: ["Be Vietnam Pro"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      body {
+        font-family: "Be Vietnam Pro", sans-serif;
+        background-color: #131313;
+        color: #e5e2e1;
+      }
+      .glass-card {
+        background: rgba(32, 31, 31, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+    </style>
+    <style>
+      body {
+        min-height: max(884px, 100dvh);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen pb-24">
+    <!-- TopAppBar -->
+    <header class="fixed top-0 w-full z-50 bg-[#131313]/60 backdrop-blur-md">
+      <div
+        class="flex justify-between items-center px-6 h-16 w-full max-w-7xl mx-auto"
+      >
+        <button
+          class="hover:opacity-80 transition-opacity scale-95 duration-200 text-[#FFB3AC]"
+        >
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h1
+          class="font-['Be_Vietnam_Pro'] tracking-[-2%] font-bold text-lg text-[#FFB3AC]"
+        >
+          Phim yêu thích
+        </h1>
+        <button
+          class="hover:opacity-80 transition-opacity scale-95 duration-200 text-[#FFB3AC]"
+        >
+          <span class="material-symbols-outlined">search</span>
+        </button>
+      </div>
+    </header>
+    <!-- Main Content Area -->
+    <main class="pt-20 px-4 space-y-6">
+      <!-- Section: Results Info -->
+      <div class="flex justify-between items-end px-2">
+        <div>
+          <p
+            class="text-secondary text-xs font-label tracking-widest uppercase mb-1"
+          >
+            Bộ sưu tập
+          </p>
+          <h2 class="text-2xl font-headline font-bold">Danh sách của bạn</h2>
+        </div>
+        <span class="text-on-surface-variant text-sm">5 phim</span>
+      </div>
+      <!-- Movie List Container (Asymmetric Grid/List) -->
+      <div class="grid grid-cols-1 gap-8">
+        <!-- Movie Card 1 -->
+        <div class="glass-card rounded-xl overflow-hidden relative group">
+          <div class="relative h-64 w-full">
+            <img
+              alt="Phim khoa học viễn tưởng"
+              class="w-full h-full object-cover"
+              data-alt="cinematic shot of a futuristic neon city with rain at night, moody lighting, atmospheric sci-fi aesthetic"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRIi4rPr3YaIJ6WpDdwnCKgDdRm0YPJ_-C-U3UCgHwVnFXYQYzr5qlRLOFV919E2irhC0uxbX7cv091xV4SbwkBA1hKcYM0Ewsuh-cnOigI5Mhhc7b4KDa0vT3Q0ukEKkCMCNvigwnNgdKNcgQdhijKVG4lkdel1k4dPgIL7CJ4MSMbZw0AIvlEOoyL0ST6RplliKb8mXHxnLAz5JkhwfA-zpWGj85IxYwReCDO9yUrSWQ1-nMMv-c1mIyo65hks-xwX3Td8w"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"
+            ></div>
+            <div
+              class="absolute top-4 right-4 bg-primary-container p-2 rounded-full shadow-lg"
+            >
+              <span
+                class="material-symbols-outlined text-white"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >favorite</span
+              >
+            </div>
+            <div class="absolute bottom-4 left-4 flex items-center space-x-2">
+              <div
+                class="bg-secondary-container/90 px-2 py-1 rounded-md flex items-center gap-1"
+              >
+                <span
+                  class="material-symbols-outlined text-on-secondary-container text-sm"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >star</span
+                >
+                <span class="text-on-secondary-container font-bold text-xs"
+                  >9.2</span
+                >
+              </div>
+              <span
+                class="bg-surface-variant/80 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-white uppercase font-bold tracking-tighter"
+                >IMAX</span
+              >
+            </div>
+          </div>
+          <div class="p-5 flex flex-col gap-3">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-xl font-headline font-extrabold leading-tight">
+                  Kẻ Hủy Diệt: Kỷ Nguyên Mới
+                </h3>
+                <p class="text-on-surface-variant text-sm mt-1">
+                  Hành động • Viễn tưởng • 128 phút
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-4 items-center mt-2">
+              <button
+                class="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary-container py-3 rounded-full font-bold text-sm tracking-wide shadow-[0_4px_15px_rgba(211,47,47,0.3)] active:scale-95 transition-transform"
+              >
+                Đặt vé ngay
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Movie Card 2 -->
+        <div class="glass-card rounded-xl overflow-hidden relative group">
+          <div class="relative h-64 w-full">
+            <img
+              alt="Phim kinh dị kịch tính"
+              class="w-full h-full object-cover"
+              data-alt="dramatic low-angle shot of a mysterious person in a long coat standing in a fog-filled dark forest, cinematic teal and orange lighting"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDb1_yl8p3JOcGnZWO7IzG3vDsWA5PbYR03fGPUjEjq69T4NbtmwqXQASDFwoQNPYyXkXfEClNdVNdUEGmBjlFIwdqT29juHcDNL2eGlntTJ_7eQ6aMCH6bjUnPo2YFgSpV_q-OzpjIxSPt9CZTmWYwoImLKfkfIb0Gc4SfV6k8Dy5Ea9RI0aVSs2nbocPBh3fYLjESo_jjIpuVTOQ7luZRA9BQuMG4r85IUrzu-qjMcKQnhS6hDNRiHmqU3Z7GDnbHsysNsak"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"
+            ></div>
+            <div
+              class="absolute top-4 right-4 bg-primary-container p-2 rounded-full shadow-lg"
+            >
+              <span
+                class="material-symbols-outlined text-white"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >favorite</span
+              >
+            </div>
+            <div class="absolute bottom-4 left-4 flex items-center space-x-2">
+              <div
+                class="bg-secondary-container/90 px-2 py-1 rounded-md flex items-center gap-1"
+              >
+                <span
+                  class="material-symbols-outlined text-on-secondary-container text-sm"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >star</span
+                >
+                <span class="text-on-secondary-container font-bold text-xs"
+                  >8.5</span
+                >
+              </div>
+              <span
+                class="bg-surface-variant/80 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-white uppercase font-bold tracking-tighter"
+                >2D</span
+              >
+            </div>
+          </div>
+          <div class="p-5 flex flex-col gap-3">
+            <div>
+              <h3 class="text-xl font-headline font-extrabold leading-tight">
+                Bóng Đêm Kinh Hoàng
+              </h3>
+              <p class="text-on-surface-variant text-sm mt-1">
+                Kinh dị • Tâm lý • 105 phút
+              </p>
+            </div>
+            <div class="flex gap-4 items-center mt-2">
+              <button
+                class="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary-container py-3 rounded-full font-bold text-sm tracking-wide shadow-[0_4px_15px_rgba(211,47,47,0.3)] active:scale-95 transition-transform"
+              >
+                Đặt vé ngay
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Movie Card 3 -->
+        <div class="glass-card rounded-xl overflow-hidden relative group">
+          <div class="relative h-64 w-full">
+            <img
+              alt="Phim hoạt hình nghệ thuật"
+              class="w-full h-full object-cover"
+              data-alt="vibrant animated scene of a whimsical floating city among colorful clouds, Studio Ghibli style illustration, soft sunlight"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuC55zkinY8OYXNE9kFEOKNKqKuJKJVEprwx1z5MJ4fh8FOwLqWqylApJWqSxfiZVzKSyOBPTh3Gtur9LywA8i-I0ugjw_hM_4VeyuB1B-FBlCCo-HMS2woqa7D9du2cB8Uj9HqZFOecjq9NeVq8qOTw0tgW1sA6yxy6_-2KPSQZne7RF1z50G5zvB8I0zfBaF2M4tR0yIn5osIUzXCQeQiOop4yXbvUkbmT-G51lkpYgkgJHGwtFn45joXk_7mxBmWN7oc7q3M"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"
+            ></div>
+            <div
+              class="absolute top-4 right-4 bg-primary-container p-2 rounded-full shadow-lg"
+            >
+              <span
+                class="material-symbols-outlined text-white"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >favorite</span
+              >
+            </div>
+            <div class="absolute bottom-4 left-4 flex items-center space-x-2">
+              <div
+                class="bg-secondary-container/90 px-2 py-1 rounded-md flex items-center gap-1"
+              >
+                <span
+                  class="material-symbols-outlined text-on-secondary-container text-sm"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >star</span
+                >
+                <span class="text-on-secondary-container font-bold text-xs"
+                  >9.7</span
+                >
+              </div>
+              <span
+                class="bg-surface-variant/80 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-white uppercase font-bold tracking-tighter"
+                >3D</span
+              >
+            </div>
+          </div>
+          <div class="p-5 flex flex-col gap-3">
+            <div>
+              <h3 class="text-xl font-headline font-extrabold leading-tight">
+                Vương Quốc Trên Mây
+              </h3>
+              <p class="text-on-surface-variant text-sm mt-1">
+                Hoạt hình • Phiêu lưu • 92 phút
+              </p>
+            </div>
+            <div class="flex gap-4 items-center mt-2">
+              <button
+                class="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary-container py-3 rounded-full font-bold text-sm tracking-wide shadow-[0_4px_15px_rgba(211,47,47,0.3)] active:scale-95 transition-transform"
+              >
+                Đặt vé ngay
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Movie Card 4 -->
+        <div class="glass-card rounded-xl overflow-hidden relative group">
+          <div class="relative h-64 w-full">
+            <img
+              alt="Phim kịch tính lịch sử"
+              class="w-full h-full object-cover"
+              data-alt="wide cinematic landscape of a historical battlefield with smoke and orange sunset light, epic and solemn atmosphere"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKsxK41RJc2UmIg36_00PInK6A5uK6bt3Ab3fqro86ZwV6HAlVCUoVK0ClKHYqlljhcWutEvOiBDZy3f673qwLUkyfddFToJ4o2RsKYdgiQ4jvDZKktgwZbRdVBRGjd6G2bLVuQKL0aRfKJRUUxIN3yCrnyK8McgAjhDql5vRqkjaRh8fpJrqxmBz3V10VLEUTq2u0vTX9lhvVga1JWuCr9Xz1L22CBMF6x4QekalgLZGIUrCpt9MgjQpVWyyZzZGkjTOd4lc"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"
+            ></div>
+            <div
+              class="absolute top-4 right-4 bg-primary-container p-2 rounded-full shadow-lg"
+            >
+              <span
+                class="material-symbols-outlined text-white"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >favorite</span
+              >
+            </div>
+            <div class="absolute bottom-4 left-4 flex items-center space-x-2">
+              <div
+                class="bg-secondary-container/90 px-2 py-1 rounded-md flex items-center gap-1"
+              >
+                <span
+                  class="material-symbols-outlined text-on-secondary-container text-sm"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >star</span
+                >
+                <span class="text-on-secondary-container font-bold text-xs"
+                  >8.9</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="p-5 flex flex-col gap-3">
+            <div>
+              <h3 class="text-xl font-headline font-extrabold leading-tight">
+                Hào Kiệt Cuối Cùng
+              </h3>
+              <p class="text-on-surface-variant text-sm mt-1">
+                Hành động • Lịch sử • 142 phút
+              </p>
+            </div>
+            <div class="flex gap-4 items-center mt-2">
+              <button
+                class="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary-container py-3 rounded-full font-bold text-sm tracking-wide shadow-[0_4px_15px_rgba(211,47,47,0.3)] active:scale-95 transition-transform"
+              >
+                Đặt vé ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Pagination / Load More (Subtle) -->
+      <div class="flex justify-center py-8">
+        <button
+          class="text-secondary font-label text-xs uppercase tracking-[0.2em] hover:text-primary transition-colors flex items-center gap-2"
+        >
+          Xem thêm phim khác
+          <span class="material-symbols-outlined text-sm"
+            >keyboard_double_arrow_down</span
+          >
+        </button>
+      </div>
+    </main>
+    <!-- BottomNavBar -->
+    <nav
+      class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-3 pb-safe bg-[#201F1F]/60 backdrop-blur-md rounded-t-[1.5rem] z-50 shadow-[0_-4px_20px_rgba(255,179,172,0.06)]"
+    >
+      <div
+        class="flex flex-col items-center justify-center text-[#E5E2E1]/60 p-2 scale-90 duration-300 ease-in-out hover:text-[#FFB3AC] transition-colors"
+      >
+        <span class="material-symbols-outlined">home</span>
+        <span
+          class="font-['Be_Vietnam_Pro'] text-[10px] uppercase tracking-widest font-medium"
+          >Trang chủ</span
+        >
+      </div>
+      <div
+        class="flex flex-col items-center justify-center text-[#E5E2E1]/60 p-2 scale-90 duration-300 ease-in-out hover:text-[#FFB3AC] transition-colors"
+      >
+        <span class="material-symbols-outlined">movie</span>
+        <span
+          class="font-['Be_Vietnam_Pro'] text-[10px] uppercase tracking-widest font-medium"
+          >Phim</span
+        >
+      </div>
+      <!-- Active Tab: Yêu thích -->
+      <div
+        class="flex flex-col items-center justify-center bg-gradient-to-br from-[#FFB3AC] to-[#D32F2F] text-[#131313] rounded-full p-2 h-12 w-12 scale-90 duration-300 ease-in-out"
+      >
+        <span
+          class="material-symbols-outlined"
+          style="font-variation-settings: &quot;FILL&quot; 1"
+          >favorite</span
+        >
+      </div>
+      <div
+        class="flex flex-col items-center justify-center text-[#E5E2E1]/60 p-2 scale-90 duration-300 ease-in-out hover:text-[#FFB3AC] transition-colors"
+      >
+        <span class="material-symbols-outlined">person</span>
+        <span
+          class="font-['Be_Vietnam_Pro'] text-[10px] uppercase tracking-widest font-medium"
+          >Cá nhân</span
+        >
+      </div>
+    </nav>
+  </body>
+</html>
