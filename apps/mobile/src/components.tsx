@@ -1606,70 +1606,171 @@ export function ProfileScreen(props: {
   logoutLoading?: boolean;
 }) {
   const { onReload, profile, sessionUser, reminders, onLogout, loading = false, logoutLoading = false } = props;
+  const [aiAutoBook, setAiAutoBook] = React.useState(true);
+  const [aiNotifyDeal, setAiNotifyDeal] = React.useState(true);
+  const [systemPush, setSystemPush] = React.useState(true);
+
+  const displayName = profile?.fullName ?? sessionUser?.fullName ?? "Khách";
+  const displayEmail = profile?.email ?? sessionUser?.email ?? "Chưa đăng nhập";
+  const displayPhone = profile?.phone ?? sessionUser?.phone ?? "---";
+  const favorites = profile?.stats.favorites ?? 0;
+  const bookings = profile?.stats.bookings ?? 0;
+
+  const walletItems = [
+    { code: "VIP25", title: "Giảm 25% tối đa 120.000đ", note: "Áp dụng phim 2D, 3D" },
+    { code: "COMBO79", title: "Combo bắp + nước 79.000đ", note: "Hiệu lực đến cuối tuần" },
+    { code: "EARLY45", title: "Suất sáng giảm 45.000đ", note: "Khung 08:00 - 11:00" },
+  ];
+
+  const SettingRow = ({
+    title,
+    detail,
+    value,
+    onToggle,
+    icon,
+  }: {
+    title: string;
+    detail: string;
+    value: boolean;
+    onToggle: (next: boolean) => void;
+    icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  }) => (
+    <Pressable
+      onPress={() => onToggle(!value)}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        borderRadius: 18,
+        padding: 12,
+        backgroundColor: "rgba(255,255,255,0.03)",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.08)",
+      }}
+    >
+      <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(195,13,18,0.18)" }}>
+        <MaterialCommunityIcons name={icon} size={18} color="#fff2eb" />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={{ color: palette.text, fontSize: 14, fontWeight: "800" }}>{title}</Text>
+        <Text style={{ color: palette.muted, fontSize: 12 }}>{detail}</Text>
+      </View>
+      <View
+        style={{
+          width: 46,
+          height: 28,
+          borderRadius: 999,
+          padding: 3,
+          justifyContent: "center",
+          backgroundColor: value ? "rgba(195,13,18,0.9)" : "rgba(255,255,255,0.16)",
+        }}
+      >
+        <View
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 999,
+            backgroundColor: "#fff6f1",
+            transform: [{ translateX: value ? 18 : 0 }],
+          }}
+        />
+      </View>
+    </Pressable>
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.profileHero}>
-        {profile?.avatarUrl ? <MediaAsset uri={profile.avatarUrl} style={styles.avatar} /> : <View style={styles.avatar} />}
-        <View style={styles.profileMetaBlock}>
-          <Text style={styles.profileName}>{profile?.fullName ?? sessionUser?.fullName ?? "KhÃ¡ch"}</Text>
-          <Text style={styles.profileMail}>{profile?.email ?? sessionUser?.email ?? "ChÆ°a Ä‘Äƒng nháº­p"}</Text>
-          <Text style={styles.accountDetail}>{profile?.phone ?? sessionUser?.phone ?? "ÄÄƒng nháº­p Ä‘á»ƒ Ä‘á»“ng bá»™ vÃ©, Æ°u Ä‘Ã£i vÃ  nháº¯c lá»‹ch."}</Text>
+      <View
+        style={{
+          alignItems: "center",
+          borderRadius: 28,
+          padding: 20,
+          gap: 10,
+          backgroundColor: "rgba(195,13,18,0.08)",
+          borderWidth: 1,
+          borderColor: "rgba(195,13,18,0.24)",
+        }}
+      >
+        <View style={{ position: "relative" }}>
+          {profile?.avatarUrl ? <MediaAsset uri={profile.avatarUrl} style={{ width: 96, height: 96, borderRadius: 999, borderWidth: 2, borderColor: "rgba(255,255,255,0.2)" }} /> : <View style={{ width: 96, height: 96, borderRadius: 999, borderWidth: 2, borderColor: "rgba(255,255,255,0.2)", backgroundColor: "#2a1114" }} />}
+          <View style={{ position: "absolute", right: -8, bottom: -4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: "#cfa43f", borderWidth: 1, borderColor: "rgba(255,255,255,0.38)" }}>
+            <Text style={{ color: "#2b1a04", fontSize: 10, fontWeight: "900", letterSpacing: 0.5 }}>VIP GOLD</Text>
+          </View>
+        </View>
+        <Text style={{ color: palette.text, fontSize: 22, fontWeight: "900" }}>{displayName}</Text>
+        <Text style={{ color: palette.muted }}>{displayEmail}</Text>
+        <Text style={{ color: palette.muted }}>{displayPhone}</Text>
+
+        <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
+          <View style={{ flex: 1, borderRadius: 16, padding: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.03)", alignItems: "center", gap: 4 }}>
+            <Text style={{ color: palette.muted, fontSize: 11, fontWeight: "700" }}>Yêu thích</Text>
+            <Text style={{ color: palette.text, fontSize: 18, fontWeight: "900" }}>{favorites}</Text>
+          </View>
+          <View style={{ flex: 1, borderRadius: 16, padding: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.03)", alignItems: "center", gap: 4 }}>
+            <Text style={{ color: palette.muted, fontSize: 11, fontWeight: "700" }}>Vé đã đặt</Text>
+            <Text style={{ color: palette.text, fontSize: 18, fontWeight: "900" }}>{bookings}</Text>
+          </View>
         </View>
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>TÃ i khoáº£n</Text>
-        <Text style={styles.accountDetail}>{sessionUser ? `Äang Ä‘Äƒng nháº­p vá»›i vai trÃ² ${sessionUser.role}.` : "ÄÄƒng nháº­p hoáº·c Ä‘Äƒng kÃ½ Ä‘á»ƒ dÃ¹ng dá»¯ liá»‡u cÃ¡ nhÃ¢n vÃ  voucher."}</Text>
-        <NeonButton label="ÄÄƒng xuáº¥t" variant="secondary" onPress={onLogout} loading={logoutLoading} />
-      </View>
-
-      {profile ? (
-        <View style={styles.checkoutSummaryGrid}>
-          <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>YÃªu thÃ­ch</Text>
-            <Text style={styles.summaryValue}>{profile.stats.favorites}</Text>
-          </View>
-          <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>Xem sau</Text>
-            <Text style={styles.summaryValue}>{profile.stats.watchlist}</Text>
-          </View>
-          <View style={styles.checkoutSummaryCell}>
-            <Text style={styles.summaryLabel}>VÃ© Ä‘Ã£ Ä‘áº·t</Text>
-            <Text style={styles.summaryValue}>{profile.stats.bookings}</Text>
-          </View>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text style={styles.accountTitle}>Ví voucher</Text>
+          <Text style={styles.sectionAction}>NanBao Club</Text>
         </View>
-      ) : null}
-
-      {profile ? (
-        <View style={styles.accountRow}>
-          <Text style={styles.accountTitle}>Chi tiÃªu tÃ­ch lÅ©y</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(profile.stats.spending)}</Text>
-          <Text style={styles.accountDetail}>Theo dÃµi tá»•ng chi tiÃªu Ä‘á»ƒ tá»‘i Æ°u voucher vÃ  lá»‹ch xem phim.</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Nháº¯c lá»‹ch vÃ©</Text>
-        {reminders.length === 0 ? <Text style={styles.accountDetail}>ChÆ°a cÃ³ lá»‹ch nháº¯c nÃ o.</Text> : null}
-        {reminders.slice(0, 4).map((item, idx) => (
-          <View key={`reminder-${item.id}`} style={[styles.activityRow, idx % 2 === 1 && styles.activityRowAlt]}>
-            <Text style={styles.activityTitle}>{item.movie_title}</Text>
-            <Text style={styles.activityMeta}>{item.cinema_name} â€¢ {formatDateTime(item.start_time)}</Text>
-            <Text style={styles.activityTime}>Nháº¯c lÃºc {formatDateTime(item.remind_at)} â€¢ {item.status}</Text>
-          </View>
-        ))}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+          {walletItems.map((item, index) => (
+            <LinearGradient
+              key={item.code}
+              colors={index % 2 === 0 ? ["#8f0f07", "#3d0a0b"] : ["#a82611", "#4d110a"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ width: 220, minHeight: 126, borderRadius: 18, padding: 14, gap: 8, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" }}
+            >
+              <Text style={{ color: "#ffdca4", fontSize: 11, fontWeight: "900", letterSpacing: 0.8 }}>{item.code}</Text>
+              <Text style={{ color: "#fff8f3", fontSize: 16, fontWeight: "900", lineHeight: 22 }}>{item.title}</Text>
+              <Text style={{ color: "#f8d3c9", fontSize: 12, lineHeight: 18 }}>{item.note}</Text>
+            </LinearGradient>
+          ))}
+        </ScrollView>
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Dá»¯ liá»‡u tÃ i khoáº£n</Text>
-        <Text style={styles.accountDetail}>Táº£i láº¡i Ä‘á»ƒ Ä‘á»“ng bá»™ vÃ©, Æ°u Ä‘Ã£i vÃ  nháº¯c lá»‹ch má»›i nháº¥t.</Text>
-        <NeonButton label="Táº£i láº¡i dá»¯ liá»‡u" onPress={onReload} loading={loading} />
+        <Text style={styles.accountTitle}>Cài đặt AI trợ lý</Text>
+        <SettingRow title="AI tự gợi ý suất phù hợp" detail="Tối ưu theo ngân sách và giờ rảnh" value={aiAutoBook} onToggle={setAiAutoBook} icon="robot-outline" />
+        <SettingRow title="Thông báo ưu đãi thông minh" detail="Nhắc voucher gần hết hạn" value={aiNotifyDeal} onToggle={setAiNotifyDeal} icon="bell-ring-outline" />
       </View>
+
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>Hệ thống</Text>
+        <SettingRow title="Nhận thông báo push" detail="Vé mới, nhắc lịch và thay đổi suất" value={systemPush} onToggle={setSystemPush} icon="cellphone-cog" />
+        <Text style={styles.accountDetail}>Nhắc lịch đang bật: {reminders.length} mục.</Text>
+      </View>
+
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>Dữ liệu tài khoản</Text>
+        <Text style={styles.accountDetail}>Tải lại để đồng bộ vé, ưu đãi và lịch nhắc mới nhất.</Text>
+        <NeonButton label="Tải lại dữ liệu" onPress={onReload} loading={loading} />
+      </View>
+
+      <Pressable
+        onPress={onLogout}
+        disabled={logoutLoading}
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.24)",
+          paddingVertical: 14,
+          backgroundColor: "rgba(255,255,255,0.03)",
+        }}
+      >
+        {logoutLoading ? <ActivityIndicator size="small" color={palette.cyan} /> : <Text style={{ color: palette.text, fontSize: 14, fontWeight: "900" }}>Đăng xuất</Text>}
+      </Pressable>
     </ScrollView>
   );
 }
-
 export function UserMovieListScreen(props: {
   title: string;
   description: string;
@@ -1736,72 +1837,52 @@ export function UserMovieListScreen(props: {
 }
 
 export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onBook: (showtime: ShowtimeItem) => void; showtimesData: ShowtimeItem[]; isFavorite: boolean; isInWatchlist: boolean; onToggleFavorite: () => void; onToggleWatchlist: () => void; favoriteLoading?: boolean; watchlistLoading?: boolean; bookingLoadingMovieId?: number | null; bookingLoadingShowtimeId?: number | null; entrySource?: "home" | "default"; }) {
-  const { movie, onBack, onBook, showtimesData, isFavorite, isInWatchlist, onToggleFavorite, onToggleWatchlist, favoriteLoading = false, watchlistLoading = false, bookingLoadingMovieId = null, bookingLoadingShowtimeId = null, entrySource = "default" } = props;
+  const { movie, onBack, onBook, showtimesData, isFavorite, isInWatchlist, onToggleFavorite, onToggleWatchlist, favoriteLoading = false, watchlistLoading = false, bookingLoadingMovieId = null, bookingLoadingShowtimeId = null } = props;
   const now = useMinuteNow();
-  const headerOpacity = React.useRef(new Animated.Value(0)).current;
-  const thumbScale = React.useRef(new Animated.Value(entrySource === "home" ? 0.84 : 0.94)).current;
-  const thumbTranslateY = React.useRef(new Animated.Value(entrySource === "home" ? 24 : 12)).current;
-  const [trailerVisible, setTrailerVisible] = React.useState(false);
   const dateScrollRef = React.useRef<ScrollView | null>(null);
-  const movieShowtimes = showtimesData.filter((item) => item.movieId === movie.id);
-  const cinemaOptions = React.useMemo(
-    () => Array.from(new Set(movieShowtimes.map((item) => item.cinemaName))).sort((a, b) => a.localeCompare(b, "vi")),
-    [movieShowtimes]
-  );
-  const [selectedCinema, setSelectedCinema] = React.useState<string | null>(null);
+  const movieShowtimes = React.useMemo(() => showtimesData.filter((item) => item.movieId === movie.id), [movie.id, showtimesData]);
   const [selectedDateKey, setSelectedDateKey] = React.useState<string | null>(null);
   const [selectedShowtimeId, setSelectedShowtimeId] = React.useState<number | null>(null);
-  const activeShowtimeId = movieShowtimes
-    .filter((item) => new Date(item.startTime).getTime() >= now)
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0]?.id ?? null;
-  const featuredShowtime = movieShowtimes.find((item) => item.id === activeShowtimeId) ?? movieShowtimes[0];
-  const effectiveCinema = selectedCinema ?? featuredShowtime?.cinemaName ?? cinemaOptions[0] ?? null;
-  const cinemaShowtimes = React.useMemo(
-    () => movieShowtimes.filter((item) => item.cinemaName === effectiveCinema),
-    [effectiveCinema, movieShowtimes]
-  );
+
   const dateOptions = React.useMemo(
     () =>
-      Array.from(new Set(cinemaShowtimes.map((item) => toDateKey(item.startTime))))
+      Array.from(new Set(movieShowtimes.map((item) => toDateKey(item.startTime))))
         .sort((a, b) => new Date(a).getTime() - new Date(b).getTime()),
-    [cinemaShowtimes]
+    [movieShowtimes]
   );
-  const effectiveDateKey = selectedDateKey ?? dateOptions[0] ?? null;
-  const filteredShowtimes = React.useMemo(
-    () =>
-      cinemaShowtimes
-        .filter((item) => toDateKey(item.startTime) === effectiveDateKey)
-        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
-    [cinemaShowtimes, effectiveDateKey]
-  );
-  const groupedShowtimes = React.useMemo(() => {
-    const groups: Array<{ label: "SÃ¡ng" | "Chiá»u" | "Tá»‘i"; items: ShowtimeItem[] }> = [
-      { label: "SÃ¡ng", items: [] },
-      { label: "Chiá»u", items: [] },
-      { label: "Tá»‘i", items: [] },
-    ];
-    for (const item of filteredShowtimes) {
-      const label = showtimeBucketLabel(item.startTime) as "SÃ¡ng" | "Chiá»u" | "Tá»‘i";
-      groups.find((group) => group.label === label)?.items.push(item);
-    }
-    return groups.filter((group) => group.items.length > 0);
-  }, [filteredShowtimes]);
-  const primaryShowtime =
-    filteredShowtimes.find((item) => item.id === selectedShowtimeId) ??
-    filteredShowtimes.find((item) => new Date(item.startTime).getTime() >= now) ??
-    filteredShowtimes[0] ??
-    featuredShowtime;
-  const trailerUrl = normalizeTrailerUrl(movie.trailerUrl);
 
-  React.useEffect(() => {
-    if (!effectiveCinema && cinemaOptions[0]) {
-      setSelectedCinema(cinemaOptions[0]);
-      return;
+  const effectiveDateKey = selectedDateKey ?? dateOptions[0] ?? null;
+
+  const showtimeByCinema = React.useMemo(() => {
+    if (!effectiveDateKey) {
+      return [] as Array<{ cinemaName: string; items: ShowtimeItem[] }>;
     }
-    if (effectiveCinema && !cinemaOptions.includes(effectiveCinema)) {
-      setSelectedCinema(cinemaOptions[0] ?? null);
+
+    const groups = new Map<string, ShowtimeItem[]>();
+    for (const showtime of movieShowtimes) {
+      if (toDateKey(showtime.startTime) !== effectiveDateKey) continue;
+      const key = showtime.cinemaName;
+      const current = groups.get(key) ?? [];
+      current.push(showtime);
+      groups.set(key, current);
     }
-  }, [cinemaOptions, effectiveCinema]);
+
+    return Array.from(groups.entries())
+      .map(([cinemaName, items]) => ({
+        cinemaName,
+        items: items.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
+      }))
+      .sort((a, b) => a.cinemaName.localeCompare(b.cinemaName, "vi"));
+  }, [effectiveDateKey, movieShowtimes]);
+
+  const allShowtimesOfDate = React.useMemo(() => showtimeByCinema.flatMap((group) => group.items), [showtimeByCinema]);
+
+  const primaryShowtime =
+    allShowtimesOfDate.find((item) => item.id === selectedShowtimeId) ??
+    allShowtimesOfDate.find((item) => new Date(item.startTime).getTime() >= now) ??
+    allShowtimesOfDate[0] ??
+    movieShowtimes[0] ??
+    null;
 
   React.useEffect(() => {
     if (!effectiveDateKey && dateOptions[0]) {
@@ -1814,270 +1895,186 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
   }, [dateOptions, effectiveDateKey]);
 
   React.useEffect(() => {
-    headerOpacity.setValue(0);
-    thumbScale.setValue(entrySource === "home" ? 0.84 : 0.94);
-    thumbTranslateY.setValue(entrySource === "home" ? 24 : 12);
-    Animated.parallel([
-      Animated.timing(headerOpacity, {
-        toValue: 1,
-        duration: entrySource === "home" ? 260 : 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.spring(thumbScale, {
-        toValue: 1,
-        tension: entrySource === "home" ? 108 : 90,
-        friction: entrySource === "home" ? 13 : 14,
-        useNativeDriver: true,
-      }),
-      Animated.spring(thumbTranslateY, {
-        toValue: 0,
-        tension: entrySource === "home" ? 108 : 92,
-        friction: entrySource === "home" ? 14 : 15,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [entrySource, headerOpacity, movie.id, thumbScale, thumbTranslateY]);
-
-  React.useEffect(() => {
     if (!primaryShowtime) {
       setSelectedShowtimeId(null);
       return;
     }
-    if (!filteredShowtimes.some((item) => item.id === selectedShowtimeId)) {
+    if (!allShowtimesOfDate.some((item) => item.id === selectedShowtimeId)) {
       setSelectedShowtimeId(primaryShowtime.id);
     }
-  }, [filteredShowtimes, primaryShowtime, selectedShowtimeId]);
+  }, [allShowtimesOfDate, primaryShowtime, selectedShowtimeId]);
 
   React.useEffect(() => {
-    if (!effectiveDateKey || dateOptions.length <= 1) {
-      return;
-    }
+    if (!effectiveDateKey || dateOptions.length <= 1) return;
     const selectedIndex = dateOptions.findIndex((item) => item === effectiveDateKey);
-    if (selectedIndex < 0) {
-      return;
-    }
-    const estimatedCardWidth = 94;
+    if (selectedIndex < 0) return;
+    const estimatedCardWidth = 88;
     dateScrollRef.current?.scrollTo({
-      x: Math.max(0, selectedIndex * estimatedCardWidth - 20),
+      x: Math.max(0, selectedIndex * estimatedCardWidth - 24),
       animated: true,
     });
   }, [dateOptions, effectiveDateKey]);
 
+  const trailerUrl = normalizeTrailerUrl(movie.trailerUrl);
+
   return (
-    <>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <View style={styles.screenShell}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, styles.stickyScrollContent]} showsVerticalScrollIndicator={false}>
         <Pressable onPress={onBack}>
-          <Text style={styles.backLink}>â† Quay láº¡i</Text>
+          <Text style={styles.backLink}>← Quay lại</Text>
         </Pressable>
 
-      <Animated.View style={[styles.detailHeaderRow, { opacity: headerOpacity }]}>
-        <Animated.View style={[styles.detailThumbWrap, { transform: [{ scale: thumbScale }, { translateY: thumbTranslateY }] }]}>
-          {movie.posterUrl ? <MediaAsset uri={movie.posterUrl} style={styles.detailThumbImage} /> : <View style={[styles.detailThumbImage, { backgroundColor: movie.tone }]} />}
-        </Animated.View>
-        <View style={styles.detailHeaderMeta}>
-          <Text style={styles.detailHeaderTitle}>{movie.title}</Text>
-          <View style={styles.detailHeaderChips}>
-            <Text style={styles.detailHeaderChip}>{movie.status === "COMING_SOON" ? "Sáº¯p chiáº¿u" : "Äang chiáº¿u"}</Text>
-            <Text style={styles.detailHeaderChipSecondary}>IMDb {movie.score}</Text>
+        <View style={{ height: 530, borderRadius: 28, overflow: "hidden", backgroundColor: movie.tone || "#2b0f12", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
+          <MediaAsset uri={movie.bannerUrl ?? movie.posterUrl} style={{ ...StyleSheet.absoluteFillObject }} />
+          <LinearGradient colors={["rgba(5,5,8,0.08)", "rgba(5,5,8,0.56)", "rgba(5,5,8,0.92)"]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ ...StyleSheet.absoluteFillObject }} />
+
+          <View style={{ position: "absolute", top: 16, left: 16, flexDirection: "row", gap: 8 }}>
+            <Text style={{ color: "#fff6f0", fontSize: 11, fontWeight: "900", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.42)" }}>{movie.badge || "IMAX"}</Text>
+            <Text style={{ color: "#fff6f0", fontSize: 11, fontWeight: "900", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(195,13,18,0.38)" }}>T16</Text>
           </View>
-          <Text style={styles.detailHeaderSubline}>{movie.genre} â€¢ {movie.runtime}</Text>
-        </View>
-      </Animated.View>
 
-      <View style={[styles.detailPoster, { backgroundColor: movie.tone }]}>
-        <MediaAsset uri={movie.bannerUrl} style={styles.detailPosterImage} />
-        <View style={styles.detailPosterScrim} />
-        <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
-          <Text style={styles.posterBadge}>{movie.badge}</Text>
-        </BlurView>
-        <View style={styles.detailOverlayMeta}>
-          <Text style={styles.detailOverlayText}>IMDb {movie.score}</Text>
-          <Text style={styles.detailOverlayText}>{movie.status === "COMING_SOON" ? "Sáº¯p chiáº¿u" : "Äang chiáº¿u"}</Text>
-        </View>
-        <View style={styles.detailMediaBottom}>
-          <Pressable style={styles.detailMediaPlay} onPress={() => setTrailerVisible(true)}>
-            <MaterialCommunityIcons name="play-circle" size={20} color="#fff4ef" />
-            <Text style={styles.detailMediaPlayText}>Trailer</Text>
-          </Pressable>
-          <View style={styles.detailMediaFacts}>
-            <Text style={styles.detailMediaFactText}>{primaryShowtime ? primaryShowtime.startTime.slice(11, 16) : "Cáº­p nháº­t sá»›m"}</Text>
-            <Text style={styles.detailMediaFactDivider}>â€¢</Text>
-            <Text style={styles.detailMediaFactText}>{primaryShowtime ? primaryShowtime.formatLabel : movie.runtime}</Text>
-            <Text style={styles.detailMediaFactDivider}>â€¢</Text>
-            <Text style={styles.detailMediaFactText}>{primaryShowtime ? primaryShowtime.languageLabel : movie.genre}</Text>
-          </View>
-        </View>
-      </View>
-
-      <Text style={styles.detailTitle}>{movie.title}</Text>
-      <Text style={styles.detailMeta}>{movie.genre} â€¢ {movie.runtime}</Text>
-      <Text style={styles.detailDescription}>{movie.description}</Text>
-
-      <View style={styles.detailActionsRow}>
-        <Pressable style={[styles.listToggleButton, isFavorite ? styles.listToggleButtonFavoriteOn : styles.listToggleButtonFavoriteOff]} onPress={favoriteLoading ? undefined : onToggleFavorite}>
-          {favoriteLoading ? <ActivityIndicator size="small" color="#fff4ef" /> : <MaterialCommunityIcons name={isFavorite ? "heart" : "heart-outline"} size={18} color={isFavorite ? "#ffe8ee" : "#ff9ab3"} />}
-          <Text style={[styles.listToggleButtonText, isFavorite ? styles.listToggleButtonTextOn : styles.listToggleButtonTextOff]}>{isFavorite ? "ÄÃ£ yÃªu thÃ­ch" : "ThÃªm yÃªu thÃ­ch"}</Text>
-        </Pressable>
-        <Pressable style={[styles.listToggleButton, isInWatchlist ? styles.listToggleButtonWatchlistOn : styles.listToggleButtonWatchlistOff]} onPress={watchlistLoading ? undefined : onToggleWatchlist}>
-          {watchlistLoading ? <ActivityIndicator size="small" color="#effff9" /> : <MaterialCommunityIcons name={isInWatchlist ? "bookmark" : "bookmark-outline"} size={18} color={isInWatchlist ? "#e2fff6" : "#7df2d9"} />}
-          <Text style={[styles.listToggleButtonText, isInWatchlist ? styles.listToggleButtonTextOn : styles.listToggleButtonTextOff]}>{isInWatchlist ? "ÄÃ£ lÆ°u xem sau" : "LÆ°u xem sau"}</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.detailStatsRow}>
-        <View style={styles.detailStat}>
-          <Text style={styles.detailStatLabel}>Tráº¡ng thÃ¡i</Text>
-          <Text style={styles.detailStatValue}>{movie.status === "COMING_SOON" ? "Sáº¯p chiáº¿u" : "Äang chiáº¿u"}</Text>
-        </View>
-        <View style={styles.detailStat}>
-          <Text style={styles.detailStatLabel}>ÄÃ¡nh giÃ¡</Text>
-          <Text style={styles.detailStatValue}>{movie.score}/10</Text>
-        </View>
-        <View style={styles.detailStat}>
-          <Text style={styles.detailStatLabel}>Thá»i lÆ°á»£ng</Text>
-          <Text style={styles.detailStatValue}>{movie.runtime}</Text>
-        </View>
-      </View>
-
-      <SectionHeader title="Chá»n lá»‹ch chiáº¿u" action={`${movieShowtimes.length} suáº¥t`} />
-
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>1. Chá»n ráº¡p</Text>
-        <View style={styles.paymentWrap}>
-          {cinemaOptions.map((cinema) => (
-            <Pressable key={cinema} style={[styles.paymentMethod, effectiveCinema === cinema && styles.paymentMethodActive]} onPress={() => setSelectedCinema(cinema)}>
-              <Text style={[styles.paymentMethodText, effectiveCinema === cinema && styles.paymentMethodTextActive]}>{cinema}</Text>
+          <View style={{ marginTop: "auto", padding: 20, gap: 10 }}>
+            <Text style={{ color: "#fff8f4", fontSize: 34, lineHeight: 40, fontWeight: "900", textTransform: "uppercase" }}>{movie.title}</Text>
+            <Text style={{ color: "#f2d0bf", fontSize: 13, fontWeight: "700" }}>IMDb {movie.score} • {movie.genre} • {movie.runtime}</Text>
+            <Pressable
+              onPress={favoriteLoading ? undefined : onToggleFavorite}
+              style={{
+                alignSelf: "flex-start",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.24)",
+                backgroundColor: "rgba(0,0,0,0.24)",
+              }}
+            >
+              {favoriteLoading ? <ActivityIndicator size="small" color="#fff6f0" /> : <MaterialCommunityIcons name={isFavorite ? "heart" : "heart-outline"} size={18} color="#fff6f0" />}
+              <Text style={{ color: "#fff6f0", fontSize: 12, fontWeight: "900" }}>{isFavorite ? "Đã yêu thích" : "Yêu thích"}</Text>
             </Pressable>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>2. Chá»n ngÃ y</Text>
-        <ScrollView ref={dateScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateMiniRow}>
-          {dateOptions.map((dateKey) => (
-            <Pressable key={dateKey} style={[styles.dateMiniCard, effectiveDateKey === dateKey && styles.dateMiniCardActive]} onPress={() => setSelectedDateKey(dateKey)}>
-              <Text style={[styles.dateMiniLabel, effectiveDateKey === dateKey && styles.dateMiniLabelActive]}>{formatRelativeShowtimeLabel(dateKey, now)}</Text>
-              <Text style={[styles.dateMiniWeekday, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeWeekday(dateKey)}</Text>
-              <Text style={[styles.dateMiniDay, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeDayNumber(dateKey)}</Text>
-              <Text style={[styles.dateMiniMonth, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeDateLabel(dateKey)}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>3. Chá»n khung giá»</Text>
-        <Text style={styles.accountDetail}>
-          {effectiveCinema && effectiveDateKey ? `${effectiveCinema} â€¢ ${formatShowtimeDateLabel(effectiveDateKey)}` : "Chá»n ráº¡p vÃ  ngÃ y Ä‘á»ƒ xem suáº¥t chiáº¿u."}
-        </Text>
-      </View>
-
-      {groupedShowtimes.map((group) => (
-        <View key={group.label} style={styles.showtimeGroupSection}>
-          <View style={styles.showtimeGroupHeader}>
-            <Text style={styles.showtimeGroupTitle}>{group.label}</Text>
-            <Text style={styles.showtimeGroupMeta}>{group.items.length} suáº¥t</Text>
-          </View>
-          <View style={styles.showtimeGrid}>
-            {group.items.map((item) => {
-              const showtimeTimestamp = new Date(item.startTime).getTime();
-              const isDisabled = showtimeTimestamp < now;
-              const isActive = item.id === (primaryShowtime?.id ?? activeShowtimeId);
-              const countdownLevel = getCountdownLevel(item.startTime, now);
-              const availableSeats = Number(item.availableSeats ?? 0);
-              const totalSeats = Number(item.totalSeats ?? item.seatLayout.flat().length ?? 0);
-              const availabilityMeta = getSeatAvailabilityMeta(availableSeats, totalSeats);
-              return (
-                <Pressable
-                  key={`${item.id}-${item.roomName}`}
-                  disabled={isDisabled}
-                  style={[styles.showtimeCard, isActive && styles.showtimeCardActive, isDisabled && styles.showtimeCardDisabled]}
-                  onPress={() => setSelectedShowtimeId(item.id)}
-                >
-                  <View style={styles.showtimePillRow}>
-                    <Text style={[styles.showtimePill, isActive && styles.showtimePillActive, isDisabled && styles.showtimePillDisabled]}>{item.formatLabel}</Text>
-                    <Text style={[styles.showtimePillSecondary, isDisabled && styles.showtimePillSecondaryDisabled]}>{item.languageLabel}</Text>
-                  </View>
-                  <Text style={[styles.showtimeTime, isDisabled && styles.showtimeTimeDisabled]}>{item.startTime.slice(11, 16)}</Text>
-                  <Text style={[styles.showtimeCinema, isDisabled && styles.showtimeCinemaDisabled]}>{item.cinemaName}</Text>
-                  <Text style={styles.showtimeInfo}>{item.roomName}</Text>
-                  <View style={styles.showtimeMetaStack}>
-                    <Text style={[styles.showtimePrice, isDisabled && styles.showtimePriceDisabled]}>Tá»« {formatCurrency(item.basePrice)}</Text>
-                    <View style={styles.showtimeSeatsMetaRow}>
-                      <Text
-                        style={[
-                          styles.showtimeSeatLevel,
-                          availabilityMeta.tone === "good" && styles.showtimeSeatLevelGood,
-                          availabilityMeta.tone === "warning" && styles.showtimeSeatLevelWarning,
-                          availabilityMeta.tone === "critical" && styles.showtimeSeatLevelCritical,
-                          isDisabled && styles.showtimeSeatLevelDisabled,
-                        ]}
-                      >
-                        {availabilityMeta.label}
-                      </Text>
-                      <Text style={[styles.showtimeSeatsLeft, isDisabled && styles.showtimeSeatsLeftDisabled]}>
-                        {availableSeats > 0 ? `CÃ²n ${availableSeats}/${totalSeats} gháº¿` : "ÄÃ£ kÃ­n chá»—"}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.showtimeFooterRow}>
-                    {bookingLoadingShowtimeId === item.id ? (
-                      <View style={styles.showtimeLoadingWrap}>
-                        <ActivityIndicator size="small" color={palette.cyan} />
-                      </View>
-                    ) : (
-                      <Text
-                        style={[
-                          styles.showtimeState,
-                          isActive && styles.showtimeStateActive,
-                          isActive && countdownLevel === "soon" && styles.showtimeStateSoon,
-                          isActive && countdownLevel === "boarding" && styles.showtimeStateBoarding,
-                          isDisabled && styles.showtimeStateDisabled,
-                        ]}
-                      >
-                        {isDisabled ? "Háº¿t giá»" : isActive ? formatCountdownLabel(item.startTime, now) : "Má»Ÿ bÃ¡n"}
-                      </Text>
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })}
           </View>
         </View>
-      ))}
 
-      {filteredShowtimes.length === 0 ? (
         <View style={styles.accountRow}>
-          <Text style={styles.accountDetail}>Hiá»‡n chÆ°a cÃ³ suáº¥t chiáº¿u phÃ¹ há»£p cho lá»±a chá»n nÃ y.</Text>
+          <Text style={styles.accountTitle}>Nội dung phim</Text>
+          <Text style={styles.detailDescription}>{movie.description}</Text>
+          <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.08)", marginVertical: 6 }} />
+          <View style={{ gap: 10 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={styles.accountDetail}>Đạo diễn</Text>
+              <Text style={{ color: palette.text, fontWeight: "800" }}>Đang cập nhật</Text>
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={styles.accountDetail}>Ngôn ngữ</Text>
+              <Text style={{ color: palette.text, fontWeight: "800" }}>{primaryShowtime?.languageLabel ?? "Phụ đề Việt"}</Text>
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={styles.accountDetail}>Ngày chiếu</Text>
+              <Text style={{ color: palette.text, fontWeight: "800" }}>{primaryShowtime ? formatShowtimeDateLabel(primaryShowtime.startTime) : "Đang cập nhật"}</Text>
+            </View>
+          </View>
         </View>
-      ) : null}
 
-      {primaryShowtime ? <NeonButton label="Chá»n gháº¿" onPress={() => onBook(primaryShowtime)} loading={bookingLoadingMovieId === movie.id} /> : null}
+        <View style={styles.accountRow}>
+          <Text style={styles.accountTitle}>Chọn ngày</Text>
+          <ScrollView ref={dateScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateMiniRow}>
+            {dateOptions.map((dateKey) => (
+              <Pressable key={dateKey} style={[styles.dateMiniCard, { width: 74, minHeight: 82, borderRadius: 16 }, effectiveDateKey === dateKey && styles.dateMiniCardActive]} onPress={() => setSelectedDateKey(dateKey)}>
+                <Text style={[styles.dateMiniWeekday, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeWeekday(dateKey)}</Text>
+                <Text style={[styles.dateMiniDay, { fontSize: 22 }, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeDayNumber(dateKey)}</Text>
+                <Text style={[styles.dateMiniMonth, effectiveDateKey === dateKey && styles.dateMiniTextActive]}>{formatShowtimeDateLabel(dateKey)}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={{ gap: 14 }}>
+          {showtimeByCinema.map((group) => (
+            <View key={group.cinemaName} style={styles.accountRow}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Text style={styles.accountTitle}>{group.cinemaName}</Text>
+                <Text style={styles.sectionAction}>{group.items.length} suất</Text>
+              </View>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+                {group.items.map((item) => {
+                  const isActive = item.id === primaryShowtime?.id;
+                  const disabled = new Date(item.startTime).getTime() < now;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => setSelectedShowtimeId(item.id)}
+                      disabled={disabled}
+                      style={{
+                        minWidth: 98,
+                        borderRadius: 999,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        borderWidth: 1,
+                        borderColor: isActive ? "rgba(255,240,236,0.34)" : "rgba(255,255,255,0.1)",
+                        backgroundColor: disabled ? "rgba(255,255,255,0.04)" : isActive ? "rgba(195,13,18,0.24)" : "rgba(255,255,255,0.03)",
+                        opacity: disabled ? 0.52 : 1,
+                      }}
+                    >
+                      <Text style={{ color: isActive ? "#fff6f0" : palette.text, fontSize: 14, fontWeight: "900", textAlign: "center" }}>{item.startTime.slice(11, 16)}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {showtimeByCinema.length === 0 ? (
+          <View style={styles.accountRow}>
+            <Text style={styles.accountDetail}>Hiện chưa có suất chiếu cho ngày đã chọn.</Text>
+          </View>
+        ) : null}
+
+        <View style={[styles.accountRow, { gap: 10 }]}> 
+          <Text style={styles.accountTitle}>Tùy chọn nhanh</Text>
+          <Pressable style={[styles.listToggleButton, isInWatchlist ? styles.listToggleButtonWatchlistOn : styles.listToggleButtonWatchlistOff]} onPress={watchlistLoading ? undefined : onToggleWatchlist}>
+            {watchlistLoading ? <ActivityIndicator size="small" color="#effff9" /> : <MaterialCommunityIcons name={isInWatchlist ? "bookmark" : "bookmark-outline"} size={18} color={isInWatchlist ? "#e2fff6" : "#7df2d9"} />}
+            <Text style={[styles.listToggleButtonText, isInWatchlist ? styles.listToggleButtonTextOn : styles.listToggleButtonTextOff]}>{isInWatchlist ? "Đã lưu xem sau" : "Lưu xem sau"}</Text>
+          </Pressable>
+          <Pressable style={styles.detailMediaPlay} onPress={() => primaryShowtime && onBook(primaryShowtime)}>
+            <MaterialCommunityIcons name="play-circle" size={20} color="#fff4ef" />
+            <Text style={styles.detailMediaPlayText}>Đặt suất đang chọn</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.accountRow}>
+          <Text style={styles.accountTitle}>Trailer</Text>
+          <TrailerPlayer url={trailerUrl} posterUrl={movie.bannerUrl ?? movie.posterUrl} title={movie.title} />
+        </View>
       </ScrollView>
 
-      <Modal visible={trailerVisible} animationType="slide" transparent onRequestClose={() => setTrailerVisible(false)}>
-        <View style={styles.trailerModalBackdrop}>
-          <View style={styles.trailerModalShell}>
-            <LinearGradient colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0.02)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.trailerModalStroke} />
-            <View style={styles.trailerModalHeader}>
-              <View>
-                <Text style={styles.accountTitle}>Trailer</Text>
-                <Text style={styles.accountDetail}>{movie.title}</Text>
-              </View>
-              <Pressable style={styles.trailerCloseButton} onPress={() => setTrailerVisible(false)}>
-                <MaterialCommunityIcons name="close" size={20} color={palette.text} />
-              </Pressable>
+      {primaryShowtime ? (
+        <View style={styles.stickyFooterWrap}>
+          <LinearGradient
+            pointerEvents="none"
+            colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0.06)", "rgba(255,255,255,0)"]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.stickyFooterTopGlow}
+          />
+          <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
+            <View pointerEvents="none" style={styles.stickyFooterInnerHighlight} />
+            <View style={styles.stickySummaryMain}>
+              <Text style={styles.summaryLabel}>{primaryShowtime.cinemaName}</Text>
+              <Text style={styles.stickyPrimaryValue}>{primaryShowtime.startTime.slice(11, 16)} • {primaryShowtime.roomName}</Text>
+              <Text style={styles.stickySecondaryValue}>Giá từ {formatCurrency(primaryShowtime.basePrice)} • {primaryShowtime.languageLabel}</Text>
             </View>
-            <TrailerPlayer url={trailerUrl} posterUrl={movie.bannerUrl ?? movie.posterUrl} title={movie.title} />
-          </View>
+            <View style={{ flex: 1 }}>
+              <NeonButton label="Tiếp tục" onPress={() => onBook(primaryShowtime)} loading={bookingLoadingMovieId === movie.id || bookingLoadingShowtimeId === primaryShowtime.id} />
+            </View>
+          </BlurView>
         </View>
-      </Modal>
-    </>
+      ) : null}
+    </View>
   );
 }
-
 export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seats: SeatSelection[]) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
   const layout = React.useMemo(
     () => {
@@ -2895,6 +2892,8 @@ export function TicketDetailScreen({ ticket, onBack, onScheduleReminder, onCance
     </ScrollView>
   );
 }
+
+
 
 
 
