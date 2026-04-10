@@ -2755,24 +2755,24 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
     const isSold = seat.status === "SOLD";
     const isHeld = seat.status === "HELD";
 
-    let backgroundColor = "rgba(255,255,255,0.06)";
-    let borderColor = "rgba(255,255,255,0.12)";
-    let textColor = "rgba(229,226,225,0.52)";
+    let backgroundColor = "rgba(255,179,172,0.16)";
+    let borderColor = "rgba(255,179,172,0.56)";
+    let textColor = "#ffd9d4";
 
     if (isVip) {
-      backgroundColor = "rgba(255,215,153,0.08)";
-      borderColor = "rgba(255,215,153,0.5)";
-      textColor = "#ffd799";
+      backgroundColor = "rgba(255,179,172,0.24)";
+      borderColor = "rgba(255,215,153,0.72)";
+      textColor = "#ffe1a8";
     }
     if (isCouple) {
-      backgroundColor = "rgba(120,110,112,0.4)";
-      borderColor = "rgba(255,179,172,0.3)";
-      textColor = "#ffd7cf";
+      backgroundColor = "rgba(255,148,171,0.24)";
+      borderColor = "rgba(255,179,194,0.68)";
+      textColor = "#ffe2eb";
     }
     if (isHot) {
-      backgroundColor = "rgba(255,179,172,0.13)";
-      borderColor = "rgba(255,179,172,0.45)";
-      textColor = "#ffe0da";
+      backgroundColor = "rgba(255,179,172,0.24)";
+      borderColor = "rgba(255,179,172,0.8)";
+      textColor = "#ffebe7";
     }
     if (isHeld) {
       backgroundColor = "rgba(211,47,47,0.88)";
@@ -2887,8 +2887,8 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
 
         <View style={{ marginBottom: 10, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.03)", padding: 12, gap: 8 }}>
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(255,255,255,0.06)" }}>
-              <Text style={{ color: "rgba(229,226,225,0.78)", fontSize: 11, fontWeight: "800" }}>Ghế thường: Cơ bản</Text>
+            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(255,179,172,0.18)" }}>
+              <Text style={{ color: "#ffd7d1", fontSize: 11, fontWeight: "800" }}>Ghế thường: Cơ bản</Text>
             </View>
             <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(255,224,74,0.14)" }}>
               <Text style={{ color: "#ffe88b", fontSize: 11, fontWeight: "800" }}>VIP: +30.000đ</Text>
@@ -2896,8 +2896,8 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
             <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(255,68,68,0.14)" }}>
               <Text style={{ color: "#ffd5d5", fontSize: 11, fontWeight: "800" }}>Ghế đôi: +90.000đ / cặp</Text>
             </View>
-            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(115,246,221,0.14)" }}>
-              <Text style={{ color: "#b8fff2", fontSize: 11, fontWeight: "800" }}>Khu hot: +20.000đ</Text>
+            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(255,179,172,0.22)" }}>
+              <Text style={{ color: "#ffe3de", fontSize: 11, fontWeight: "800" }}>Khu hot: +20.000đ</Text>
             </View>
           </View>
         </View>
@@ -2922,7 +2922,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
 
         <View style={{ marginTop: 14, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", backgroundColor: "rgba(255,255,255,0.03)", padding: 12, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10 }}>
           {[
-            ["Còn trống", "rgba(255,255,255,0.75)"],
+            ["Còn trống", "#ffb3ac"],
             ["Đã chọn", "#d32f2f"],
             ["Đang giữ", "rgba(195,13,18,0.85)"],
             ["Đã bán", "rgba(171,165,176,0.56)"],
