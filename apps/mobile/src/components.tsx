@@ -1367,6 +1367,8 @@ export function TicketsScreen(props: {
   watchlistMovieIds?: number[];
 }) {
   const { onSeatPress, onTicketPress, tickets, moviesData, loading = false, fallbackMovie, loadingTicketId = null, loadingSeatMovieId = null, favoriteMovieIds = [], watchlistMovieIds = [] } = props;
+  const TICKET_CARD_HEIGHT = 172;
+  const TICKET_POSTER_WIDTH = 110;
   const [activeTab, setActiveTab] = React.useState<"upcoming" | "history">("upcoming");
   const now = useMinuteNow();
 
@@ -1485,8 +1487,20 @@ export function TicketsScreen(props: {
               const isPending = ticket.status === "PENDING";
 
               return (
-                <Pressable key={ticket.id} style={getTicketShellStyle(ticket.status)} onPress={() => onTicketPress(ticket)}>
-                  <View style={[styles.ticketPosterWrap, { backgroundColor: movie.tone }]}> 
+                <Pressable
+                  key={ticket.id}
+                  style={[
+                    getTicketShellStyle(ticket.status),
+                    {
+                      height: TICKET_CARD_HEIGHT,
+                      minHeight: TICKET_CARD_HEIGHT,
+                      maxHeight: TICKET_CARD_HEIGHT,
+                      alignSelf: "stretch",
+                    },
+                  ]}
+                  onPress={() => onTicketPress(ticket)}
+                >
+                  <View style={[styles.ticketPosterWrap, { width: TICKET_POSTER_WIDTH, height: TICKET_CARD_HEIGHT, backgroundColor: movie.tone }]}>
                     <MediaAsset uri={movie.posterUrl} style={styles.ticketPosterImage} />
                     <View style={styles.ticketFormatBadge}>
                       <Text style={styles.ticketFormatBadgeText}>{movie.badge || "2D"}</Text>
@@ -1495,20 +1509,20 @@ export function TicketsScreen(props: {
 
                   <View style={styles.ticketBody}>
                     <View style={styles.ticketBodyTop}>
-                      <Text style={styles.ticketTitle}>{ticket.movie}</Text>
+                      <Text style={styles.ticketTitle} numberOfLines={2}>{ticket.movie}</Text>
                       <View style={styles.ticketMetaRow}>
                         <MaterialCommunityIcons name="map-marker-radius-outline" size={14} color={palette.muted} />
-                        <Text style={styles.ticketMetaText}>{ticket.cinema}</Text>
+                        <Text style={styles.ticketMetaText} numberOfLines={1}>{ticket.cinema}</Text>
                       </View>
                       <View style={styles.ticketMetaRow}>
                         <MaterialCommunityIcons name="clock-outline" size={14} color={palette.muted} />
-                        <Text style={styles.ticketMetaText}>{formatDateTime(ticket.time)}</Text>
+                        <Text style={styles.ticketMetaText} numberOfLines={1}>{formatDateTime(ticket.time)}</Text>
                       </View>
                       <View style={styles.ticketMetaRow}>
                         <MaterialCommunityIcons name="sofa-single-outline" size={14} color={palette.muted} />
-                        <Text style={styles.ticketSeatText}>{ticket.seat}</Text>
+                        <Text style={styles.ticketSeatText} numberOfLines={1}>{ticket.seat}</Text>
                       </View>
-                      <Text style={styles.ticketInfoCode}>Mã vé {ticket.bookingCode}</Text>
+                      <Text style={styles.ticketInfoCode} numberOfLines={1}>Mã vé {ticket.bookingCode}</Text>
                     </View>
 
                     <View style={styles.ticketBodyBottom}>
@@ -2145,7 +2159,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
     </View>
   );
 }
-export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seats: SeatSelection[]) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
+function LegacySeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seats: SeatSelection[]) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
   const layout = React.useMemo(
     () => {
       const rowMap = new Map<string, SeatMapRow["seats"]>();
@@ -2640,6 +2654,303 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
             <NeonButton label="Tiếp tục" onPress={onContinue} loading={holding} />
           </View>
 </View>
+      </View>
+    </View>
+  );
+}
+
+export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seats: SeatSelection[]) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0);
+
+  const layout = React.useMemo(() => {
+    const rowMap = new Map<string, SeatMapRow["seats"]>();
+    for (const row of seatMapRows) {
+      const key = String(row.rowLabel ?? "").trim().toUpperCase();
+      const prev = rowMap.get(key) ?? [];
+      rowMap.set(key, [...prev, ...row.seats]);
+    }
+
+    return [...rowMap.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], "vi"))
+      .map(([rowLabel, seats]) => {
+        const seatMap = new Map<string, SeatMapRow["seats"][number]>();
+        for (const seat of seats) {
+          const seatKey = String(seat.seatCode).trim().toUpperCase();
+          if (!seatMap.has(seatKey)) {
+            seatMap.set(seatKey, { ...seat, rowLabel });
+          }
+        }
+        return {
+          rowLabel,
+          seats: [...seatMap.values()].sort((l, r) => Number(l.columnIndex ?? 0) - Number(r.columnIndex ?? 0)),
+        };
+      });
+  }, [seatMapRows]);
+
+  const getSeatSelectionUnit = React.useCallback((row: SeatMapRow, seat: SeatMapRow["seats"][number]) => {
+    if (seat.seatType !== "COUPLE") {
+      return [{ seatCode: seat.seatCode, seatType: seat.seatType as "STANDARD" | "VIP" | "COUPLE", price: seat.price }];
+    }
+    const orderedCoupleSeats = [...row.seats]
+      .filter((item) => item.seatType === "COUPLE")
+      .sort((left, right) => Number(left.columnIndex ?? 0) - Number(right.columnIndex ?? 0));
+    const column = Number(seat.columnIndex ?? 0);
+    const pairStart = column % 2 === 0 ? column - 1 : column;
+    const pairSeats = orderedCoupleSeats.filter((item) => {
+      const itemColumn = Number(item.columnIndex ?? 0);
+      return itemColumn === pairStart || itemColumn === pairStart + 1;
+    });
+    return (pairSeats.length > 0 ? pairSeats : [seat]).map((item) => ({
+      seatCode: item.seatCode,
+      seatType: item.seatType as "STANDARD" | "VIP" | "COUPLE",
+      price: item.price,
+    }));
+  }, []);
+
+  const getRowSeatGroups = React.useCallback((rowSeats: SeatMapRow["seats"]) => {
+    if (rowSeats.length <= 8) return { left: [] as typeof rowSeats, center: rowSeats, right: [] as typeof rowSeats };
+    if (rowSeats.length <= 10) return { left: rowSeats.slice(0, 2), center: rowSeats.slice(2, rowSeats.length - 2), right: rowSeats.slice(rowSeats.length - 2) };
+    return { left: rowSeats.slice(0, 3), center: rowSeats.slice(3, rowSeats.length - 3), right: rowSeats.slice(rowSeats.length - 3) };
+  }, []);
+
+  const groupedRows = React.useMemo(() => {
+    const standard: SeatMapRow[] = [];
+    const vip: SeatMapRow[] = [];
+    const couple: SeatMapRow[] = [];
+    for (const row of layout) {
+      const hasCouple = row.seats.some((seat) => seat.seatType === "COUPLE");
+      const hasVip = row.seats.some((seat) => seat.seatType === "VIP");
+      if (hasCouple) couple.push(row);
+      else if (hasVip) vip.push(row);
+      else standard.push(row);
+    }
+    return [
+      { key: "standard", label: null as string | null, rows: standard, tint: "rgba(229,226,225,0.55)" },
+      { key: "vip", label: "KHU VIP", rows: vip, tint: "rgba(255,215,153,0.9)" },
+      { key: "couple", label: "KHU GHẾ ĐÔI", rows: couple, tint: "rgba(255,179,172,0.9)" },
+    ].filter((section) => section.rows.length > 0);
+  }, [layout]);
+
+  const hasHotSeat = React.useMemo(() => layout.some((row) => row.seats.some((seat) => seat.isHot)), [layout]);
+
+  const renderSeatCell = React.useCallback((row: SeatMapRow, seat: SeatMapRow["seats"][number]) => {
+    const selectionUnit = getSeatSelectionUnit(row, seat);
+    const active = selectionUnit.every((item) => selectedSeats.some((selected) => selected.seatCode === item.seatCode && selected.seatType === item.seatType));
+    const disabled = selectionUnit.some((item) => {
+      const match = row.seats.find((candidate) => candidate.seatCode === item.seatCode && candidate.seatType === item.seatType);
+      return match?.status !== "AVAILABLE";
+    });
+    const isCouple = seat.seatType === "COUPLE";
+    const isVip = seat.seatType === "VIP";
+    const isHot = Boolean(seat.isHot);
+    const isSold = seat.status === "SOLD";
+    const isHeld = seat.status === "HELD";
+
+    let backgroundColor = "rgba(255,255,255,0.06)";
+    let borderColor = "rgba(255,255,255,0.12)";
+    let textColor = "rgba(229,226,225,0.52)";
+
+    if (isVip) {
+      backgroundColor = "rgba(255,215,153,0.08)";
+      borderColor = "rgba(255,215,153,0.5)";
+      textColor = "#ffd799";
+    }
+    if (isCouple) {
+      backgroundColor = "rgba(120,110,112,0.4)";
+      borderColor = "rgba(255,179,172,0.3)";
+      textColor = "#ffd7cf";
+    }
+    if (isHot) {
+      backgroundColor = "rgba(255,179,172,0.13)";
+      borderColor = "rgba(255,179,172,0.45)";
+      textColor = "#ffe0da";
+    }
+    if (isHeld) {
+      backgroundColor = "rgba(211,47,47,0.88)";
+      borderColor = "rgba(255,179,172,0.72)";
+      textColor = "#fff6f4";
+    }
+    if (isSold) {
+      backgroundColor = "rgba(255,255,255,0.06)";
+      borderColor = "rgba(255,255,255,0.12)";
+      textColor = "rgba(255,255,255,0.26)";
+    }
+    if (active) {
+      backgroundColor = "#d32f2f";
+      borderColor = "#ffb3ac";
+      textColor = "#fff8f6";
+    }
+
+    const seatLabel = seat.seatCode.replace(row.rowLabel, "");
+
+    return (
+      <Pressable
+        key={`${row.rowLabel}-${seat.seatCode}-${seat.seatType}`}
+        disabled={disabled}
+        onPress={() => onToggleSeat(selectionUnit)}
+        style={{
+          width: isCouple ? 70 : 34,
+          height: 34,
+          borderTopLeftRadius: isCouple ? 14 : 10,
+          borderTopRightRadius: isCouple ? 14 : 10,
+          borderBottomLeftRadius: 6,
+          borderBottomRightRadius: 6,
+          borderWidth: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor,
+          borderColor,
+          opacity: disabled && !active ? 0.55 : 1,
+          transform: active ? [{ scale: 1.03 }] : undefined,
+          shadowColor: active ? "#d32f2f" : borderColor,
+          shadowOpacity: active ? 0.34 : isHot ? 0.2 : 0.05,
+          shadowRadius: active ? 8 : 3,
+          shadowOffset: { width: 0, height: 0 },
+        }}
+      >
+        {isSold ? (
+          <MaterialCommunityIcons name="close" size={12} color={textColor} />
+        ) : isCouple ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <MaterialCommunityIcons name="heart" size={11} color={textColor} />
+            <Text style={{ color: textColor, fontSize: 8, fontWeight: "900" }}>{seatLabel}</Text>
+          </View>
+        ) : (
+          <Text style={{ color: textColor, fontSize: 9, fontWeight: "900" }}>{seatLabel}</Text>
+        )}
+      </Pressable>
+    );
+  }, [getSeatSelectionUnit, onToggleSeat, selectedSeats]);
+
+  const renderSeatRow = React.useCallback((row: SeatMapRow) => {
+    const orderedSeats = [...row.seats].sort((l, r) => Number(l.columnIndex ?? 0) - Number(r.columnIndex ?? 0));
+    const hasCouple = orderedSeats.some((seat) => seat.seatType === "COUPLE");
+    const displaySeats = hasCouple ? orderedSeats.filter((seat) => Number(seat.columnIndex ?? 0) % 2 === 1) : orderedSeats;
+    const groups = getRowSeatGroups(displaySeats);
+
+    return (
+      <View key={row.rowLabel} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
+        <Text style={{ width: 14, textAlign: "center", color: "rgba(255,255,255,0.42)", fontSize: 10, fontWeight: "900" }}>{row.rowLabel}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+          {groups.left.map((seat) => renderSeatCell(row, seat))}
+          {groups.left.length > 0 ? <View style={{ width: 18 }} /> : null}
+          {groups.center.map((seat) => renderSeatCell(row, seat))}
+          {groups.right.length > 0 ? <View style={{ width: 18 }} /> : null}
+          {groups.right.map((seat) => renderSeatCell(row, seat))}
+        </View>
+        <Text style={{ width: 14, textAlign: "center", color: "rgba(255,255,255,0.42)", fontSize: 10, fontWeight: "900" }}>{row.rowLabel}</Text>
+      </View>
+    );
+  }, [getRowSeatGroups, renderSeatCell]);
+
+  return (
+    <View style={styles.screenShell}>
+      <Animated.ScrollView
+        contentContainerStyle={[styles.scrollContent, styles.stickyScrollContent]}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+      >
+        <Pressable onPress={onBack}>
+          <Text style={styles.backLink}>← Quay lại</Text>
+        </Pressable>
+
+        <View style={styles.seatHeader}>
+          <Text style={styles.detailTitle}>Chọn ghế</Text>
+          <Text style={[styles.detailMeta, { textTransform: "uppercase", letterSpacing: 1.2 }]}>
+            {showtime ? `${showtime.cinemaName} - ${showtime.roomName}` : "CHƯA CHỌN SUẤT CHIẾU"}
+          </Text>
+          <Text style={[styles.detailMeta, { color: "rgba(229,226,225,0.5)" }]}>{movie.title}</Text>
+        </View>
+
+        <View style={{ marginBottom: 10, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.03)", padding: 12, gap: 8 }}>
+          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(255,255,255,0.06)" }}>
+              <Text style={{ color: "rgba(229,226,225,0.78)", fontSize: 11, fontWeight: "800" }}>Ghế thường: Cơ bản</Text>
+            </View>
+            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(255,224,74,0.14)" }}>
+              <Text style={{ color: "#ffe88b", fontSize: 11, fontWeight: "800" }}>VIP: +30.000đ</Text>
+            </View>
+            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(255,68,68,0.14)" }}>
+              <Text style={{ color: "#ffd5d5", fontSize: 11, fontWeight: "800" }}>Ghế đôi: +90.000đ / cặp</Text>
+            </View>
+            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "rgba(115,246,221,0.14)" }}>
+              <Text style={{ color: "#b8fff2", fontSize: 11, fontWeight: "800" }}>Khu hot: +20.000đ</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={[styles.screenArcWrap, { paddingTop: 22, paddingBottom: 14 }]}>
+          <View style={styles.screenArcGlow} />
+          <Text style={styles.screenArcText}>MÀN HÌNH</Text>
+        </View>
+
+        <View style={{ borderRadius: 22, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(28,27,27,0.76)", paddingHorizontal: 10, paddingVertical: 14, gap: 14 }}>
+          {groupedRows.map((section) => (
+            <View key={section.key} style={{ gap: 8 }}>
+              {section.label ? (
+                <Text style={{ alignSelf: "center", color: section.tint, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 }}>{section.label}</Text>
+              ) : null}
+              <View style={{ gap: 8 }}>
+                {section.rows.map((row) => renderSeatRow(row))}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={{ marginTop: 14, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", backgroundColor: "rgba(255,255,255,0.03)", padding: 12, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10 }}>
+          {[
+            ["Còn trống", "rgba(255,255,255,0.75)"],
+            ["Đã chọn", "#d32f2f"],
+            ["Đang giữ", "rgba(195,13,18,0.85)"],
+            ["Đã bán", "rgba(171,165,176,0.56)"],
+            ["VIP", "#ffe04a"],
+            ["Ghế đôi", "#ff4444"],
+            ["Khu hot", "#ffb3ac"],
+          ].map(([label, color]) => (
+            <View key={label} style={{ width: "48%", flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={{ width: 11, height: 11, borderRadius: 999, backgroundColor: color }} />
+              <Text style={{ color: palette.text, fontSize: 11, fontWeight: "700" }}>{label}</Text>
+            </View>
+          ))}
+          {hasHotSeat ? (
+            <View style={{ width: "100%", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: "rgba(255,179,172,0.12)", borderWidth: 1, borderColor: "rgba(255,179,172,0.3)" }}>
+              <Text style={{ color: "#ffe1db", fontSize: 11, fontWeight: "800" }}>Mẹo: Chạm 1 ghế đôi để chọn cả cặp</Text>
+            </View>
+          ) : null}
+        </View>
+      </Animated.ScrollView>
+      <View style={styles.stickyFooterWrap}>
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0.06)", "rgba(255,255,255,0)"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.stickyFooterTopGlow}
+        />
+        <View style={styles.stickyFooter}>
+          <View pointerEvents="none" style={styles.stickyFooterInnerHighlight} />
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.stickyFooterNoise, { transform: [{ translateY: scrollY.interpolate({ inputRange: [0, 320], outputRange: [0, -6], extrapolate: "clamp" }) }] }]}
+          >
+            {glassNoiseDots.map((dot, index) => (
+              <View key={`seat-noise-${index}`} style={[styles.stickyFooterNoiseDot, { left: dot.left, top: dot.top, width: dot.size, height: dot.size, opacity: dot.opacity }]} />
+            ))}
+            {glassNoiseDots.map((dot, index) => (
+              <View key={`seat-noise-dark-${index}`} style={[styles.stickyFooterNoiseDotDark, { left: dot.left, top: dot.top + 8, width: dot.size + 0.4, height: dot.size + 0.4, opacity: dot.opacity * 0.55 }]} />
+            ))}
+          </Animated.View>
+          <View style={styles.stickySummaryMain}>
+            <Text style={styles.summaryLabel}>Ghế đã chọn</Text>
+            <Text style={styles.stickyPrimaryValue}>{selectedSeats.map((item) => item.seatCode).join(", ") || "Chưa chọn"}</Text>
+            <Text style={styles.stickySecondaryValue}>Tạm tính {formatCurrency(subtotal)}</Text>
+          </View>
+          <View style={styles.stickyActionBlock}>
+            <NeonButton label="Tiếp tục" onPress={onContinue} loading={holding} />
+          </View>
+        </View>
       </View>
     </View>
   );

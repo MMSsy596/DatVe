@@ -1,22 +1,22 @@
 import { StyleSheet, Platform } from "react-native";
 
 export const palette = {
-  bg: "#0a0a12",
-  bgSoft: "#111118",
-  panel: "rgba(30, 30, 48, 0.5)", // Glass card
-  panelSoft: "rgba(30, 30, 48, 0.25)",
-  panelStrong: "rgba(30, 30, 48, 0.7)",
-  text: "#e8e0f0",
-  muted: "#a098b0",
-  red: "#CC0000",
-  redSoft: "#8F0F07",
-  cyan: "#00ffcc", // Primary variant
-  amber: "#ffe04a", // Secondary variant
-  border: "rgba(255,255,255,0.05)",
-  sold: "#28283e",
-  held: "#3d0f0f",
-  seat: "#e8e0f0",
-  vip: "#ffe04a",
+  bg: "#131313",
+  bgSoft: "#1c1b1b",
+  panel: "rgba(32, 31, 31, 0.68)",
+  panelSoft: "rgba(53, 53, 52, 0.34)",
+  panelStrong: "rgba(53, 53, 52, 0.78)",
+  text: "#E5E2E1",
+  muted: "#9a9694",
+  red: "#D32F2F",
+  redSoft: "#B71C1C",
+  cyan: "#FFB3AC",
+  amber: "#FFD799",
+  border: "rgba(229,226,225,0.1)",
+  sold: "#2b2a2a",
+  held: "#4a1a1a",
+  seat: "#E5E2E1",
+  vip: "#FFD799",
   couple: "#ff4444",
 };
 
@@ -333,7 +333,9 @@ export const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.06)",
     overflow: "hidden",
     flexDirection: "row",
+    height: 172,
     minHeight: 172,
+    maxHeight: 172,
     backgroundColor: "rgba(32,31,31,0.6)",
   },
   ticketCardPaid: {
@@ -349,6 +351,7 @@ export const styles = StyleSheet.create({
   },
   ticketPosterWrap: {
     width: 110,
+    height: 172,
     flexShrink: 0,
     backgroundColor: palette.panel,
     position: "relative",
@@ -546,8 +549,8 @@ export const styles = StyleSheet.create({
   seatPriceLabel: { color: palette.muted, fontSize: 11, fontWeight: "700" },
   seatPriceValue: { color: palette.text, fontSize: 15, fontWeight: "900", marginTop: 6 },
   screenArcWrap: { alignItems: "center", gap: 10, paddingTop: 40, paddingBottom: 20 },
-  screenArcGlow: { width: "95%", height: 4, borderRadius: 999, backgroundColor: palette.cyan, shadowColor: palette.cyan, shadowOpacity: 1, shadowRadius: 32, shadowOffset: { width: 0, height: 10 } },
-  screenArcText: { color: palette.cyan, fontSize: 13, fontWeight: "900", letterSpacing: 4, textShadowColor: palette.cyan, textShadowRadius: 12 },
+  screenArcGlow: { width: "95%", height: 4, borderRadius: 999, backgroundColor: palette.red, shadowColor: palette.red, shadowOpacity: 0.9, shadowRadius: 30, shadowOffset: { width: 0, height: 8 } },
+  screenArcText: { color: "rgba(229,226,225,0.48)", fontSize: 12, fontWeight: "900", letterSpacing: 4 },
   seatGridWrap: { backgroundColor: palette.panel, borderRadius: 28, paddingVertical: 18, paddingHorizontal: 10, borderWidth: 1, borderColor: palette.border, gap: 12 },
   seatSection: { gap: 10, alignSelf: "center" },
   seatSectionVip: { gap: 10, paddingVertical: 14, paddingHorizontal: 8, borderRadius: 22, backgroundColor: "rgba(255,207,106,0.05)", borderWidth: 1, borderColor: "rgba(255,207,106,0.14)" },
