@@ -2662,6 +2662,14 @@ function LegacySeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, 
 export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats, onToggleSeat, holding, seatMapRows }: { movie: Movie; showtime: ShowtimeItem | null; onBack: () => void; onContinue: () => void; selectedSeats: SeatSelection[]; onToggleSeat: (seats: SeatSelection[]) => void; holding: boolean; seatMapRows: SeatMapRow[]; }) {
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0);
+  const SEAT_SIZE = 36;
+  const COUPLE_SEAT_WIDTH = 74;
+  const SEAT_TOP_RADIUS = 12;
+  const COUPLE_TOP_RADIUS = 16;
+  const SEAT_BOTTOM_RADIUS = 7;
+  const SEAT_GAP = 8;
+  const SIDE_AISLE_GAP = 20;
+  const CENTER_AISLE_GAP = 22;
 
   const layout = React.useMemo(() => {
     const rowMap = new Map<string, SeatMapRow["seats"]>();
@@ -2790,12 +2798,12 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         disabled={disabled}
         onPress={() => onToggleSeat(selectionUnit)}
         style={{
-          width: isCouple ? 70 : 34,
-          height: 34,
-          borderTopLeftRadius: isCouple ? 14 : 10,
-          borderTopRightRadius: isCouple ? 14 : 10,
-          borderBottomLeftRadius: 6,
-          borderBottomRightRadius: 6,
+          width: isCouple ? COUPLE_SEAT_WIDTH : SEAT_SIZE,
+          height: SEAT_SIZE,
+          borderTopLeftRadius: isCouple ? COUPLE_TOP_RADIUS : SEAT_TOP_RADIUS,
+          borderTopRightRadius: isCouple ? COUPLE_TOP_RADIUS : SEAT_TOP_RADIUS,
+          borderBottomLeftRadius: SEAT_BOTTOM_RADIUS,
+          borderBottomRightRadius: SEAT_BOTTOM_RADIUS,
           borderWidth: 1,
           alignItems: "center",
           justifyContent: "center",
@@ -2809,6 +2817,19 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
           shadowOffset: { width: 0, height: 0 },
         }}
       >
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            top: 2,
+            left: isCouple ? 6 : 4,
+            right: isCouple ? 6 : 4,
+            height: isCouple ? 8 : 7,
+            borderTopLeftRadius: isCouple ? 14 : 10,
+            borderTopRightRadius: isCouple ? 14 : 10,
+            backgroundColor: active ? "rgba(255,255,255,0.24)" : "rgba(255,255,255,0.12)",
+          }}
+        />
         {isSold ? (
           <MaterialCommunityIcons name="close" size={12} color={textColor} />
         ) : isCouple ? (
@@ -2832,17 +2853,17 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
     return (
       <View key={row.rowLabel} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
         <Text style={{ width: 14, textAlign: "center", color: "rgba(255,255,255,0.42)", fontSize: 10, fontWeight: "900" }}>{row.rowLabel}</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SEAT_GAP }}>
           {groups.left.map((seat) => renderSeatCell(row, seat))}
-          {groups.left.length > 0 ? <View style={{ width: 18 }} /> : null}
+          {groups.left.length > 0 ? <View style={{ width: SIDE_AISLE_GAP }} /> : null}
           {groups.center.map((seat) => renderSeatCell(row, seat))}
-          {groups.right.length > 0 ? <View style={{ width: 18 }} /> : null}
+          {groups.right.length > 0 ? <View style={{ width: CENTER_AISLE_GAP }} /> : null}
           {groups.right.map((seat) => renderSeatCell(row, seat))}
         </View>
         <Text style={{ width: 14, textAlign: "center", color: "rgba(255,255,255,0.42)", fontSize: 10, fontWeight: "900" }}>{row.rowLabel}</Text>
       </View>
     );
-  }, [getRowSeatGroups, renderSeatCell]);
+  }, [CENTER_AISLE_GAP, SEAT_GAP, SIDE_AISLE_GAP, getRowSeatGroups, renderSeatCell]);
 
   return (
     <View style={styles.screenShell}>
@@ -2886,13 +2907,13 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
           <Text style={styles.screenArcText}>MÀN HÌNH</Text>
         </View>
 
-        <View style={{ borderRadius: 22, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(28,27,27,0.76)", paddingHorizontal: 10, paddingVertical: 14, gap: 14 }}>
+        <View style={{ borderRadius: 22, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(28,27,27,0.76)", paddingHorizontal: 12, paddingVertical: 16, gap: 16 }}>
           {groupedRows.map((section) => (
             <View key={section.key} style={{ gap: 8 }}>
               {section.label ? (
                 <Text style={{ alignSelf: "center", color: section.tint, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 }}>{section.label}</Text>
               ) : null}
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: 10 }}>
                 {section.rows.map((row) => renderSeatRow(row))}
               </View>
             </View>

@@ -1847,12 +1847,24 @@ export default function App() {
   }
 
   const androidTopInset = Platform.OS === "android" ? NativeStatusBar.currentHeight ?? 0 : 0;
+  const topBarSideWidth = 128;
+  const topBarActionSize = 36;
+  const topBarActionStyle = {
+    width: topBarActionSize,
+    height: topBarActionSize,
+    borderRadius: 999,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" translucent={false} />
       <View style={[styles.topBar, { paddingTop: 14 + androidTopInset }]}>
-        <View style={{ width: 124, gap: 2 }}>
+        <View style={{ width: topBarSideWidth, gap: 2 }}>
           <Text style={{ color: "#bca6a9", fontSize: 9, fontWeight: "900", letterSpacing: 0.8, textTransform: "uppercase" }}>Vị trí hiện tại</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <MaterialCommunityIcons name="map-marker-radius-outline" size={13} color="#f2d8d1" />
@@ -1864,11 +1876,11 @@ export default function App() {
           <Text style={{ color: "#d43b36", fontSize: 24, fontWeight: "900", fontStyle: "italic", letterSpacing: 0.2 }}>{APP_DISPLAY_NAME}</Text>
         </View>
 
-        <View style={{ width: 124, flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 10 }}>
-          <Pressable onPress={() => setActiveTab("explore")} style={{ width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" }}>
+        <View style={{ width: topBarSideWidth, flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 10 }}>
+          <Pressable onPress={() => setActiveTab("explore")} style={topBarActionStyle}>
             <MaterialCommunityIcons name="magnify" size={18} color="#fff4ef" />
           </Pressable>
-          <Pressable onPress={() => setActiveTab("tickets")} style={{ width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" }}>
+          <Pressable onPress={() => setActiveTab("tickets")} style={topBarActionStyle}>
             <MaterialCommunityIcons name="bell-outline" size={18} color="#fff4ef" />
             {remindersData.length > 0 ? (
               <View style={{ position: "absolute", top: 5, right: 5, minWidth: 14, height: 14, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: "#c30d12", paddingHorizontal: 2 }}>
@@ -1876,7 +1888,11 @@ export default function App() {
               </View>
             ) : null}
           </Pressable>
-          {loadingRemote ? <ActivityIndicator size="small" color={palette.cyan} /> : null}
+          {loadingRemote ? (
+            <View style={{ position: "absolute", left: 2, bottom: -2 }}>
+              <ActivityIndicator size="small" color={palette.cyan} />
+            </View>
+          ) : null}
         </View>
       </View>
       {toast ? <Toast toastId={toast.id} message={toast.message} tone={toast.tone} kind={toast.kind} closing={toast.closing} visibleMs={toast.visibleMs} topOffset={androidTopInset + 14} /> : null}
