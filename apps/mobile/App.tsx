@@ -1853,33 +1853,30 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" translucent={false} />
       <View style={[styles.topBar, { paddingTop: 14 + androidTopInset }]}>
-        <View style={styles.brandWrap}>
-          <View style={styles.brandLogo}>
-            <Image source={require("./assets/brand-mark.png")} style={styles.brandLogoImage} resizeMode="contain" />
-          </View>
-          <View style={styles.brandMeta}>
-            <Text style={styles.brandCaption}>NEON CINEMA</Text>
-            <Text style={styles.brand}>{APP_DISPLAY_NAME}</Text>
+        <View style={{ width: 124, gap: 2 }}>
+          <Text style={{ color: "#bca6a9", fontSize: 9, fontWeight: "900", letterSpacing: 0.8, textTransform: "uppercase" }}>Vị trí hiện tại</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <MaterialCommunityIcons name="map-marker-radius-outline" size={13} color="#f2d8d1" />
+            <Text style={{ color: "#fff4ef", fontSize: 13, fontWeight: "800" }}>TP.HCM</Text>
           </View>
         </View>
-        <View style={styles.topBarStatusWrap}>
-          <Pressable
-            style={[styles.aiQuickButton, assistantQuickLoading && styles.aiQuickButtonDisabled]}
-            onPress={runAssistantQuickBooking}
-            onLongPress={() => setAssistantQuickConfigVisible(true)}
-            delayLongPress={320}
-          >
-            {assistantQuickLoading ? (
-              <ActivityIndicator size="small" color="#fff7f2" />
-            ) : (
-              <MaterialCommunityIcons name="robot-love-outline" size={14} color="#fff7f2" />
-            )}
-            <Text style={styles.aiQuickButtonText}>AI đặt nhanh</Text>
+
+        <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ color: "#d43b36", fontSize: 24, fontWeight: "900", fontStyle: "italic", letterSpacing: 0.2 }}>{APP_DISPLAY_NAME}</Text>
+        </View>
+
+        <View style={{ width: 124, flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 10 }}>
+          <Pressable onPress={() => setActiveTab("explore")} style={{ width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" }}>
+            <MaterialCommunityIcons name="magnify" size={18} color="#fff4ef" />
           </Pressable>
-          <View style={[styles.networkIndicator, networkStatus === "online" ? styles.networkIndicatorOnline : styles.networkIndicatorOffline]}>
-            <View style={[styles.networkIndicatorCore, networkStatus === "online" ? styles.networkIndicatorCoreOnline : styles.networkIndicatorCoreOffline]} />
-          </View>
-          <Text style={styles.liveClock}>{liveClockLabel}</Text>
+          <Pressable onPress={() => setActiveTab("tickets")} style={{ width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" }}>
+            <MaterialCommunityIcons name="bell-outline" size={18} color="#fff4ef" />
+            {remindersData.length > 0 ? (
+              <View style={{ position: "absolute", top: 5, right: 5, minWidth: 14, height: 14, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: "#c30d12", paddingHorizontal: 2 }}>
+                <Text style={{ color: "#fff7f2", fontSize: 9, fontWeight: "900" }}>{Math.min(remindersData.length, 9)}</Text>
+              </View>
+            ) : null}
+          </Pressable>
           {loadingRemote ? <ActivityIndicator size="small" color={palette.cyan} /> : null}
         </View>
       </View>
@@ -2068,5 +2065,4 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
 
