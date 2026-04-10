@@ -1,7 +1,13 @@
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { ensureRuntimeSchema, getPool } from "./db";
 import { consumeVoucherIfNeeded } from "./vouchers";
-import { prepareGatewayPayment, type GatewayMode, type PaymentProvider, verifyVnpayReturn as verifyVnpayReturnWithMode } from "./payment-gateways";
+import {
+  prepareGatewayPayment,
+  type GatewayMode,
+  type PaymentProvider,
+  verifyMomoSignature as verifyMomoSignatureWithMode,
+  verifyVnpayReturn as verifyVnpayReturnWithMode,
+} from "./payment-gateways";
 import { sendPushToUser } from "./notifications";
 
 export type PaymentStatus = "INITIATED" | "PENDING" | "SUCCESS" | "FAILED" | "CANCELLED";
@@ -70,7 +76,7 @@ export async function createPaymentLink(payload: CreatePaymentPayload) {
       Number(booking.total_amount),
       checkoutUrl,
       payload.returnUrl,
-      JSON.stringify({
+      JSON.stringify(prepared?.requestPayload ?? {
         bookingId: payload.bookingId,
         provider: payload.provider,
         origin: payload.origin,
@@ -266,4 +272,8 @@ export async function updatePaymentStatus(
 
 export function verifyVnpayReturn(params: URLSearchParams, gatewayMode: GatewayMode) {
   return verifyVnpayReturnWithMode(params, gatewayMode);
+}
+
+export function verifyMomoSignature(payload: Record<string, unknown>, gatewayMode: GatewayMode) {
+  return verifyMomoSignatureWithMode(payload, gatewayMode);
 }

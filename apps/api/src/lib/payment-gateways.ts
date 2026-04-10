@@ -57,6 +57,23 @@ function getVnpConfig(mode: GatewayMode) {
   };
 }
 
+function getMomoConfig(mode: GatewayMode) {
+  const sandboxPartnerCode = process.env.MOMO_PARTNER_CODE_SANDBOX ?? process.env.PARTNER_CODE;
+  const sandboxAccessKey = process.env.MOMO_ACCESS_KEY_SANDBOX ?? process.env.ACCESS_KEY;
+  const sandboxSecretKey = process.env.MOMO_SECRET_KEY_SANDBOX ?? process.env.SECRET_KEY;
+  const sandboxEndpoint =
+    process.env.MOMO_CREATE_URL_SANDBOX ??
+    process.env.MOMO_ENDPOINT ??
+    "https://test-payment.momo.vn/v2/gateway/api/create";
+
+  return {
+    partnerCode: mode === "REAL" ? process.env.MOMO_PARTNER_CODE_REAL : sandboxPartnerCode,
+    accessKey: mode === "REAL" ? process.env.MOMO_ACCESS_KEY_REAL : sandboxAccessKey,
+    secretKey: mode === "REAL" ? process.env.MOMO_SECRET_KEY_REAL : sandboxSecretKey,
+    endpoint: mode === "REAL" ? process.env.MOMO_CREATE_URL_REAL : sandboxEndpoint,
+  };
+}
+
 export function verifyVnpayReturn(params: URLSearchParams, gatewayMode: GatewayMode) {
   const config = getVnpConfig(gatewayMode);
   if (!config.tmnCode || !config.hashSecret) {
@@ -73,6 +90,34 @@ export function verifyVnpayReturn(params: URLSearchParams, gatewayMode: GatewayM
   const query = new URLSearchParams(sortObject(data)).toString();
   const expected = hmacSha512(config.hashSecret, query);
   return secureHash === expected;
+}
+
+export function verifyMomoSignature(payload: Record<string, unknown>, gatewayMode: GatewayMode) {
+  const { accessKey, secretKey } = getMomoConfig(gatewayMode);
+  if (!accessKey || !secretKey) return false;
+
+  const read = (key: string) => {
+    const value = payload[key];
+    return value === undefined || value === null ? "" : String(value);
+  };
+  const providedSignature = read("signature");
+  if (!providedSignature) return false;
+
+  const rawSignature =
+    `accessKey=${read("accessKey") || accessKey}` +
+    `&amount=${read("amount")}` +
+    `&extraData=${read("extraData")}` +
+    `&message=${read("message")}` +
+    `&orderId=${read("orderId")}` +
+    `&orderInfo=${read("orderInfo")}` +
+    `&orderType=${read("orderType")}` +
+    `&partnerCode=${read("partnerCode")}` +
+    `&payType=${read("payType")}` +
+    `&requestId=${read("requestId")}` +
+    `&responseTime=${read("responseTime")}` +
+    `&resultCode=${read("resultCode")}`;
+
+  return hmacSha256(secretKey, rawSignature) === providedSignature;
 }
 
 async function buildVnpayPayment(input: {
@@ -96,7 +141,7 @@ async function buildVnpayPayment(input: {
     vnp_CurrCode: "VND",
     vnp_IpAddr: input.ipAddr,
     vnp_Locale: "vn",
-    vnp_OrderInfo: `Thanh toán vé ${input.bookingCode}`,
+    vnp_OrderInfo: `Thanh toan ve ${input.bookingCode}`,
     vnp_OrderType: "other",
     vnp_ReturnUrl: `${input.origin}/api/v1/payments/callback/vnpay`,
     vnp_TmnCode: config.tmnCode,
@@ -123,35 +168,28 @@ async function buildMomoPayment(input: {
   origin: string;
   returnUrl: string;
   gatewayMode: GatewayMode;
-}) {
-  const partnerCode =
-    input.gatewayMode === "REAL" ? process.env.MOMO_PARTNER_CODE_REAL : process.env.MOMO_PARTNER_CODE_SANDBOX;
-  const accessKey =
-    input.gatewayMode === "REAL" ? process.env.MOMO_ACCESS_KEY_REAL : process.env.MOMO_ACCESS_KEY_SANDBOX;
-  const secretKey =
-    input.gatewayMode === "REAL" ? process.env.MOMO_SECRET_KEY_REAL : process.env.MOMO_SECRET_KEY_SANDBOX;
-  const endpoint =
-    input.gatewayMode === "REAL"
-      ? process.env.MOMO_CREATE_URL_REAL
-      : process.env.MOMO_CREATE_URL_SANDBOX ?? "https://test-payment.momo.vn/v2/gateway/api/create";
-
+}): Promise<PreparedPayment | null> {
+  const { partnerCode, accessKey, secretKey, endpoint } = getMomoConfig(input.gatewayMode);
   if (!partnerCode || !accessKey || !secretKey || !endpoint) return null;
 
   const requestId = createNonce("momo");
   const orderId = input.providerTxnRef;
   const ipnUrl = `${input.origin}/api/v1/payments/callback/momo`;
   const redirectUrl = `${input.origin}/api/v1/payments/callback/momo`;
+  const amount = String(input.amount);
+  const orderInfo = `Thanh toan ve ${input.bookingCode}`;
   const rawSignature =
-    `accessKey=${accessKey}&amount=${input.amount}&extraData=` +
-    `&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=Thanh toán vé ${input.bookingCode}` +
+    `accessKey=${accessKey}&amount=${amount}&extraData=` +
+    `&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}` +
     `&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=captureWallet`;
 
   const payload = {
     partnerCode,
+    accessKey,
     requestId,
-    amount: input.amount,
+    amount,
     orderId,
-    orderInfo: `Thanh toán vé ${input.bookingCode}`,
+    orderInfo,
     redirectUrl,
     ipnUrl,
     extraData: "",
@@ -167,14 +205,14 @@ async function buildMomoPayment(input: {
   });
   const json = await response.json();
   if (!response.ok || !json.payUrl) {
-    throw new Error(json.message ?? "MoMo không tạo được link thanh toán.");
+    throw new Error(json.message ?? "MoMo khong tao duoc link thanh toan.");
   }
 
   return {
     providerOrderId: orderId,
     checkoutUrl: String(json.payUrl),
     gatewayMode: input.gatewayMode,
-    mode: "REAL" as const,
+    mode: "REAL",
     requestPayload: payload,
   };
 }
@@ -186,7 +224,7 @@ async function buildZalopayPayment(input: {
   origin: string;
   returnUrl: string;
   gatewayMode: GatewayMode;
-}) {
+}): Promise<PreparedPayment | null> {
   const appId =
     input.gatewayMode === "REAL" ? process.env.ZALOPAY_APP_ID_REAL : process.env.ZALOPAY_APP_ID_SANDBOX;
   const key1 =
@@ -217,7 +255,7 @@ async function buildZalopayPayment(input: {
     app_trans_id: appTransId,
     embed_data: embedData,
     item,
-    description: `Đặt Vé - ${input.bookingCode}`,
+    description: `Dat Ve - ${input.bookingCode}`,
     callback_url: `${input.origin}/api/v1/payments/callback/zalopay`,
     mac: hmacSha256(key1, data),
   };
@@ -235,14 +273,14 @@ async function buildZalopayPayment(input: {
   });
   const json = await response.json();
   if (!response.ok || !(json.order_url || json.orderurl)) {
-    throw new Error(json.return_message ?? "ZaloPay không tạo được link thanh toán.");
+    throw new Error(json.return_message ?? "ZaloPay khong tao duoc link thanh toan.");
   }
 
   return {
     providerOrderId: appTransId,
     checkoutUrl: String(json.order_url ?? json.orderurl),
     gatewayMode: input.gatewayMode,
-    mode: "REAL" as const,
+    mode: "REAL",
     requestPayload: payload,
   };
 }
