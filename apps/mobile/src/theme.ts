@@ -373,7 +373,95 @@ export const styles = StyleSheet.create({
   exploreDescription: { color: palette.muted, lineHeight: 21 },
 
   screenIntro: { gap: 6 },
-  ticketCard: { backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 22, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", overflow: "hidden", gap: 8, paddingBottom: 16 },
+
+  // Tab bar (Sắp tới / Lịch sử)
+  ticketTabRow: { flexDirection: "row", gap: 24, paddingHorizontal: 2, marginBottom: 4 },
+  ticketTab: { paddingVertical: 8, paddingHorizontal: 2, position: "relative" },
+  ticketTabText: { color: "rgba(255,255,255,0.38)", fontSize: 18, fontWeight: "900" },
+  ticketTabTextActive: { color: palette.text },
+  ticketTabUnderline: { position: "absolute", bottom: 0, left: 0, width: 32, height: 3, borderRadius: 999, backgroundColor: palette.red },
+
+  // Ticket card ngang có poster thumbnail (theo stitchv1)
+  ticketCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+    overflow: "hidden",
+    flexDirection: "row",
+    minHeight: 172,
+    backgroundColor: "rgba(32,31,31,0.6)",
+  },
+  ticketCardPaid: {
+    borderColor: "rgba(115,246,221,0.18)",
+    backgroundColor: "rgba(5,36,31,0.55)",
+  },
+  ticketCardPending: {
+    borderColor: "rgba(255,207,106,0.22)",
+    backgroundColor: "rgba(36,28,5,0.55)",
+  },
+  ticketCardCancelled: {
+    opacity: 0.68,
+  },
+  ticketPosterWrap: {
+    width: 110,
+    flexShrink: 0,
+    backgroundColor: palette.panel,
+    position: "relative",
+  },
+  ticketPosterImage: { width: "100%", height: "100%" },
+  ticketFormatBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "rgba(0,0,0,0.58)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  ticketFormatBadgeText: { color: "rgba(255,255,255,0.9)", fontSize: 9, fontWeight: "900", letterSpacing: 0.5, textTransform: "uppercase" },
+  ticketBody: { flex: 1, padding: 16, justifyContent: "space-between" },
+  ticketBodyTop: { gap: 4 },
+  ticketBodyBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 8 },
+  ticketTitle: { color: palette.text, fontSize: 16, fontWeight: "900", lineHeight: 20 },
+  ticketMetaRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  ticketMetaText: { color: "rgba(255,255,255,0.5)", fontSize: 12 },
+  ticketSeatText: { color: palette.text, fontSize: 12, fontWeight: "800" },
+  ticketStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  ticketStatusBadgePaid: {
+    borderColor: "rgba(115,246,221,0.3)",
+    backgroundColor: "rgba(115,246,221,0.12)",
+  },
+  ticketStatusBadgePending: {
+    borderColor: "rgba(255,207,106,0.3)",
+    backgroundColor: "rgba(255,207,106,0.1)",
+  },
+  ticketStatusBadgeCancelled: {
+    borderColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.03)",
+  },
+  ticketStatusText: { color: palette.text, fontSize: 10, fontWeight: "900", letterSpacing: 0.4 },
+  ticketStatusTextPaid: { color: "#8affea" },
+  ticketStatusTextPending: { color: palette.amber },
+  ticketStatusTextCancelled: { color: palette.muted },
+  ticketActionBtn: { color: palette.cyan, fontSize: 12, fontWeight: "800" },
+  ticketActionBtnPay: { color: "#fff8f0", fontSize: 12, fontWeight: "900" },
+  ticketPayBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: palette.red,
+  },
+
+  // Legacy compat (vài nơi khác vẫn dùng)
   ticketEmptyCard: { backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 22, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", padding: 16, gap: 12 },
   ticketEmptyLabel: { color: palette.amber, fontSize: 11, fontWeight: "800", letterSpacing: 1.4 },
   ticketStripe: { height: 5, backgroundColor: palette.red },
