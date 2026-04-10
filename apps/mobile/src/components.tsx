@@ -1,16 +1,14 @@
-﻿import React from "react";
-import { BlurView } from "expo-blur";
+import React from "react";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { SvgUri } from "react-native-svg";
 import { WebView } from "react-native-webview";
 import { palette, styles } from "./theme";
 import { AssistantMessage, Banner, ComboItem, Movie, PaymentProvider, ProfileData, ReminderItem, SeatMapRow, SeatSelection, Setter, SessionUser, ShowtimeItem, TicketDetail, TicketItem, ToastKind, ToastTone, Voucher } from "./types";
 
-const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")}Ä‘`;
+const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
 
 function isSvgAsset(uri?: string | null) {
   return Boolean(uri && /\.svg(?:\?|#|$)/i.test(uri));
@@ -19,15 +17,7 @@ function isSvgAsset(uri?: string | null) {
 function MediaAsset({ uri, style, resizeMode = "cover" }: { uri?: string | null; style: any; resizeMode?: "cover" | "contain" | "stretch" | "center" }) {
   if (!uri) return null;
   if (isSvgAsset(uri)) {
-    return (
-      <SvgUri
-        uri={uri}
-        width="100%"
-        height="100%"
-        preserveAspectRatio={resizeMode === "contain" ? "xMidYMid meet" : "xMidYMid slice"}
-        style={style}
-      />
-    );
+    return <View style={style} />;
   }
   return <Image source={{ uri }} style={style} resizeMode={resizeMode} />;
 }
@@ -46,7 +36,7 @@ const formatDateTime = (value: string) => {
   if (Number.isNaN(date.getTime())) {
     return String(value).replace("T", " ").slice(0, 16);
   }
-  return `${date.toLocaleDateString("vi-VN")} â€¢ ${date.toLocaleTimeString("vi-VN", {
+  return `${date.toLocaleDateString("vi-VN")} • ${date.toLocaleTimeString("vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
   })}`;
@@ -86,7 +76,7 @@ const formatShowtimeDayNumber = (value: string) => {
 const formatShowtimeWeekday = (value: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "NgÃ y";
+    return "Ngày";
   }
   return date.toLocaleDateString("vi-VN", { weekday: "short" });
 };
@@ -95,48 +85,48 @@ const formatRelativeShowtimeLabel = (value: string, now: number) => {
   const date = new Date(value);
   const today = new Date(now);
   if (Number.isNaN(date.getTime()) || Number.isNaN(today.getTime())) {
-    return "Lá»‹ch chiáº¿u";
+    return "Lịch chiếu";
   }
 
   const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const diffDays = Math.round((startOfDate - startOfToday) / 86400000);
 
-  if (diffDays === 0) return "HÃ´m nay";
-  if (diffDays === 1) return "NgÃ y mai";
-  return "Lá»‹ch chiáº¿u";
+  if (diffDays === 0) return "Hôm nay";
+  if (diffDays === 1) return "Ngày mai";
+  return "Lịch chiếu";
 };
 
 const showtimeBucketLabel = (startTime: string) => {
   const hour = Number(String(startTime).slice(11, 13));
-  if (hour < 12) return "SÃ¡ng";
-  if (hour < 18) return "Chiá»u";
-  return "Tá»‘i";
+  if (hour < 12) return "Sáng";
+  if (hour < 18) return "Chiều";
+  return "Tối";
 };
 
 const getSeatAvailabilityMeta = (availableSeats: number, totalSeats: number) => {
   if (totalSeats <= 0 || availableSeats <= 0) {
-    return { label: "Gáº§n kÃ­n", tone: "critical" as const };
+    return { label: "Gần kín", tone: "critical" as const };
   }
 
   const ratio = availableSeats / totalSeats;
   if (ratio <= 0.2) {
-    return { label: "Gáº§n kÃ­n", tone: "critical" as const };
+    return { label: "Gần kín", tone: "critical" as const };
   }
   if (ratio <= 0.45) {
-    return { label: "Sáº¯p háº¿t", tone: "warning" as const };
+    return { label: "Sắp hết", tone: "warning" as const };
   }
-  return { label: "CÃ²n nhiá»u", tone: "good" as const };
+  return { label: "Còn nhiều", tone: "good" as const };
 };
 
 const mapBookingStatus = (status: string) => {
   switch (status) {
     case "PAID":
-      return "ÄÃ£ thanh toÃ¡n";
+      return "Đã thanh toán";
     case "PENDING":
-      return "Chá» thanh toÃ¡n";
+      return "Chờ thanh toán";
     case "CANCELLED":
-      return "ÄÃ£ há»§y";
+      return "Đã hủy";
     default:
       return status;
   }
@@ -145,11 +135,11 @@ const mapBookingStatus = (status: string) => {
 const mapCheckinStatus = (status?: string | null) => {
   switch (status) {
     case "CHECKED_IN":
-      return "ÄÃ£ check-in";
+      return "Đã check-in";
     case "NOT_CHECKED_IN":
-      return "ChÆ°a check-in";
+      return "Chưa check-in";
     default:
-      return status ?? "ChÆ°a check-in";
+      return status ?? "Chưa check-in";
   }
 };
 
@@ -210,16 +200,16 @@ function normalizeTrailerUrl(value?: string | null) {
 function formatCountdownLabel(startTime: string, now: number) {
   const diffMs = new Date(startTime).getTime() - now;
   if (diffMs <= 0) {
-    return "Háº¿t giá»";
+    return "Hết giờ";
   }
   if (diffMs < 60000) {
-    return "Äang vÃ o ráº¡p";
+    return "Đang vào rạp";
   }
   const minutes = Math.max(1, Math.ceil(diffMs / 60000));
   if (minutes <= 3) {
-    return "Sáº¯p báº¯t Ä‘áº§u";
+    return "Sắp bắt đầu";
   }
-  return `Báº¯t Ä‘áº§u sau ${minutes} phÃºt`;
+  return `Bắt đầu sau ${minutes} phút`;
 }
 
 function getCountdownLevel(startTime: string, now: number) {
@@ -287,8 +277,8 @@ function TrailerPlayer({ url, posterUrl, title }: { url: string | null; posterUr
   if (!url) {
     return (
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>ChÆ°a cÃ³ trailer</Text>
-        <Text style={styles.accountDetail}>Phim nÃ y hiá»‡n chÆ°a cÃ³ link trailer Ä‘á»ƒ phÃ¡t trong app.</Text>
+        <Text style={styles.accountTitle}>Chưa có trailer</Text>
+        <Text style={styles.accountDetail}>Phim này hiện chưa có link trailer để phát trong app.</Text>
       </View>
     );
   }
@@ -308,7 +298,7 @@ function TrailerPlayer({ url, posterUrl, title }: { url: string | null; posterUr
             <MaterialCommunityIcons name="play" size={24} color="#fff6f0" />
           </View>
           <Text style={styles.trailerPosterTitle}>{title}</Text>
-          <Text style={styles.trailerPosterHint}>Báº¥m Ä‘á»ƒ phÃ¡t trailer</Text>
+          <Text style={styles.trailerPosterHint}>Bấm để phát trailer</Text>
         </View>
       </Pressable>
     );
@@ -327,7 +317,7 @@ function TrailerPlayer({ url, posterUrl, title }: { url: string | null; posterUr
         {loading ? (
           <View style={styles.trailerLoadingOverlay}>
             <ActivityIndicator color={palette.cyan} />
-            <Text style={styles.trailerLoadingText}>{loadProgress > 0 ? `Äang táº£i ${loadProgress}%` : "Äang táº£i trailer"}</Text>
+            <Text style={styles.trailerLoadingText}>{loadProgress > 0 ? `Đang tải ${loadProgress}%` : "Đang tải trailer"}</Text>
           </View>
         ) : null}
       </View>
@@ -354,7 +344,7 @@ function TrailerPlayer({ url, posterUrl, title }: { url: string | null; posterUr
       {loading ? (
         <View style={styles.trailerLoadingOverlay}>
           <ActivityIndicator color={palette.cyan} />
-          <Text style={styles.trailerLoadingText}>{`Äang táº£i ${Math.max(loadProgress, 12)}%`}</Text>
+          <Text style={styles.trailerLoadingText}>{`Đang tải ${Math.max(loadProgress, 12)}%`}</Text>
         </View>
       ) : null}
     </View>
@@ -396,16 +386,16 @@ export function NeonButton({
   );
 }
 
-const toastToneLabel = (tone: ToastTone) => (tone === "success" ? "HoÃ n táº¥t" : tone === "error" ? "Lá»—i" : "ThÃ´ng bÃ¡o");
+const toastToneLabel = (tone: ToastTone) => (tone === "success" ? "Hoàn tất" : tone === "error" ? "Lỗi" : "Thông báo");
 
 const toastKindMeta: Record<ToastKind, { label: string; outlineIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; filledIcon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; color: string; bg: string }> = {
-  ticket: { label: "VÃ©", outlineIcon: "ticket-confirmation-outline", filledIcon: "ticket-confirmation", color: palette.amber, bg: "rgba(255,207,106,0.14)" },
-  favorite: { label: "YÃªu thÃ­ch", outlineIcon: "heart-outline", filledIcon: "heart", color: "#ff88a4", bg: "rgba(201,63,98,0.16)" },
-  seat: { label: "Gháº¿", outlineIcon: "sofa-single-outline", filledIcon: "sofa-single", color: palette.cyan, bg: "rgba(115,246,221,0.14)" },
-  payment: { label: "Thanh toÃ¡n", outlineIcon: "credit-card-outline", filledIcon: "credit-card", color: "#9cc7ff", bg: "rgba(98,141,235,0.16)" },
-  reminder: { label: "Nháº¯c lá»‹ch", outlineIcon: "bell-outline", filledIcon: "bell", color: "#ffd88d", bg: "rgba(255,184,72,0.16)" },
-  auth: { label: "TÃ i khoáº£n", outlineIcon: "account-circle-outline", filledIcon: "account-circle", color: "#d7b8ff", bg: "rgba(147,51,234,0.18)" },
-  system: { label: "Há»‡ thá»‘ng", outlineIcon: "information-outline", filledIcon: "information", color: palette.text, bg: "rgba(255,255,255,0.08)" },
+  ticket: { label: "Vé", outlineIcon: "ticket-confirmation-outline", filledIcon: "ticket-confirmation", color: palette.amber, bg: "rgba(255,207,106,0.14)" },
+  favorite: { label: "Yêu thích", outlineIcon: "heart-outline", filledIcon: "heart", color: "#ff88a4", bg: "rgba(201,63,98,0.16)" },
+  seat: { label: "Ghế", outlineIcon: "sofa-single-outline", filledIcon: "sofa-single", color: palette.cyan, bg: "rgba(115,246,221,0.14)" },
+  payment: { label: "Thanh toán", outlineIcon: "credit-card-outline", filledIcon: "credit-card", color: "#9cc7ff", bg: "rgba(98,141,235,0.16)" },
+  reminder: { label: "Nhắc lịch", outlineIcon: "bell-outline", filledIcon: "bell", color: "#ffd88d", bg: "rgba(255,184,72,0.16)" },
+  auth: { label: "Tài khoản", outlineIcon: "account-circle-outline", filledIcon: "account-circle", color: "#d7b8ff", bg: "rgba(147,51,234,0.18)" },
+  system: { label: "Hệ thống", outlineIcon: "information-outline", filledIcon: "information", color: palette.text, bg: "rgba(255,255,255,0.08)" },
 };
 
 const toastKindMotion: Record<
@@ -755,7 +745,7 @@ function MovieStateBadges({ isFavorite, isInWatchlist, compact = false }: { isFa
       {isFavorite ? (
         <View style={[styles.movieStateBadge, styles.movieStateBadgeFavorite, compact && styles.movieStateBadgeCompact]}>
           <MaterialCommunityIcons name="heart" size={compact ? 11 : 12} color="#ffe7ef" />
-          {!compact ? <Text style={styles.movieStateBadgeText}>YÃªu thÃ­ch</Text> : null}
+          {!compact ? <Text style={styles.movieStateBadgeText}>Yêu thích</Text> : null}
         </View>
       ) : null}
       {isInWatchlist ? (
@@ -860,7 +850,7 @@ export function HomeScreen(props: {
                 mediaStyle={styles.bannerImage}
                 style={{ width: 320, aspectRatio: 21 / 9, borderRadius: 20, overflow: "hidden", backgroundColor: banner.accent, padding: 14, justifyContent: "space-between" }}
               >
-                <LinearGradient colors={["rgba(5,5,7,0.16)", "rgba(5,5,7,0.72)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ ...StyleSheet.absoluteFillObject }} />
+                <LinearGradient colors={["rgba(5,5,7,0.16)", "rgba(5,5,7,0.72)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }} />
                 <Text style={{ color: "#f8d9cf", fontSize: 10, fontWeight: "900", letterSpacing: 0.8 }}>{banner.eyebrow}</Text>
                 <View style={{ gap: 4 }}>
                   <Text style={{ color: "#fff7f3", fontSize: 20, fontWeight: "900" }}>{banner.title}</Text>
@@ -910,24 +900,24 @@ export function HomeScreen(props: {
 
       <StaggerSection index={2}>
         <View style={styles.quickStrip}>
-          <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
+          <View style={styles.quickStripItemWrap}>
             <View style={styles.quickStripItem}>
               <Text style={styles.quickStripLabel}>Đang chiếu</Text>
               <Text style={styles.quickStripValue}>{moviesData.filter((movie) => movie.status !== "COMING_SOON").length}</Text>
             </View>
-          </BlurView>
-          <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
+          </View>
+          <View style={styles.quickStripItemWrap}>
             <View style={styles.quickStripItem}>
               <Text style={styles.quickStripLabel}>Sắp chiếu</Text>
               <Text style={styles.quickStripValue}>{moviesData.filter((movie) => movie.status === "COMING_SOON").length}</Text>
             </View>
-          </BlurView>
-          <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
+          </View>
+          <View style={styles.quickStripItemWrap}>
             <View style={styles.quickStripItem}>
               <Text style={styles.quickStripLabel}>Thanh toán</Text>
               <Text style={styles.quickStripValue}>MoMo • ZaloPay</Text>
             </View>
-          </BlurView>
+          </View>
         </View>
       </StaggerSection>
 
@@ -943,9 +933,9 @@ export function HomeScreen(props: {
                   <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
                   <View style={styles.posterScrim} />
                   <View style={styles.posterTopRow}>
-                    <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
+                    <View style={styles.posterBadgeWrap}>
                       <Text style={styles.posterBadge}>{movie.badge}</Text>
-                    </BlurView>
+                    </View>
                     <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                   </View>
                 </MediaBackground>
@@ -1024,9 +1014,9 @@ export function HomeScreen(props: {
                     <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
                     <View style={styles.posterScrim} />
                     <View style={styles.posterTopRow}>
-                      <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
+                      <View style={styles.posterBadgeWrap}>
                         <Text style={styles.posterBadge}>{movie.badge}</Text>
-                      </BlurView>
+                      </View>
                       <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                     </View>
                   </MediaBackground>
@@ -1581,22 +1571,22 @@ export function AuthScreen(props: {
   const { authMode, setAuthMode, authName, setAuthName, authEmail, setAuthEmail, authPhone, setAuthPhone, authPassword, setAuthPassword, onSubmitAuth, onGoogleAuth, authLoading, initialStep = 0, onBack, helperMessage } = props;
   const slides = [
     {
-      eyebrow: "Äáº¶T VÃ‰ THÃ”NG MINH",
-      title: "Chá»n phim nhanh, giá»¯ gháº¿ Ä‘áº¹p vÃ  quay láº¡i Ä‘Ãºng bÆ°á»›c Ä‘ang xem.",
-      body: "App ghi nhá»› luá»“ng Ä‘ang má»Ÿ Ä‘á»ƒ tráº£i nghiá»‡m giá»‘ng sáº£n pháº©m tháº­t, khÃ´ng cÃ²n cáº£m giÃ¡c demo.",
-      chips: ["Giá»¯ gháº¿ theo thá»i gian thá»±c", "Back Android Ä‘Ãºng luá»“ng"],
+      eyebrow: "ĐẶT VÉ THÔNG MINH",
+      title: "Chọn phim nhanh, giữ ghế đẹp và quay lại đúng bước đang xem.",
+      body: "App ghi nhớ luồng đang mở để trải nghiệm giống sản phẩm thật, không còn cảm giác demo.",
+      chips: ["Giữ ghế theo thời gian thực", "Back Android đúng luồng"],
     },
     {
-      eyebrow: "VÃ‰ VÃ€ NHáº®C Lá»ŠCH",
-      title: "ToÃ n bá»™ vÃ©, QR vÃ  lá»‹ch nháº¯c Ä‘Æ°á»£c gom vÃ o má»™t nÆ¡i dá»… quÃ©t.",
-      body: "Báº¡n cÃ³ thá»ƒ má»Ÿ láº¡i vÃ©, theo dÃµi tráº¡ng thÃ¡i thanh toÃ¡n vÃ  nháº­n nháº¯c lá»‹ch trÆ°á»›c giá» chiáº¿u.",
-      chips: ["VÃ© Ä‘á»“ng bá»™", "Nháº¯c lá»‹ch tá»± Ä‘á»™ng"],
+      eyebrow: "VÉ VÀ NHẮC LỊCH",
+      title: "Toàn bộ vé, QR và lịch nhắc được gom vào một nơi dễ quét.",
+      body: "Bạn có thể mở lại vé, theo dõi trạng thái thanh toán và nhận nhắc lịch trước giờ chiếu.",
+      chips: ["Vé đồng bộ", "Nhắc lịch tự động"],
     },
     {
-      eyebrow: "PHIÃŠN CÃ NHÃ‚N",
-      title: "ÄÄƒng nháº­p má»™t láº§n, má»Ÿ láº¡i app váº«n vÃ o tháº³ng tráº£i nghiá»‡m cá»§a báº¡n.",
-      body: "PhiÃªn Ä‘Æ°á»£c lÆ°u an toÃ n báº±ng Secure Store Ä‘á»ƒ dÃ¹ng tá»‘t hÆ¡n cho mÃ´i trÆ°á»ng production.",
-      chips: ["Secure Store", "Æ¯u Ä‘Ã£i cÃ¡ nhÃ¢n"],
+      eyebrow: "PHIÊN CÁ NHÂN",
+      title: "Đăng nhập một lần, mở lại app vẫn vào thẳng trải nghiệm của bạn.",
+      body: "Phiên được lưu an toàn bằng Secure Store để dùng tốt hơn cho môi trường production.",
+      chips: ["Secure Store", "Ưu đãi cá nhân"],
     },
   ] as const;
   const [onboardingStep, setOnboardingStep] = React.useState(initialStep);
@@ -1607,7 +1597,7 @@ export function AuthScreen(props: {
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {onBack ? (
         <Pressable onPress={onBack}>
-          <Text style={styles.backLink}>â† Quay láº¡i</Text>
+          <Text style={styles.backLink}>← Quay lại</Text>
         </Pressable>
       ) : null}
       {!inAuthForm ? (
@@ -1633,41 +1623,41 @@ export function AuthScreen(props: {
 
           <View style={styles.authNavRow}>
             <Pressable onPress={() => setOnboardingStep(slides.length)}>
-              <Text style={styles.authLink}>Bá» qua</Text>
+              <Text style={styles.authLink}>Bỏ qua</Text>
             </Pressable>
-            <NeonButton label={onboardingStep === slides.length - 1 ? "Báº¯t Ä‘áº§u" : "Tiáº¿p theo"} onPress={() => setOnboardingStep((step) => Math.min(step + 1, slides.length))} />
+            <NeonButton label={onboardingStep === slides.length - 1 ? "Bắt đầu" : "Tiếp theo"} onPress={() => setOnboardingStep((step) => Math.min(step + 1, slides.length))} />
           </View>
         </>
       ) : (
         <>
           <View style={styles.authHero}>
-            <Text style={styles.eyebrow}>Sáº´N SÃ€NG ÄÄ‚NG NHáº¬P</Text>
-            <Text style={styles.authTitle}>ÄÄƒng nháº­p Ä‘á»ƒ Ä‘á»“ng bá»™ vÃ©, gháº¿ Ä‘Ã£ giá»¯ vÃ  lá»‹ch nháº¯c trÃªn thiáº¿t bá»‹ cá»§a báº¡n.</Text>
-            <Text style={styles.authBody}>Má»i giao dá»‹ch, mÃ£ QR vÃ  Æ°u Ä‘Ã£i sáº½ Ä‘Æ°á»£c giá»¯ láº¡i khi báº¡n má»Ÿ app láº§n sau.</Text>
+            <Text style={styles.eyebrow}>SẴN SÀNG ĐĂNG NHẬP</Text>
+            <Text style={styles.authTitle}>Đăng nhập để đồng bộ vé, ghế đã giữ và lịch nhắc trên thiết bị của bạn.</Text>
+            <Text style={styles.authBody}>Mọi giao dịch, mã QR và ưu đãi sẽ được giữ lại khi bạn mở app lần sau.</Text>
           </View>
 
           <View style={styles.authCard}>
-            <Text style={styles.accountTitle}>Báº¯t Ä‘áº§u</Text>
+            <Text style={styles.accountTitle}>Bắt đầu</Text>
             {helperMessage ? <Text style={styles.accountDetail}>{helperMessage}</Text> : null}
-            <Text style={styles.accountDetail}>Táº¡o tÃ i khoáº£n má»›i hoáº·c Ä‘Äƒng nháº­p Ä‘á»ƒ vÃ o tráº£i nghiá»‡m Ä‘áº·t vÃ© Ä‘áº§y Ä‘á»§.</Text>
+            <Text style={styles.accountDetail}>Tạo tài khoản mới hoặc đăng nhập để vào trải nghiệm đặt vé đầy đủ.</Text>
             <Pressable style={styles.googleButton} onPress={onGoogleAuth}>
               <MaterialCommunityIcons name="google" size={18} color="#ffffff" />
-              <Text style={styles.googleButtonText}>Tiáº¿p tá»¥c vá»›i Google</Text>
+              <Text style={styles.googleButtonText}>Tiếp tục với Google</Text>
             </Pressable>
-            <Text style={styles.authDivider}>hoáº·c dÃ¹ng email</Text>
+            <Text style={styles.authDivider}>hoặc dùng email</Text>
             <View style={styles.paymentWrap}>
               {["login", "register"].map((mode) => (
                 <Pressable key={mode} style={[styles.paymentMethod, authMode === mode && styles.paymentMethodActive]} onPress={() => setAuthMode(mode as "login" | "register")}>
-                  <Text style={[styles.paymentMethodText, authMode === mode && styles.paymentMethodTextActive]}>{mode === "login" ? "ÄÄƒng nháº­p" : "ÄÄƒng kÃ½"}</Text>
+                  <Text style={[styles.paymentMethodText, authMode === mode && styles.paymentMethodTextActive]}>{mode === "login" ? "Đăng nhập" : "Đăng ký"}</Text>
                 </Pressable>
               ))}
             </View>
-            {authMode === "register" ? <TextInput value={authName} onChangeText={setAuthName} placeholder="Há» vÃ  tÃªn" placeholderTextColor={palette.muted} style={styles.input} /> : null}
+            {authMode === "register" ? <TextInput value={authName} onChangeText={setAuthName} placeholder="Họ và tên" placeholderTextColor={palette.muted} style={styles.input} /> : null}
             <TextInput value={authEmail} onChangeText={setAuthEmail} placeholder="Email" placeholderTextColor={palette.muted} style={styles.input} autoCapitalize="none" />
-            {authMode === "register" ? <TextInput value={authPhone} onChangeText={setAuthPhone} placeholder="Sá»‘ Ä‘iá»‡n thoáº¡i" placeholderTextColor={palette.muted} style={styles.input} /> : null}
-            <TextInput value={authPassword} onChangeText={setAuthPassword} placeholder="Máº­t kháº©u" placeholderTextColor={palette.muted} style={styles.input} secureTextEntry />
-            <NeonButton label={authMode === "login" ? "VÃ o á»©ng dá»¥ng" : "Táº¡o tÃ i khoáº£n"} onPress={onSubmitAuth} loading={authLoading} />
-            <Text style={styles.accountDetail}>TÃ i khoáº£n máº«u: `admin@phimbook.local / Admin@123`, `user@phimbook.local / User@123`.</Text>
+            {authMode === "register" ? <TextInput value={authPhone} onChangeText={setAuthPhone} placeholder="Số điện thoại" placeholderTextColor={palette.muted} style={styles.input} /> : null}
+            <TextInput value={authPassword} onChangeText={setAuthPassword} placeholder="Mật khẩu" placeholderTextColor={palette.muted} style={styles.input} secureTextEntry />
+            <NeonButton label={authMode === "login" ? "Vào ứng dụng" : "Tạo tài khoản"} onPress={onSubmitAuth} loading={authLoading} />
+            <Text style={styles.accountDetail}>Tài khoản mẫu: `admin@phimbook.local / Admin@123`, `user@phimbook.local / User@123`.</Text>
           </View>
 
         </>
@@ -1863,20 +1853,20 @@ export function UserMovieListScreen(props: {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={styles.exploreHero}>
-        <Text style={styles.eyebrow}>THÆ¯ VIá»†N CÃ NHÃ‚N</Text>
+        <Text style={styles.eyebrow}>THƯ VIỆN CÁ NHÂN</Text>
         <Text style={styles.authTitle}>{title}</Text>
         <Text style={styles.accountDetail}>{description}</Text>
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Danh sÃ¡ch phim</Text>
+        <Text style={styles.accountTitle}>Danh sách phim</Text>
         <Text style={styles.accountDetail}>
-          {movies.length > 0 ? `${movies.length} phim Ä‘ang Ä‘Æ°á»£c lÆ°u trong má»¥c nÃ y.` : emptyMessage}
+          {movies.length > 0 ? `${movies.length} phim đang được lưu trong mục này.` : emptyMessage}
         </Text>
         <View style={styles.profileMovieList}>
           {movies.map((movie) => (
             <Pressable key={`${title}-${movie.id}`} onPress={() => onMoviePress(movie)} style={styles.profileMovieChip}>
-              <MovieStateBadges isFavorite={title === "YÃªu thÃ­ch"} isInWatchlist={title === "Xem sau"} compact />
+              <MovieStateBadges isFavorite={title === "Yêu thích"} isInWatchlist={title === "Xem sau"} compact />
               <Text style={styles.profileMovieChipText}>{movie.title}</Text>
             </Pressable>
           ))}
@@ -1886,7 +1876,7 @@ export function UserMovieListScreen(props: {
       {movies.length > 0 ? (
         <View style={styles.homeGrid}>
           {movies.map((movie) => {
-            const isFavorite = title === "YÃªu thÃ­ch";
+            const isFavorite = title === "Yêu thích";
             const isInWatchlist = title === "Xem sau";
             return (
             <Pressable key={`grid-${title}-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
@@ -1894,18 +1884,18 @@ export function UserMovieListScreen(props: {
                 <MediaAsset uri={movie.posterUrl} style={styles.homeGridPosterImage} />
                 <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
                 <View style={styles.posterTopRow}>
-                  <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
+                  <View style={styles.posterBadgeWrap}>
                     <Text style={styles.posterBadge}>{movie.badge}</Text>
-                  </BlurView>
+                  </View>
                   <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                 </View>
               </View>
               <View style={styles.homeGridBody}>
                 <Text style={styles.homeGridTitle}>{movie.title}</Text>
-                <Text style={styles.homeGridMeta}>{movie.genre} â€¢ {movie.runtime}</Text>
+                <Text style={styles.homeGridMeta}>{movie.genre} • {movie.runtime}</Text>
                 <View style={styles.homeGridFooter}>
                   <Text style={styles.movieScore}>IMDb {movie.score}</Text>
-                  <Text style={styles.homeGridAction}>Xem chi tiáº¿t</Text>
+                  <Text style={styles.homeGridAction}>Xem chi tiết</Text>
                 </View>
               </View>
             </Pressable>
@@ -2005,8 +1995,8 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
         </Pressable>
 
         <View style={{ height: 530, borderRadius: 28, overflow: "hidden", backgroundColor: movie.tone || "#2b0f12", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
-          <MediaAsset uri={movie.bannerUrl ?? movie.posterUrl} style={{ ...StyleSheet.absoluteFillObject }} />
-          <LinearGradient colors={["rgba(5,5,8,0.08)", "rgba(5,5,8,0.56)", "rgba(5,5,8,0.92)"]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ ...StyleSheet.absoluteFillObject }} />
+          <MediaAsset uri={movie.bannerUrl ?? movie.posterUrl} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }} />
+          <LinearGradient colors={["rgba(5,5,8,0.08)", "rgba(5,5,8,0.56)", "rgba(5,5,8,0.92)"]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }} />
 
           <View style={{ position: "absolute", top: 16, left: 16, flexDirection: "row", gap: 8 }}>
             <Text style={{ color: "#fff6f0", fontSize: 11, fontWeight: "900", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.42)" }}>{movie.badge || "IMAX"}</Text>
@@ -2139,7 +2129,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
             end={{ x: 0.5, y: 1 }}
             style={styles.stickyFooterTopGlow}
           />
-          <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
+          <View style={styles.stickyFooter}>
             <View pointerEvents="none" style={styles.stickyFooterInnerHighlight} />
             <View style={styles.stickySummaryMain}>
               <Text style={styles.summaryLabel}>{primaryShowtime.cinemaName}</Text>
@@ -2149,7 +2139,7 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
             <View style={{ flex: 1 }}>
               <NeonButton label="Tiếp tục" onPress={() => onBook(primaryShowtime)} loading={bookingLoadingMovieId === movie.id || bookingLoadingShowtimeId === primaryShowtime.id} />
             </View>
-          </BlurView>
+          </View>
         </View>
       ) : null}
     </View>
@@ -2308,7 +2298,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
     const isLeftHotEdge = isHot && hotBounds && Number(seat.columnIndex ?? -1) === hotBounds.minColumn;
     const isRightHotEdge = isHot && hotBounds && Number(seat.columnIndex ?? -1) === hotBounds.maxColumn;
     const label = selectionUnit.length > 1 ? selectionUnit.map((item) => item.seatCode).join(" - ") : seat.seatCode;
-    const detail = seat.seatType === "COUPLE" ? "Gháº¿ Ä‘Ã´i â€¢ chá»n cáº£ cáº·p" : seat.isHot ? "Gháº¿ Hot" : seat.seatType === "VIP" ? "Gháº¿ VIP" : "Gháº¿ thÆ°á»ng";
+    const detail = seat.seatType === "COUPLE" ? "Ghế đôi • chọn cả cặp" : seat.isHot ? "Ghế Hot" : seat.seatType === "VIP" ? "Ghế VIP" : "Ghế thường";
     const totalPrice = selectionUnit.reduce((sum, item) => sum + item.price, 0);
 
     return (
@@ -2553,43 +2543,43 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         scrollEventThrottle={16}
       >
         <Pressable onPress={onBack}>
-          <Text style={styles.backLink}>â† Quay láº¡i</Text>
+          <Text style={styles.backLink}>← Quay lại</Text>
         </Pressable>
 
         <View style={styles.seatHeader}>
           <Text style={styles.detailTitle}>{movie.title}</Text>
-          <Text style={styles.detailMeta}>{showtime ? `${showtime.cinemaName} â€¢ ${showtime.roomName} â€¢ ${showtime.startTime.slice(11, 16)}` : "ChÆ°a chá»n suáº¥t chiáº¿u"}</Text>
+          <Text style={styles.detailMeta}>{showtime ? `${showtime.cinemaName} • ${showtime.roomName} • ${showtime.startTime.slice(11, 16)}` : "Chưa chọn suất chiếu"}</Text>
         </View>
 
         <View style={styles.seatPriceRow}>
           <View style={styles.seatPriceCard}>
-            <Text style={styles.seatPriceLabel}>Gháº¿ thÆ°á»ng</Text>
-            <Text style={styles.seatPriceValue}>CÆ¡ báº£n</Text>
+            <Text style={styles.seatPriceLabel}>Ghế thường</Text>
+            <Text style={styles.seatPriceValue}>Cơ bản</Text>
           </View>
           <View style={styles.seatPriceCard}>
-            <Text style={styles.seatPriceLabel}>Gháº¿ VIP</Text>
-            <Text style={styles.seatPriceValue}>+30.000Ä‘</Text>
+            <Text style={styles.seatPriceLabel}>Ghế VIP</Text>
+            <Text style={styles.seatPriceValue}>+30.000đ</Text>
           </View>
           <View style={styles.seatPriceCard}>
-            <Text style={styles.seatPriceLabel}>Gháº¿ Hot</Text>
-            <Text style={styles.seatPriceValue}>+20.000Ä‘</Text>
+            <Text style={styles.seatPriceLabel}>Ghế Hot</Text>
+            <Text style={styles.seatPriceValue}>+20.000đ</Text>
           </View>
           <View style={styles.seatPriceCard}>
-            <Text style={styles.seatPriceLabel}>Gháº¿ Ä‘Ã´i</Text>
-            <Text style={styles.seatPriceValue}>+90.000Ä‘</Text>
+            <Text style={styles.seatPriceLabel}>Ghế đôi</Text>
+            <Text style={styles.seatPriceValue}>+90.000đ</Text>
           </View>
         </View>
 
         <View style={styles.screenArcWrap}>
           <View style={styles.screenArcGlow} />
-          <Text style={styles.screenArcText}>MÃ€N HÃŒNH</Text>
+          <Text style={styles.screenArcText}>MÀN HÌNH</Text>
         </View>
 
         <View style={styles.seatGridWrap}>
           {hotBounds ? (
             <View style={styles.seatHotBadge}>
               <MaterialCommunityIcons name="fire" size={14} color="#06251d" />
-              <Text style={styles.seatHotBadgeText}>VÃ¹ng Hot: vá»‹ trÃ­ Ä‘áº¹p, Ä‘áº·t nhiá»u, phá»¥ thu +20.000Ä‘</Text>
+              <Text style={styles.seatHotBadgeText}>Vùng Hot: vị trí đẹp, đặt nhiều, phụ thu +20.000đ</Text>
             </View>
           ) : null}
           {renderColumnHeader("top")}
@@ -2599,14 +2589,14 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
         </View>
 
         <View style={styles.legendGrid}>
-          {[["Gháº¿ thÆ°á»ng", palette.seat], ["Gháº¿ VIP", palette.vip], ["Gháº¿ Hot", "#7fe4c9"], ["Gháº¿ Ä‘Ã´i", palette.couple], ["ÄÃ£ chá»n", "#ffffff"], ["ÄÃ£ bÃ¡n", palette.sold], ["Äang giá»¯", palette.held]].map(([label, color]) => (
+          {[["Ghế thường", palette.seat], ["Ghế VIP", palette.vip], ["Ghế Hot", "#7fe4c9"], ["Ghế đôi", palette.couple], ["Đã chọn", "#ffffff"], ["Đã bán", palette.sold], ["Đang giữ", palette.held]].map(([label, color]) => (
             <View key={label} style={styles.legendItem}>
-              <View style={[styles.legendDot, label === "ÄÃ£ chá»n" ? styles.legendDotSelected : null, { backgroundColor: color }]} />
+              <View style={[styles.legendDot, label === "Đã chọn" ? styles.legendDotSelected : null, { backgroundColor: color }]} />
               <Text style={styles.legendText}>{label}</Text>
             </View>
           ))}
         </View>
-        <Text style={styles.accountDetail}>Gháº¿ Ä‘Ã´i Ä‘Æ°á»£c hiá»ƒn thá»‹ trá»±c tiáº¿p trong sÆ¡ Ä‘á»“ vÃ  Ä‘Ã¡nh dáº¥u báº±ng mÃ u riÃªng, khÃ´ng tÃ¡ch thÃ nh khu riÃªng.</Text>
+        <Text style={styles.accountDetail}>Ghế đôi được hiển thị trực tiếp trong sơ đồ và đánh dấu bằng màu riêng, không tách thành khu riêng.</Text>
       </Animated.ScrollView>
       <View style={styles.stickyFooterWrap}>
         <LinearGradient
@@ -2616,7 +2606,7 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
           end={{ x: 0.5, y: 1 }}
           style={styles.stickyFooterTopGlow}
         />
-        <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
+<View style={styles.stickyFooter}>
           <View pointerEvents="none" style={styles.stickyFooterInnerHighlight} />
           <Animated.View
             pointerEvents="none"
@@ -2642,14 +2632,14 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
             ))}
           </Animated.View>
           <View style={styles.stickySummaryMain}>
-            <Text style={styles.summaryLabel}>Gháº¿ Ä‘Ã£ chá»n</Text>
-            <Text style={styles.stickyPrimaryValue}>{selectedSeats.map((item) => item.seatCode).join(", ") || "ChÆ°a chá»n"}</Text>
-            <Text style={styles.stickySecondaryValue}>Táº¡m tÃ­nh {formatCurrency(subtotal)}</Text>
+            <Text style={styles.summaryLabel}>Ghế đã chọn</Text>
+            <Text style={styles.stickyPrimaryValue}>{selectedSeats.map((item) => item.seatCode).join(", ") || "Chưa chọn"}</Text>
+            <Text style={styles.stickySecondaryValue}>Tạm tính {formatCurrency(subtotal)}</Text>
           </View>
           <View style={styles.stickyActionBlock}>
-            <NeonButton label="Tiáº¿p tá»¥c" onPress={onContinue} loading={holding} />
+            <NeonButton label="Tiếp tục" onPress={onContinue} loading={holding} />
           </View>
-        </BlurView>
+</View>
       </View>
     </View>
   );
@@ -2870,7 +2860,7 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
           end={{ x: 0.5, y: 1 }}
           style={styles.stickyFooterTopGlow}
         />
-        <BlurView intensity={34} tint="dark" style={styles.stickyFooter}>
+<View style={styles.stickyFooter}>
           <View pointerEvents="none" style={styles.stickyFooterInnerHighlight} />
           <Animated.View
             pointerEvents="none"
@@ -2903,7 +2893,7 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
           <View style={styles.stickyActionBlock}>
             <NeonButton label={`Thanh toán với ${selectedPaymentProvider}`} onPress={onConfirm} loading={confirming} />
           </View>
-        </BlurView>
+</View>
       </View>
     </View>
   );
@@ -2912,61 +2902,61 @@ export function TicketDetailScreen({ ticket, onBack, onScheduleReminder, onCance
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <Pressable onPress={onBack}>
-        <Text style={styles.backLink}>â† Quay láº¡i</Text>
+        <Text style={styles.backLink}>← Quay lại</Text>
       </Pressable>
 
       <View style={styles.ticketDetailHero}>
-        <Text style={styles.eyebrow}>CHI TIáº¾T VÃ‰</Text>
+        <Text style={styles.eyebrow}>CHI TIẾT VÉ</Text>
         <Text style={styles.detailTitle}>{ticket.showtime.movieTitle}</Text>
-        <Text style={styles.detailMeta}>{ticket.showtime.cinemaName} â€¢ {ticket.showtime.roomName}</Text>
+        <Text style={styles.detailMeta}>{ticket.showtime.cinemaName} • {ticket.showtime.roomName}</Text>
       </View>
 
       <View style={styles.ticketDetailGrid}>
         <View style={styles.checkoutSummaryCell}>
-          <Text style={styles.summaryLabel}>MÃ£ vÃ©</Text>
+          <Text style={styles.summaryLabel}>Mã vé</Text>
           <Text style={styles.summaryValue}>{ticket.bookingCode}</Text>
         </View>
         <View style={styles.checkoutSummaryCell}>
-          <Text style={styles.summaryLabel}>Tráº¡ng thÃ¡i</Text>
+          <Text style={styles.summaryLabel}>Trạng thái</Text>
           <Text style={styles.summaryValue}>{mapBookingStatus(ticket.status)}</Text>
         </View>
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Suáº¥t chiáº¿u</Text>
-        <Text style={styles.accountDetail}>{formatDateTime(ticket.showtime.startTime)} â€¢ {ticket.showtime.formatLabel} â€¢ {ticket.showtime.languageLabel}</Text>
-        <Text style={styles.accountDetail}>Gháº¿: {ticket.seats.map((item) => item.seatCode).join(", ")}</Text>
-        <Text style={styles.accountDetail}>Check-in: {mapCheckinStatus(ticket.checkInStatus)}{ticket.checkedInAt ? ` â€¢ ${formatDateTime(ticket.checkedInAt)}` : ""}</Text>
+        <Text style={styles.accountTitle}>Suất chiếu</Text>
+        <Text style={styles.accountDetail}>{formatDateTime(ticket.showtime.startTime)} • {ticket.showtime.formatLabel} • {ticket.showtime.languageLabel}</Text>
+        <Text style={styles.accountDetail}>Ghế: {ticket.seats.map((item) => item.seatCode).join(", ")}</Text>
+        <Text style={styles.accountDetail}>Check-in: {mapCheckinStatus(ticket.checkInStatus)}{ticket.checkedInAt ? ` • ${formatDateTime(ticket.checkedInAt)}` : ""}</Text>
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Combo Ä‘i kÃ¨m</Text>
-        {ticket.items.length === 0 ? <Text style={styles.accountDetail}>KhÃ´ng cÃ³ combo Ä‘i kÃ¨m.</Text> : null}
+        <Text style={styles.accountTitle}>Combo đi kèm</Text>
+        {ticket.items.length === 0 ? <Text style={styles.accountDetail}>Không có combo đi kèm.</Text> : null}
         {ticket.items.map((item) => (
-          <Text key={`${item.foodId}-${item.name}`} style={styles.accountDetail}>{item.name} x{item.quantity} â€¢ {formatCurrency(item.price * item.quantity)}</Text>
+          <Text key={`${item.foodId}-${item.name}`} style={styles.accountDetail}>{item.name} x{item.quantity} • {formatCurrency(item.price * item.quantity)}</Text>
         ))}
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>Voucher vÃ  nháº¯c lá»‹ch</Text>
-        <Text style={styles.accountDetail}>Voucher: {ticket.voucherCode ?? "KhÃ´ng Ã¡p dá»¥ng"} â€¢ Giáº£m {formatCurrency(ticket.discountAmount ?? 0)}</Text>
-        <Text style={styles.accountDetail}>MÃ£ QR: {ticket.qrPayload ?? "ChÆ°a táº¡o"}</Text>
+        <Text style={styles.accountTitle}>Voucher và nhắc lịch</Text>
+        <Text style={styles.accountDetail}>Voucher: {ticket.voucherCode ?? "Không áp dụng"} • Giảm {formatCurrency(ticket.discountAmount ?? 0)}</Text>
+        <Text style={styles.accountDetail}>Mã QR: {ticket.qrPayload ?? "Chưa tạo"}</Text>
         <View style={styles.paymentWrap}>
-          <NeonButton label="Nháº¯c trÆ°á»›c 1 giá»" variant="secondary" onPress={onScheduleReminder} loading={reminderLoading === "schedule"} />
-          <NeonButton label="Há»§y nháº¯c" variant="secondary" onPress={onCancelReminder} loading={reminderLoading === "cancel"} />
+          <NeonButton label="Nhắc trước 1 giờ" variant="secondary" onPress={onScheduleReminder} loading={reminderLoading === "schedule"} />
+          <NeonButton label="Hủy nhắc" variant="secondary" onPress={onCancelReminder} loading={reminderLoading === "cancel"} />
         </View>
-        <Text style={styles.accountDetail}>Lá»‹ch nháº¯c: {ticket.reminder ? `${formatDateTime(ticket.reminder.remindAt)} â€¢ ${ticket.reminder.status}` : "ChÆ°a Ä‘áº·t lá»‹ch nháº¯c"}</Text>
+        <Text style={styles.accountDetail}>Lịch nhắc: {ticket.reminder ? `${formatDateTime(ticket.reminder.remindAt)} • ${ticket.reminder.status}` : "Chưa đặt lịch nhắc"}</Text>
       </View>
 
       <View style={styles.accountRow}>
-        <Text style={styles.accountTitle}>ThÃ´ng tin khÃ¡ch hÃ ng</Text>
+        <Text style={styles.accountTitle}>Thông tin khách hàng</Text>
         <Text style={styles.accountDetail}>{ticket.customerName}</Text>
         <Text style={styles.accountDetail}>{ticket.customerEmail}</Text>
         <Text style={styles.accountDetail}>{ticket.customerPhone}</Text>
       </View>
 
       <View style={styles.checkoutCard}>
-        <Text style={styles.summaryLabel}>Tá»•ng thanh toÃ¡n</Text>
+        <Text style={styles.summaryLabel}>Tổng thanh toán</Text>
         <Text style={styles.checkoutPrice}>{formatCurrency(ticket.totalAmount)}</Text>
       </View>
     </ScrollView>

@@ -11,3 +11,5 @@ adb-logcat*.txt
 device-screen*.png
 datve-screen*.png
 datve-release-screen*.png
+logs/
+bugreport-*.zip

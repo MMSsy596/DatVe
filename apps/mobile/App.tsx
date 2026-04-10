@@ -2,7 +2,6 @@ import React from "react";
 import * as SecureStore from "expo-secure-store";
 import * as Haptics from "expo-haptics";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
@@ -2013,7 +2012,7 @@ export default function App() {
         </View>
       </Modal>
       {(screen === "tabs" || screen === "auth") ? (
-        <BlurView intensity={32} tint="dark" style={styles.bottomBar} onLayout={(event: any) => setBottomBarWidth(event.nativeEvent.layout.width)}>
+        <View style={styles.bottomBar} onLayout={(event: any) => setBottomBarWidth(event.nativeEvent.layout.width)}>
           {bottomBarWidth > 0 ? (
             <>
               <Animated.View
@@ -2060,9 +2059,8 @@ export default function App() {
               </Animated.View>
             </Pressable>
           ))}
-        </BlurView>
+        </View>
       ) : null}
     </SafeAreaView>
   );
 }
-
