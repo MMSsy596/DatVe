@@ -821,11 +821,25 @@ export function HomeScreen(props: {
     acc.push(movie);
     return acc;
   }, []).slice(0, 6);
-  const featuredBanner = bannersData[0];
+
+  const promoBanners = React.useMemo(() => {
+    if (bannersData.length > 0) return bannersData.slice(0, 6);
+    return [
+      {
+        id: -1,
+        eyebrow: "PROMO",
+        title: "Mở bán suất hot",
+        text: "Đặt sớm để chọn ghế đẹp, ưu đãi combo và voucher thành viên.",
+        accent: "#5d1618",
+        imageUrl: heroMovie.bannerUrl ?? heroMovie.posterUrl,
+      },
+    ] satisfies Banner[];
+  }, [bannersData, heroMovie.bannerUrl, heroMovie.posterUrl]);
 
   if (loading && moviesData.length === 0) {
     return (
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <SkeletonBlock height={220} />
         <SkeletonBlock height={380} />
         <SkeletonBlock height={120} />
         <SkeletonBlock height={260} />
@@ -836,162 +850,96 @@ export function HomeScreen(props: {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <StaggerSection index={0}>
-        <View style={[styles.heroCard, { backgroundColor: heroMovie.tone }]}>
-        <MediaAsset uri={heroMovie.bannerUrl} style={styles.heroImage} />
-        <View style={styles.heroOverlay} />
-        <View style={styles.heroTopLine}>
-          <Text style={styles.eyebrow}>Äáº¶T VÃ‰ ÄIá»†N áº¢NH</Text>
-          <Text style={styles.heroTag}>Äang má»Ÿ bÃ¡n</Text>
-        </View>
-        <MovieStateBadges isFavorite={favoriteMovieIds.includes(heroMovie.id)} isInWatchlist={watchlistMovieIds.includes(heroMovie.id)} />
-        <View style={styles.heroContent}>
-          <Text style={styles.heroKicker}>{heroMovie.badge}</Text>
-          <Text style={styles.heroTitle}>{heroMovie.title}</Text>
-          <Text style={styles.heroSubline}>{heroMovie.genre} â€¢ {heroMovie.runtime} â€¢ IMDb {heroMovie.score}</Text>
-          <Text style={styles.heroBody}>{heroMovie.description}</Text>
-        </View>
-        <View style={styles.heroMetrics}>
-          <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Suáº¥t ná»•i báº­t</Text>
-            <Text style={styles.metricValue}>20:45</Text>
-          </View>
-          <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Äá»‹nh dáº¡ng</Text>
-            <Text style={styles.metricValue}>IMAX</Text>
-          </View>
-          <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>GiÃ¡ tá»«</Text>
-            <Text style={styles.metricValue}>90.000Ä‘</Text>
-          </View>
-        </View>
-        <View style={styles.heroActions}>
-          <NeonButton label="Äáº·t vÃ© ngay" onPress={() => onSeatPress(heroMovie)} loading={loadingSeatMovieId === heroMovie.id} />
-          <NeonButton label="Xem chi tiáº¿t" variant="secondary" onPress={() => openMovieFromHome(heroMovie)} />
-        </View>
+        <View style={{ gap: 8 }}>
+          <SectionHeader title="Ưu đãi hôm nay" action="Promo 21:9" />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled decelerationRate="fast" contentContainerStyle={styles.row}>
+            {promoBanners.map((banner) => (
+              <MediaBackground
+                key={`promo-${banner.id}`}
+                uri={banner.imageUrl}
+                mediaStyle={styles.bannerImage}
+                style={{ width: 320, aspectRatio: 21 / 9, borderRadius: 20, overflow: "hidden", backgroundColor: banner.accent, padding: 14, justifyContent: "space-between" }}
+              >
+                <LinearGradient colors={["rgba(5,5,7,0.16)", "rgba(5,5,7,0.72)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ ...StyleSheet.absoluteFillObject }} />
+                <Text style={{ color: "#f8d9cf", fontSize: 10, fontWeight: "900", letterSpacing: 0.8 }}>{banner.eyebrow}</Text>
+                <View style={{ gap: 4 }}>
+                  <Text style={{ color: "#fff7f3", fontSize: 20, fontWeight: "900" }}>{banner.title}</Text>
+                  <Text style={{ color: "#f1dfd9", fontSize: 12, lineHeight: 18 }}>{banner.text}</Text>
+                </View>
+              </MediaBackground>
+            ))}
+          </ScrollView>
         </View>
       </StaggerSection>
 
       <StaggerSection index={1}>
+        <View style={[styles.heroCard, { backgroundColor: heroMovie.tone }]}>
+          <MediaAsset uri={heroMovie.bannerUrl} style={styles.heroImage} />
+          <View style={styles.heroOverlay} />
+          <View style={styles.heroTopLine}>
+            <Text style={styles.eyebrow}>ĐẶT VÉ ĐIỆN ẢNH</Text>
+            <Text style={styles.heroTag}>Đang mở bán</Text>
+          </View>
+          <MovieStateBadges isFavorite={favoriteMovieIds.includes(heroMovie.id)} isInWatchlist={watchlistMovieIds.includes(heroMovie.id)} />
+          <View style={styles.heroContent}>
+            <Text style={styles.heroKicker}>{heroMovie.badge}</Text>
+            <Text style={styles.heroTitle}>{heroMovie.title}</Text>
+            <Text style={styles.heroSubline}>{heroMovie.genre} • {heroMovie.runtime} • IMDb {heroMovie.score}</Text>
+            <Text style={styles.heroBody}>{heroMovie.description}</Text>
+          </View>
+          <View style={styles.heroMetrics}>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricLabel}>Suất nổi bật</Text>
+              <Text style={styles.metricValue}>20:45</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricLabel}>Định dạng</Text>
+              <Text style={styles.metricValue}>IMAX</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricLabel}>Giá từ</Text>
+              <Text style={styles.metricValue}>90.000đ</Text>
+            </View>
+          </View>
+          <View style={styles.heroActions}>
+            <NeonButton label="Đặt vé ngay" onPress={() => onSeatPress(heroMovie)} loading={loadingSeatMovieId === heroMovie.id} />
+            <NeonButton label="Xem chi tiết" variant="secondary" onPress={() => openMovieFromHome(heroMovie)} />
+          </View>
+        </View>
+      </StaggerSection>
+
+      <StaggerSection index={2}>
         <View style={styles.quickStrip}>
           <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
             <View style={styles.quickStripItem}>
-              <Text style={styles.quickStripLabel}>Äang chiáº¿u</Text>
+              <Text style={styles.quickStripLabel}>Đang chiếu</Text>
               <Text style={styles.quickStripValue}>{moviesData.filter((movie) => movie.status !== "COMING_SOON").length}</Text>
             </View>
           </BlurView>
           <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
             <View style={styles.quickStripItem}>
-              <Text style={styles.quickStripLabel}>Sáº¯p chiáº¿u</Text>
+              <Text style={styles.quickStripLabel}>Sắp chiếu</Text>
               <Text style={styles.quickStripValue}>{moviesData.filter((movie) => movie.status === "COMING_SOON").length}</Text>
             </View>
           </BlurView>
           <BlurView intensity={30} tint="dark" style={styles.quickStripItemWrap}>
             <View style={styles.quickStripItem}>
-              <Text style={styles.quickStripLabel}>Thanh toÃ¡n</Text>
-              <Text style={styles.quickStripValue}>MoMo â€¢ ZaloPay</Text>
+              <Text style={styles.quickStripLabel}>Thanh toán</Text>
+              <Text style={styles.quickStripValue}>MoMo • ZaloPay</Text>
             </View>
           </BlurView>
         </View>
       </StaggerSection>
 
-      {featuredBanner ? (
-        <StaggerSection index={2}>
-          <MediaBackground uri={featuredBanner.imageUrl} mediaStyle={styles.bannerImage} style={[styles.bannerCard, { backgroundColor: featuredBanner.accent }]}>
-            <View style={styles.bannerOverlay} />
-            <Text style={styles.bannerEyebrow}>{featuredBanner.eyebrow}</Text>
-            <Text style={styles.bannerTitle}>{featuredBanner.title}</Text>
-            <Text style={styles.bannerText}>{featuredBanner.text}</Text>
-          </MediaBackground>
-        </StaggerSection>
-      ) : null}
-
       <StaggerSection index={3}>
-        <SectionHeader title="Äang chiáº¿u" action="Chá»n phim" />
+        <SectionHeader title="Đang chiếu" action="Chọn phim" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {nowShowingFeatured.map((movie) => {
-          const isFavorite = favoriteMovieIds.includes(movie.id);
-          const isInWatchlist = watchlistMovieIds.includes(movie.id);
-          return (
-          <Pressable key={movie.id} style={[styles.movieCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
-            <MediaBackground uri={movie.posterUrl} mediaStyle={styles.posterImage} style={[styles.poster, { backgroundColor: movie.tone }]}>
-              <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
-              <View style={styles.posterScrim} />
-              <View style={styles.posterTopRow}>
-                <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
-                  <Text style={styles.posterBadge}>{movie.badge}</Text>
-                </BlurView>
-                <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
-              </View>
-            </MediaBackground>
-            <Text style={styles.movieTitle}>{movie.title}</Text>
-            <Text style={styles.movieMeta}>{movie.genre} â€¢ {movie.runtime}</Text>
-            <View style={styles.movieFooter}>
-              <Text style={styles.movieScore}>IMDb {movie.score}</Text>
-              <Text style={styles.movieAction}>Chi tiáº¿t</Text>
-            </View>
-          </Pressable>
-        )})}
-        </ScrollView>
-      </StaggerSection>
-
-      {nowShowingExtended.length > 0 ? (
-        <StaggerSection index={4}>
-          <SectionHeader title="LÆ°á»›t thÃªm" action={`${nowShowing.length} phim`} />
-          <View style={styles.rankingWrap}>
-            {nowShowingExtended.map((movie) => {
-              const isFavorite = favoriteMovieIds.includes(movie.id);
-              const isInWatchlist = watchlistMovieIds.includes(movie.id);
-              return (
-              <Pressable key={`extended-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
-                <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
-                  <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
-                </View>
-                <View style={styles.rankMain}>
-                  <Text style={styles.rankMovie}>{movie.title}</Text>
-                  <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
-                  <Text style={styles.rankRevenue}>{movie.genre} â€¢ {movie.runtime} â€¢ IMDb {movie.score}</Text>
-                </View>
-                <Text style={styles.rankActionText}>Má»Ÿ</Text>
-              </Pressable>
-            )})}
-          </View>
-        </StaggerSection>
-      ) : null}
-
-      {hotToday.length > 0 ? (
-        <StaggerSection index={5}>
-          <SectionHeader title="Top Ä‘áº·t nhiá»u hÃ´m nay" action="Æ¯u tiÃªn gháº¿ Ä‘áº¹p" />
-          <View style={styles.rankingWrap}>
-            {hotToday.map((movie, index) => {
-              const isFavorite = favoriteMovieIds.includes(movie.id);
-              const isInWatchlist = watchlistMovieIds.includes(movie.id);
-              return (
-              <Pressable key={`hot-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onSeatPress(movie)} disabled={loadingSeatMovieId === movie.id}>
-                <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
-                  <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
-                </View>
-                <View style={styles.rankMain}>
-                  <Text style={styles.rankMovie}>{`#${index + 1} ${movie.title}`}</Text>
-                  <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
-                  <Text style={styles.rankRevenue}>{movie.genre} â€¢ {movie.runtime} â€¢ IMDb {movie.score}</Text>
-                </View>
-                {loadingSeatMovieId === movie.id ? <ActivityIndicator size="small" color={palette.cyan} /> : <Text style={styles.rankActionText}>Äáº·t</Text>}
-              </Pressable>
-            )})}
-          </View>
-        </StaggerSection>
-      ) : null}
-
-      {genrePicks.length > 0 ? (
-        <StaggerSection index={6}>
-          <SectionHeader title="Phim theo gu" action="Grid 2 cá»™t" />
-          <View style={styles.homeGrid}>
-            {genrePicks.map((movie) => {
-              const isFavorite = favoriteMovieIds.includes(movie.id);
-              const isInWatchlist = watchlistMovieIds.includes(movie.id);
-              return (
-              <Pressable key={`genre-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
-                <MediaBackground uri={movie.posterUrl} mediaStyle={styles.posterImage} style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}>
+          {nowShowingFeatured.map((movie) => {
+            const isFavorite = favoriteMovieIds.includes(movie.id);
+            const isInWatchlist = watchlistMovieIds.includes(movie.id);
+            return (
+              <Pressable key={movie.id} style={[styles.movieCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
+                <MediaBackground uri={movie.posterUrl} mediaStyle={styles.posterImage} style={[styles.poster, { backgroundColor: movie.tone }]}>
                   <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
                   <View style={styles.posterScrim} />
                   <View style={styles.posterTopRow}>
@@ -1001,48 +949,130 @@ export function HomeScreen(props: {
                     <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
                   </View>
                 </MediaBackground>
-                <View style={styles.homeGridBody}>
-                  <Text style={styles.homeGridTitle}>{movie.title}</Text>
-                  <Text style={styles.homeGridMeta}>{movie.genre}</Text>
-                  <Text style={styles.homeGridMeta}>{movie.runtime} â€¢ IMDb {movie.score}</Text>
-                  <View style={styles.homeGridFooter}>
-                    <Text style={styles.movieScore}>Hot</Text>
-                    <Text style={styles.homeGridAction}>Xem nhanh</Text>
-                  </View>
+                <Text style={styles.movieTitle}>{movie.title}</Text>
+                <Text style={styles.movieMeta}>{movie.genre} • {movie.runtime}</Text>
+                <View style={styles.movieFooter}>
+                  <Text style={styles.movieScore}>IMDb {movie.score}</Text>
+                  <Text style={styles.movieAction}>Chi tiết</Text>
                 </View>
               </Pressable>
-            )})}
+            );
+          })}
+        </ScrollView>
+      </StaggerSection>
+
+      {nowShowingExtended.length > 0 ? (
+        <StaggerSection index={4}>
+          <SectionHeader title="Lướt thêm" action={`${nowShowing.length} phim`} />
+          <View style={styles.rankingWrap}>
+            {nowShowingExtended.map((movie) => {
+              const isFavorite = favoriteMovieIds.includes(movie.id);
+              const isInWatchlist = watchlistMovieIds.includes(movie.id);
+              return (
+                <Pressable key={`extended-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
+                  <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
+                    <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
+                  </View>
+                  <View style={styles.rankMain}>
+                    <Text style={styles.rankMovie}>{movie.title}</Text>
+                    <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
+                    <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
+                  </View>
+                  <Text style={styles.rankActionText}>Mở</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </StaggerSection>
+      ) : null}
+
+      {hotToday.length > 0 ? (
+        <StaggerSection index={5}>
+          <SectionHeader title="Top đặt nhiều hôm nay" action="Ưu tiên ghế đẹp" />
+          <View style={styles.rankingWrap}>
+            {hotToday.map((movie, index) => {
+              const isFavorite = favoriteMovieIds.includes(movie.id);
+              const isInWatchlist = watchlistMovieIds.includes(movie.id);
+              return (
+                <Pressable key={`hot-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onSeatPress(movie)} disabled={loadingSeatMovieId === movie.id}>
+                  <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
+                    <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
+                  </View>
+                  <View style={styles.rankMain}>
+                    <Text style={styles.rankMovie}>{`#${index + 1} ${movie.title}`}</Text>
+                    <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
+                    <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
+                  </View>
+                  {loadingSeatMovieId === movie.id ? <ActivityIndicator size="small" color={palette.cyan} /> : <Text style={styles.rankActionText}>Đặt</Text>}
+                </Pressable>
+              );
+            })}
+          </View>
+        </StaggerSection>
+      ) : null}
+
+      {genrePicks.length > 0 ? (
+        <StaggerSection index={6}>
+          <SectionHeader title="Phim theo gu" action="Grid 2 cột" />
+          <View style={styles.homeGrid}>
+            {genrePicks.map((movie) => {
+              const isFavorite = favoriteMovieIds.includes(movie.id);
+              const isInWatchlist = watchlistMovieIds.includes(movie.id);
+              return (
+                <Pressable key={`genre-${movie.id}`} style={[styles.homeGridCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
+                  <MediaBackground uri={movie.posterUrl} mediaStyle={styles.posterImage} style={[styles.homeGridPoster, { backgroundColor: movie.tone }]}>
+                    <LinearGradient colors={["transparent", "rgba(10,10,18,0.2)", "rgba(10,10,18,0.85)"]} style={styles.posterGradient} />
+                    <View style={styles.posterScrim} />
+                    <View style={styles.posterTopRow}>
+                      <BlurView intensity={25} tint="dark" style={styles.posterBadgeWrap}>
+                        <Text style={styles.posterBadge}>{movie.badge}</Text>
+                      </BlurView>
+                      <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
+                    </View>
+                  </MediaBackground>
+                  <View style={styles.homeGridBody}>
+                    <Text style={styles.homeGridTitle}>{movie.title}</Text>
+                    <Text style={styles.homeGridMeta}>{movie.genre}</Text>
+                    <Text style={styles.homeGridMeta}>{movie.runtime} • IMDb {movie.score}</Text>
+                    <View style={styles.homeGridFooter}>
+                      <Text style={styles.movieScore}>Hot</Text>
+                      <Text style={styles.homeGridAction}>Xem nhanh</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
         </StaggerSection>
       ) : null}
 
       {comingSoon.length > 0 ? (
         <StaggerSection index={7}>
-          <SectionHeader title="Sáº¯p chiáº¿u" action="Theo dÃµi" />
+          <SectionHeader title="Sắp chiếu" action="Theo dõi" />
           <View style={styles.rankingWrap}>
             {comingSoon.map((movie) => {
               const isFavorite = favoriteMovieIds.includes(movie.id);
               const isInWatchlist = watchlistMovieIds.includes(movie.id);
               return (
-              <Pressable key={`coming-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
-                <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
-                  <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
-                </View>
-                <View style={styles.rankMain}>
-                  <Text style={styles.rankMovie}>{movie.title}</Text>
-                  <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
-                  <Text style={styles.rankRevenue}>{movie.genre} â€¢ {movie.runtime}</Text>
-                </View>
-                <Text style={styles.rankActionText}>Xem</Text>
-              </Pressable>
-            )})}
+                <Pressable key={`coming-${movie.id}`} style={[styles.rankingRow, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => openMovieFromHome(movie)}>
+                  <View style={[styles.rankPoster, { backgroundColor: movie.tone, overflow: "hidden" }]}>
+                    <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
+                  </View>
+                  <View style={styles.rankMain}>
+                    <Text style={styles.rankMovie}>{movie.title}</Text>
+                    <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
+                    <Text style={styles.rankRevenue}>{movie.genre} • {movie.runtime}</Text>
+                  </View>
+                  <Text style={styles.rankActionText}>Xem</Text>
+                </Pressable>
+              );
+            })}
           </View>
         </StaggerSection>
       ) : null}
     </ScrollView>
   );
 }
-
 export function ExploreScreen(props: {
   onMoviePress: (movie: Movie) => void;
   moviesData: Movie[];
@@ -1065,6 +1095,18 @@ export function ExploreScreen(props: {
   watchlistMovieIds?: number[];
 }) {
   const { onMoviePress, moviesData, loading, statusFilter, setStatusFilter, cinemaFilter, setCinemaFilter, genreFilter, setGenreFilter, hourFilter, setHourFilter, favoriteFilter, setFavoriteFilter, watchlistFilter, setWatchlistFilter, cinemaOptions, genreOptions, favoriteMovieIds = [], watchlistMovieIds = [] } = props;
+  const [searchText, setSearchText] = React.useState("");
+
+  const searchedMovies = React.useMemo(() => {
+    const normalized = searchText.trim().toLowerCase();
+    if (!normalized) return moviesData;
+    return moviesData.filter((movie) => {
+      const title = movie.title.toLowerCase();
+      const genre = movie.genre.toLowerCase();
+      const badge = movie.badge.toLowerCase();
+      return title.includes(normalized) || genre.includes(normalized) || badge.includes(normalized);
+    });
+  }, [moviesData, searchText]);
 
   if (loading && moviesData.length === 0) {
     return (
@@ -1076,105 +1118,143 @@ export function ExploreScreen(props: {
     );
   }
 
+  const getAsymmetricCardWidth = (index: number) => {
+    const slot = index % 5;
+    if (slot === 0) return "100%";
+    if (slot === 3) return "58%";
+    if (slot === 4) return "38%";
+    return "48%";
+  };
+
+  const getAsymmetricPosterHeight = (index: number) => {
+    const slot = index % 5;
+    if (slot === 0) return 240;
+    if (slot === 3) return 218;
+    if (slot === 4) return 176;
+    return 188;
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <StaggerSection index={0}>
         <View style={styles.exploreHero}>
-          <Text style={styles.eyebrow}>KHÃM PHÃ</Text>
-          <Text style={styles.sectionTitle}>TÃ¬m phim theo ráº¡p, thá»ƒ loáº¡i vÃ  khung giá».</Text>
-          <Text style={styles.accountDetail}>Bá»™ lá»c ngáº¯n gá»n hÆ¡n Ä‘á»ƒ giá»‘ng tráº£i nghiá»‡m sáº£n pháº©m tháº­t.</Text>
+          <Text style={styles.eyebrow}>KHÁM PHÁ</Text>
+          <Text style={styles.sectionTitle}>Tìm phim theo rạp, thể loại và khung giờ.</Text>
+          <Text style={styles.accountDetail}>Bộ lọc ngắn gọn hơn để giống trải nghiệm sản phẩm thật.</Text>
         </View>
       </StaggerSection>
 
       <StaggerSection index={1}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {[["ALL", "Táº¥t cáº£"], ["NOW_SHOWING", "Äang chiáº¿u"], ["COMING_SOON", "Sáº¯p chiáº¿u"]].map(([id, label]) => (
-          <Pressable key={id} style={[styles.paymentMethod, statusFilter === id && styles.paymentMethodActive]} onPress={() => setStatusFilter(id)}>
-            <Text style={[styles.paymentMethodText, statusFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
-          </Pressable>
-        ))}
-        </ScrollView>
+        <View style={{ gap: 8, paddingHorizontal: 2 }}>
+          <Text style={{ color: palette.muted, fontSize: 11, fontWeight: "800", letterSpacing: 0.5, textTransform: "uppercase" }}>Tìm kiếm nhanh</Text>
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Nhập tên phim, thể loại hoặc định dạng"
+            placeholderTextColor="rgba(255,255,255,0.32)"
+            style={{ color: palette.text, fontSize: 17, fontWeight: "700", paddingVertical: 6 }}
+          />
+          <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.18)" }} />
+        </View>
       </StaggerSection>
 
       <StaggerSection index={2}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {["ALL", ...cinemaOptions].map((cinema) => (
-          <Pressable key={cinema} style={[styles.paymentMethod, cinemaFilter === cinema && styles.paymentMethodActive]} onPress={() => setCinemaFilter(cinema)}>
-            <Text style={[styles.paymentMethodText, cinemaFilter === cinema && styles.paymentMethodTextActive]}>{cinema === "ALL" ? "Táº¥t cáº£ ráº¡p" : cinema}</Text>
-          </Pressable>
-        ))}
+          {[ ["ALL", "Tất cả"], ["NOW_SHOWING", "Đang chiếu"], ["COMING_SOON", "Sắp chiếu"] ].map(([id, label]) => (
+            <Pressable key={id} style={[styles.paymentMethod, statusFilter === id && styles.paymentMethodActive]} onPress={() => setStatusFilter(id)}>
+              <Text style={[styles.paymentMethodText, statusFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
+            </Pressable>
+          ))}
         </ScrollView>
       </StaggerSection>
 
       <StaggerSection index={3}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {["ALL", ...genreOptions].map((genre) => (
-          <Pressable key={genre} style={[styles.paymentMethod, genreFilter === genre && styles.paymentMethodActive]} onPress={() => setGenreFilter(genre)}>
-            <Text style={[styles.paymentMethodText, genreFilter === genre && styles.paymentMethodTextActive]}>{genre === "ALL" ? "Táº¥t cáº£ thá»ƒ loáº¡i" : genre}</Text>
-          </Pressable>
-        ))}
+          {["ALL", ...cinemaOptions].map((cinema) => (
+            <Pressable key={cinema} style={[styles.paymentMethod, cinemaFilter === cinema && styles.paymentMethodActive]} onPress={() => setCinemaFilter(cinema)}>
+              <Text style={[styles.paymentMethodText, cinemaFilter === cinema && styles.paymentMethodTextActive]}>{cinema === "ALL" ? "Tất cả rạp" : cinema}</Text>
+            </Pressable>
+          ))}
         </ScrollView>
       </StaggerSection>
 
       <StaggerSection index={4}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {[["ALL", "Má»i giá»"], ["MORNING", "TrÆ°á»›c 12h"], ["AFTERNOON", "12h - 18h"], ["EVENING", "Sau 18h"]].map(([id, label]) => (
-          <Pressable key={id} style={[styles.paymentMethod, hourFilter === id && styles.paymentMethodActive]} onPress={() => setHourFilter(id)}>
-            <Text style={[styles.paymentMethodText, hourFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
-          </Pressable>
-        ))}
+          {["ALL", ...genreOptions].map((genre) => (
+            <Pressable key={genre} style={[styles.paymentMethod, genreFilter === genre && styles.paymentMethodActive]} onPress={() => setGenreFilter(genre)}>
+              <Text style={[styles.paymentMethodText, genreFilter === genre && styles.paymentMethodTextActive]}>{genre === "ALL" ? "Tất cả thể loại" : genre}</Text>
+            </Pressable>
+          ))}
         </ScrollView>
       </StaggerSection>
 
       <StaggerSection index={5}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {[["ALL", "Táº¥t cáº£ phim"], ["ONLY", "ÄÃ£ yÃªu thÃ­ch"]].map(([id, label]) => (
-          <Pressable key={`favorite-${id}`} style={[styles.paymentMethod, favoriteFilter === id && styles.paymentMethodActive]} onPress={() => setFavoriteFilter(id as "ALL" | "ONLY")}>
-            <Text style={[styles.paymentMethodText, favoriteFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
-          </Pressable>
-        ))}
-        {[["ALL", "Táº¥t cáº£ lÆ°u"], ["ONLY", "ÄÃ£ lÆ°u xem sau"]].map(([id, label]) => (
-          <Pressable key={`watchlist-${id}`} style={[styles.paymentMethod, watchlistFilter === id && styles.paymentMethodActive]} onPress={() => setWatchlistFilter(id as "ALL" | "ONLY")}>
-            <Text style={[styles.paymentMethodText, watchlistFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
-          </Pressable>
-        ))}
+          {[ ["ALL", "Mọi giờ"], ["MORNING", "Trước 12h"], ["AFTERNOON", "12h - 18h"], ["EVENING", "Sau 18h"] ].map(([id, label]) => (
+            <Pressable key={id} style={[styles.paymentMethod, hourFilter === id && styles.paymentMethodActive]} onPress={() => setHourFilter(id)}>
+              <Text style={[styles.paymentMethodText, hourFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
+            </Pressable>
+          ))}
+          {[ ["ALL", "Tất cả phim"], ["ONLY", "Đã yêu thích"] ].map(([id, label]) => (
+            <Pressable key={`favorite-${id}`} style={[styles.paymentMethod, favoriteFilter === id && styles.paymentMethodActive]} onPress={() => setFavoriteFilter(id as "ALL" | "ONLY")}>
+              <Text style={[styles.paymentMethodText, favoriteFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
+            </Pressable>
+          ))}
+          {[ ["ALL", "Tất cả lưu"], ["ONLY", "Đã lưu xem sau"] ].map(([id, label]) => (
+            <Pressable key={`watchlist-${id}`} style={[styles.paymentMethod, watchlistFilter === id && styles.paymentMethodActive]} onPress={() => setWatchlistFilter(id as "ALL" | "ONLY")}>
+              <Text style={[styles.paymentMethodText, watchlistFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
+            </Pressable>
+          ))}
         </ScrollView>
       </StaggerSection>
 
-      {moviesData.length === 0 ? (
+      {searchedMovies.length === 0 ? (
         <StaggerSection index={6}>
           <View style={styles.accountRow}>
-            <Text style={styles.accountTitle}>KhÃ´ng cÃ³ phim phÃ¹ há»£p</Text>
-            <Text style={styles.accountDetail}>HÃ£y Ä‘á»•i bá»™ lá»c Ä‘á»ƒ xem thÃªm lá»‹ch chiáº¿u.</Text>
+            <Text style={styles.accountTitle}>Không có phim phù hợp</Text>
+            <Text style={styles.accountDetail}>Hãy đổi bộ lọc hoặc từ khóa để xem thêm lịch chiếu.</Text>
           </View>
         </StaggerSection>
       ) : null}
 
       <StaggerSection index={7}>
-        {moviesData.map((movie) => {
-          const isFavorite = favoriteMovieIds.includes(movie.id);
-          const isInWatchlist = watchlistMovieIds.includes(movie.id);
-          return (
-          <Pressable key={`explore-${movie.id}`} style={[styles.exploreCard, getSavedMovieCardStyle(isFavorite, isInWatchlist)]} onPress={() => onMoviePress(movie)}>
-            <View style={[styles.explorePoster, { backgroundColor: movie.tone }]}>
-              <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
-              <View style={styles.explorePosterOverlay}>
-                <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
-              </View>
-            </View>
-            <View style={styles.exploreBody}>
-              <Text style={styles.exploreBadge}>{movie.badge}</Text>
-              <Text style={styles.exploreTitle}>{movie.title}</Text>
-              <Text style={styles.exploreMeta}>{movie.genre} â€¢ {movie.runtime} â€¢ IMDb {movie.score}</Text>
-              <Text style={styles.exploreDescription}>{movie.description}</Text>
-            </View>
-          </Pressable>
-        )})}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+          {searchedMovies.map((movie, index) => {
+            const isFavorite = favoriteMovieIds.includes(movie.id);
+            const isInWatchlist = watchlistMovieIds.includes(movie.id);
+            const cardWidth = getAsymmetricCardWidth(index);
+            const posterHeight = getAsymmetricPosterHeight(index);
+
+            return (
+              <Pressable
+                key={`explore-${movie.id}`}
+                style={[
+                  styles.exploreCard,
+                  getSavedMovieCardStyle(isFavorite, isInWatchlist),
+                  { width: cardWidth },
+                ]}
+                onPress={() => onMoviePress(movie)}
+              >
+                <View style={[styles.explorePoster, { backgroundColor: movie.tone, height: posterHeight }]}>
+                  <MediaAsset uri={movie.posterUrl} style={styles.explorePosterImage} />
+                  <View style={styles.explorePosterOverlay}>
+                    <MovieStateBadges isFavorite={isFavorite} isInWatchlist={isInWatchlist} compact />
+                  </View>
+                </View>
+                <View style={[styles.exploreBody, index % 5 === 4 && { padding: 12 }]}> 
+                  <Text style={styles.exploreBadge}>{movie.badge}</Text>
+                  <Text style={[styles.exploreTitle, index % 5 === 4 && { fontSize: 17 }]}>{movie.title}</Text>
+                  <Text style={styles.exploreMeta}>{movie.genre} • {movie.runtime} • IMDb {movie.score}</Text>
+                  {index % 5 !== 4 ? <Text style={styles.exploreDescription}>{movie.description}</Text> : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
       </StaggerSection>
     </ScrollView>
   );
 }
-
 export function AssistantScreen(props: {
   messages: AssistantMessage[];
   input: string;
@@ -2892,6 +2972,8 @@ export function TicketDetailScreen({ ticket, onBack, onScheduleReminder, onCance
     </ScrollView>
   );
 }
+
+
 
 
 
