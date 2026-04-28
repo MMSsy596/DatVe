@@ -104,6 +104,29 @@ const showtimeBucketLabel = (startTime: string) => {
   return "Tối";
 };
 
+const EXPLORE_STATUS_FILTERS = [
+  ["ALL", "Tất cả"],
+  ["NOW_SHOWING", "Đang chiếu"],
+  ["COMING_SOON", "Sắp chiếu"],
+] as const;
+
+const EXPLORE_HOUR_FILTERS = [
+  ["ALL", "Mọi giờ"],
+  ["MORNING", "Trước 12h"],
+  ["AFTERNOON", "12h - 18h"],
+  ["EVENING", "Sau 18h"],
+] as const;
+
+const EXPLORE_FAVORITE_FILTERS = [
+  ["ALL", "Tất cả phim"],
+  ["ONLY", "Đã yêu thích"],
+] as const;
+
+const EXPLORE_WATCHLIST_FILTERS = [
+  ["ALL", "Tất cả lưu"],
+  ["ONLY", "Đã lưu xem sau"],
+] as const;
+
 const getSeatAvailabilityMeta = (availableSeats: number, totalSeats: number) => {
   if (totalSeats <= 0 || availableSeats <= 0) {
     return { label: "Gần kín", tone: "critical" as const };
@@ -1086,6 +1109,8 @@ export function ExploreScreen(props: {
 }) {
   const { onMoviePress, moviesData, loading, statusFilter, setStatusFilter, cinemaFilter, setCinemaFilter, genreFilter, setGenreFilter, hourFilter, setHourFilter, favoriteFilter, setFavoriteFilter, watchlistFilter, setWatchlistFilter, cinemaOptions, genreOptions, favoriteMovieIds = [], watchlistMovieIds = [] } = props;
   const [searchText, setSearchText] = React.useState("");
+  const favoriteMovieIdSet = React.useMemo(() => new Set(favoriteMovieIds), [favoriteMovieIds]);
+  const watchlistMovieIdSet = React.useMemo(() => new Set(watchlistMovieIds), [watchlistMovieIds]);
 
   const searchedMovies = React.useMemo(() => {
     const normalized = searchText.trim().toLowerCase();
@@ -1150,7 +1175,7 @@ export function ExploreScreen(props: {
 
       <StaggerSection index={2}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-          {[ ["ALL", "Tất cả"], ["NOW_SHOWING", "Đang chiếu"], ["COMING_SOON", "Sắp chiếu"] ].map(([id, label]) => (
+          {EXPLORE_STATUS_FILTERS.map(([id, label]) => (
             <Pressable key={id} style={[styles.paymentMethod, statusFilter === id && styles.paymentMethodActive]} onPress={() => setStatusFilter(id)}>
               <Text style={[styles.paymentMethodText, statusFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
             </Pressable>
@@ -1180,17 +1205,17 @@ export function ExploreScreen(props: {
 
       <StaggerSection index={5}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-          {[ ["ALL", "Mọi giờ"], ["MORNING", "Trước 12h"], ["AFTERNOON", "12h - 18h"], ["EVENING", "Sau 18h"] ].map(([id, label]) => (
+          {EXPLORE_HOUR_FILTERS.map(([id, label]) => (
             <Pressable key={id} style={[styles.paymentMethod, hourFilter === id && styles.paymentMethodActive]} onPress={() => setHourFilter(id)}>
               <Text style={[styles.paymentMethodText, hourFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
             </Pressable>
           ))}
-          {[ ["ALL", "Tất cả phim"], ["ONLY", "Đã yêu thích"] ].map(([id, label]) => (
+          {EXPLORE_FAVORITE_FILTERS.map(([id, label]) => (
             <Pressable key={`favorite-${id}`} style={[styles.paymentMethod, favoriteFilter === id && styles.paymentMethodActive]} onPress={() => setFavoriteFilter(id as "ALL" | "ONLY")}>
               <Text style={[styles.paymentMethodText, favoriteFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
             </Pressable>
           ))}
-          {[ ["ALL", "Tất cả lưu"], ["ONLY", "Đã lưu xem sau"] ].map(([id, label]) => (
+          {EXPLORE_WATCHLIST_FILTERS.map(([id, label]) => (
             <Pressable key={`watchlist-${id}`} style={[styles.paymentMethod, watchlistFilter === id && styles.paymentMethodActive]} onPress={() => setWatchlistFilter(id as "ALL" | "ONLY")}>
               <Text style={[styles.paymentMethodText, watchlistFilter === id && styles.paymentMethodTextActive]}>{label}</Text>
             </Pressable>
@@ -1210,8 +1235,8 @@ export function ExploreScreen(props: {
       <StaggerSection index={7}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
           {searchedMovies.map((movie, index) => {
-            const isFavorite = favoriteMovieIds.includes(movie.id);
-            const isInWatchlist = watchlistMovieIds.includes(movie.id);
+            const isFavorite = favoriteMovieIdSet.has(movie.id);
+            const isInWatchlist = watchlistMovieIdSet.has(movie.id);
             const cardWidth = getAsymmetricCardWidth(index);
             const posterHeight = getAsymmetricPosterHeight(index);
 
