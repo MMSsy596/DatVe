@@ -46,6 +46,25 @@ async function hasColumn(pool: Pool, tableName: string, columnName: string) {
   return rows.length > 0;
 }
 
+async function hasIndex(pool: Pool, tableName: string, indexName: string) {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT 1
+     FROM information_schema.statistics
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND index_name = ?
+     LIMIT 1`,
+    [tableName, indexName]
+  );
+  return rows.length > 0;
+}
+
+async function addIndexIfMissing(pool: Pool, tableName: string, indexName: string, statement: string) {
+  if ((await hasTable(pool, tableName)) && !(await hasIndex(pool, tableName, indexName))) {
+    await pool.execute(statement);
+  }
+}
+
 export async function ensureRuntimeSchema() {
   if (!global.__phimbookSchemaReady) {
     global.__phimbookSchemaReady = (async () => {
@@ -121,6 +140,37 @@ export async function ensureRuntimeSchema() {
           )
         `);
       }
+
+      await addIndexIfMissing(
+        pool,
+        "bookings",
+        "idx_bookings_showtime_status_expiry",
+        "CREATE INDEX idx_bookings_showtime_status_expiry ON bookings (showtime_id, status, expires_at)"
+      );
+      await addIndexIfMissing(
+        pool,
+        "booking_seats",
+        "idx_booking_seats_booking_code",
+        "CREATE INDEX idx_booking_seats_booking_code ON booking_seats (booking_id, seat_code)"
+      );
+      await addIndexIfMissing(
+        pool,
+        "showtimes",
+        "idx_showtimes_movie_start",
+        "CREATE INDEX idx_showtimes_movie_start ON showtimes (movie_id, start_time)"
+      );
+      await addIndexIfMissing(
+        pool,
+        "showtimes",
+        "idx_showtimes_room_start",
+        "CREATE INDEX idx_showtimes_room_start ON showtimes (room_id, start_time)"
+      );
+      await addIndexIfMissing(
+        pool,
+        "payments",
+        "idx_payments_provider_order_id",
+        "CREATE INDEX idx_payments_provider_order_id ON payments (provider_order_id)"
+      );
     })();
   }
 

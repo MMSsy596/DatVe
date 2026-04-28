@@ -229,6 +229,8 @@ CREATE TABLE IF NOT EXISTS showtimes (
   base_price INT NOT NULL DEFAULT 90000,
   status ENUM('SCHEDULED','SELLING','SOLD_OUT') NOT NULL DEFAULT 'SELLING',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_showtimes_movie_start (movie_id, start_time),
+  KEY idx_showtimes_room_start (room_id, start_time),
   CONSTRAINT fk_showtimes_movie FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
   CONSTRAINT fk_showtimes_cinema FOREIGN KEY (cinema_id) REFERENCES cinemas(id) ON DELETE CASCADE,
   CONSTRAINT fk_showtimes_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
@@ -262,6 +264,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   checked_in_at DATETIME NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_bookings_showtime_status_expiry (showtime_id, status, expires_at),
   CONSTRAINT fk_bookings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_bookings_showtime FOREIGN KEY (showtime_id) REFERENCES showtimes(id) ON DELETE CASCADE
 );
@@ -272,6 +275,7 @@ CREATE TABLE IF NOT EXISTS booking_seats (
   seat_code VARCHAR(20) NOT NULL,
   seat_type ENUM('STANDARD','VIP','COUPLE') NOT NULL DEFAULT 'STANDARD',
   price INT NOT NULL,
+  KEY idx_booking_seats_booking_code (booking_id, seat_code),
   CONSTRAINT fk_booking_seats_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
 );
 
@@ -307,6 +311,7 @@ CREATE TABLE IF NOT EXISTS payments (
   paid_at DATETIME NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_payments_provider_order_id (provider_order_id),
   CONSTRAINT fk_payments_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
   CONSTRAINT fk_payments_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 );

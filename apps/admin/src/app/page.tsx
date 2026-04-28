@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001/api/v1";
+const adminTokenStorageKey = "datve.admin.token";
 
 type Stats = {
   movies: number;
@@ -48,7 +49,7 @@ export default function AdminPage() {
   const [token, setToken] = useState<string | null>(null);
   const [me, setMe] = useState<{ fullName: string; role: string } | null>(null);
   const [email, setEmail] = useState("admin@datve.local");
-  const [password, setPassword] = useState("Admin@123");
+  const [password, setPassword] = useState("");
   const [stats, setStats] = useState<Stats | null>(null);
   const [movies, setMovies] = useState<Item[]>([]);
   const [cinemas, setCinemas] = useState<Item[]>([]);
@@ -74,6 +75,13 @@ export default function AdminPage() {
   const [showtimeForm, setShowtimeForm] = useState({ movieId: "", cinemaId: "", roomId: "", startTime: "", languageLabel: "Phu de", formatLabel: "2D", basePrice: "90000", status: "SELLING" });
   const [foodForm, setFoodForm] = useState({ name: "", description: "", price: "99000", category: "COMBO", isActive: true });
   const [voucherForm, setVoucherForm] = useState({ code: "", title: "", description: "", discountType: "PERCENT", discountValue: "10", minOrderValue: "0", maxDiscountValue: "0", assignedUserId: "", expiresAt: "", isActive: true });
+
+  useEffect(() => {
+    const savedToken = window.sessionStorage.getItem(adminTokenStorageKey);
+    if (savedToken) {
+      setToken(savedToken);
+    }
+  }, []);
 
   const requestJson = useCallback(async (path: string, init?: RequestInit) => {
     const response = await fetch(`${apiBase}${path}`, {
@@ -154,10 +162,18 @@ export default function AdminPage() {
         body: JSON.stringify({ email, password, deviceName: "Admin Dashboard" }),
       }).then((r) => r.json());
       if (!json.token) throw new Error(json.error ?? "Dang nhap that bai");
+      window.sessionStorage.setItem(adminTokenStorageKey, json.token);
       setToken(json.token);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Dang nhap that bai");
     }
+  };
+
+  const logout = () => {
+    window.sessionStorage.removeItem(adminTokenStorageKey);
+    setToken(null);
+    setMe(null);
+    setPassword("");
   };
 
   const post = async (path: string, body: unknown) => requestJson(path, { method: "POST", body: JSON.stringify(body) });
@@ -189,7 +205,10 @@ export default function AdminPage() {
               <h1 className="text-4xl font-black tracking-tight">Dashboard van hanh dat ve thuc te</h1>
               <p className="mt-3 text-sm text-slate-300">{me?.fullName} | {me?.role}. Da mo voucher, room CRUD, payment review, check-in va seat map.</p>
             </div>
-            <button className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-300" onClick={loadAll}>Tai lai</button>
+            <div className="flex flex-wrap gap-3">
+              <button className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-300" onClick={loadAll}>Tai lai</button>
+              <button className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200" onClick={logout}>Dang xuat</button>
+            </div>
           </div>
         </section>
 

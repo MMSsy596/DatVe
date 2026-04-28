@@ -169,10 +169,16 @@ async function maybeRewriteByGemini(input: {
         continue;
       }
 
-      const json = await response.json();
+      const json = (await response.json()) as {
+        candidates?: Array<{
+          content?: {
+            parts?: Array<{ text?: unknown }>;
+          };
+        }>;
+      };
       const text = String(
         json?.candidates?.[0]?.content?.parts
-          ?.map((part: any) => String(part?.text ?? ""))
+          ?.map((part) => String(part.text ?? ""))
           .join(" ") ?? ""
       ).trim();
 

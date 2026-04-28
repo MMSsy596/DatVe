@@ -20,7 +20,8 @@ type FinalizePayload = {
 };
 
 function makeBookingCode() {
-  return `DV${Date.now().toString().slice(-8)}`;
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `DV${Date.now().toString().slice(-8)}${suffix}`;
 }
 
 function makeQrPayload(input: { bookingCode: string; bookingId: number; showtimeId: number; userId?: number | null }) {
@@ -44,8 +45,31 @@ export async function holdSeats(payload: HoldPayload) {
   try {
     await connection.beginTransaction();
 
+    if (!Number.isFinite(Number(payload.showtimeId))) {
+      throw new Error("Suất chiếu không hợp lệ.");
+    }
+
+    if (!Array.isArray(payload.seats) || payload.seats.length === 0) {
+      throw new Error("Vui lòng chọn ít nhất một ghế.");
+    }
+
+    const requestedSeats = [...payload.seats].sort((a, b) =>
+      String(a.seatCode).localeCompare(String(b.seatCode))
+    );
+    const requestedSeatCodes = new Set<string>();
+    for (const seat of requestedSeats) {
+      const seatCode = String(seat.seatCode ?? "").trim().toUpperCase();
+      if (!seatCode) {
+        throw new Error("Mã ghế không hợp lệ.");
+      }
+      if (requestedSeatCodes.has(seatCode)) {
+        throw new Error(`Ghế ${seatCode} bị chọn trùng.`);
+      }
+      requestedSeatCodes.add(seatCode);
+    }
+
     const [[showtime]] = await connection.query<RowDataPacket[]>(
-      `SELECT room_id, base_price FROM showtimes WHERE id = ? LIMIT 1`,
+      `SELECT room_id, base_price FROM showtimes WHERE id = ? LIMIT 1 FOR UPDATE`,
       [payload.showtimeId]
     );
 
@@ -65,13 +89,14 @@ export async function holdSeats(payload: HoldPayload) {
 
     const normalizedSeats: Array<{ seatCode: string; seatType: "STANDARD" | "VIP" | "COUPLE"; price: number }> = [];
 
-    for (const seat of payload.seats) {
+    for (const seat of requestedSeats) {
+      const requestedSeatCode = String(seat.seatCode).trim().toUpperCase();
       const [[roomSeat]] = await connection.query<RowDataPacket[]>(
         `SELECT seat_code, seat_type, row_label, column_index
          FROM room_seats
          WHERE room_id = ? AND seat_code = ? AND is_active = TRUE
          LIMIT 1`,
-        [showtime.room_id, seat.seatCode]
+        [showtime.room_id, requestedSeatCode]
       );
 
       if (!roomSeat) {
@@ -90,7 +115,7 @@ export async function holdSeats(payload: HoldPayload) {
              (b.status = 'HELD' AND b.expires_at IS NOT NULL AND b.expires_at >= NOW())
            )
          LIMIT 1`,
-        [payload.showtimeId, seat.seatCode]
+        [payload.showtimeId, requestedSeatCode]
       );
 
       if (conflicts.length > 0) {
