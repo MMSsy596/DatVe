@@ -21,6 +21,26 @@
   "workspaces": [
     "apps/*"
   ],
+  "overrides": {
+    "@expo/metro-config": {
+      "postcss": "8.5.12"
+    },
+    "@expo/plist": {
+      "@xmldom/xmldom": "0.9.10"
+    },
+    "@tailwindcss/postcss": {
+      "postcss": "8.5.12"
+    },
+    "next@16.2.4": {
+      "postcss": "8.5.12"
+    },
+    "plist": {
+      "@xmldom/xmldom": "0.9.10"
+    },
+    "xcode": {
+      "uuid": "14.0.0"
+    }
+  },
   "keywords": [
     "movie-booking",
     "react-native",

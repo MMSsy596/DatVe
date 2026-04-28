@@ -136,6 +136,18 @@ function hourBucket(startTime: string) {
   return "EVENING";
 }
 
+function hasNotificationPermission(permission: Notifications.NotificationPermissionsStatus) {
+  const normalized = permission as Notifications.NotificationPermissionsStatus & {
+    granted?: boolean;
+    status?: string;
+  };
+  return (
+    normalized.granted === true ||
+    normalized.status === "granted" ||
+    normalized.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
+  );
+}
+
 type RouteState = {
   screen: ScreenId;
   tab: TabId;
@@ -538,12 +550,12 @@ export default function App() {
     if (!authToken || !Device.isDevice) return;
 
     const currentPermission = await Notifications.getPermissionsAsync();
-    let finalStatus = currentPermission.status;
-    if (finalStatus !== "granted") {
+    let granted = hasNotificationPermission(currentPermission);
+    if (!granted) {
       const requested = await Notifications.requestPermissionsAsync();
-      finalStatus = requested.status;
+      granted = hasNotificationPermission(requested);
     }
-    if (finalStatus !== "granted") return;
+    if (!granted) return;
 
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ??
