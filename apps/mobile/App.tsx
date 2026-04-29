@@ -52,8 +52,14 @@ import {
   Voucher,
 } from "./src/types";
 
-const DEFAULT_API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || "https://datve.up.railway.app/api/v1";
+const configuredApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+const isLocalWebHost =
+  Platform.OS === "web" &&
+  typeof globalThis.location?.hostname === "string" &&
+  ["localhost", "127.0.0.1"].includes(globalThis.location.hostname);
+const DEFAULT_API_BASE_URL = isLocalWebHost
+  ? "http://localhost:3001/api/v1"
+  : configuredApiBaseUrl || "https://datve.up.railway.app/api/v1";
 const SESSION_STORAGE_KEY = "phimbook.mobile.session";
 const ASSISTANT_SETTINGS_STORAGE_KEY = "phimbook.mobile.assistant.settings";
 const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
@@ -1640,6 +1646,7 @@ export default function App() {
 
   let content: React.ReactNode = null;
   const activePillWidth = bottomBarWidth > 0 ? (bottomBarWidth - 24) / tabItems.length : 0;
+  const shouldShowAssistantFloating = screen !== "tabs" && screen !== "auth";
 
   const handleTabPress = React.useCallback(
     (tab: TabId) => {
@@ -1914,7 +1921,7 @@ export default function App() {
       {canSwipeBack ? (
         <Animated.View pointerEvents="none" style={[styles.swipeBackCue, { opacity: swipeBackTranslateX.interpolate({ inputRange: [0, 44], outputRange: [0.16, 0.55], extrapolate: "clamp" }) }]} />
       ) : null}
-      {assistantMiniOpen ? (
+      {shouldShowAssistantFloating && assistantMiniOpen ? (
         <View style={styles.aiMiniPanel}>
           <View style={styles.aiMiniHeader}>
             <Text style={styles.aiMiniTitle}>Trợ lý AI</Text>
@@ -1937,20 +1944,22 @@ export default function App() {
           />
         </View>
       ) : null}
-      <Animated.View
-        style={[
-          styles.aiFab,
-          {
-            transform: [{ translateX: assistantBubblePos.x }, { translateY: assistantBubblePos.y }],
-          },
-        ]}
-        {...assistantBubblePanResponder.panHandlers}
-      >
-        <Pressable onPress={() => setAssistantMiniOpen((prev) => !prev)} style={{ alignItems: "center", gap: 1 }} hitSlop={8}>
-          <MaterialCommunityIcons name="robot" size={22} color="#fff7f2" />
-          <Text style={styles.aiFabLabel}>AI</Text>
-        </Pressable>
-      </Animated.View>
+      {shouldShowAssistantFloating && !assistantMiniOpen ? (
+        <Animated.View
+          style={[
+            styles.aiFab,
+            {
+              transform: [{ translateX: assistantBubblePos.x }, { translateY: assistantBubblePos.y }],
+            },
+          ]}
+          {...assistantBubblePanResponder.panHandlers}
+        >
+          <Pressable testID="assistant-floating-button" onPress={() => setAssistantMiniOpen((prev) => !prev)} style={{ alignItems: "center", gap: 1 }} hitSlop={8}>
+            <MaterialCommunityIcons name="robot" size={22} color="#fff7f2" />
+            <Text style={styles.aiFabLabel}>AI</Text>
+          </Pressable>
+        </Animated.View>
+      ) : null}
       <Modal
         visible={assistantConfirmVisible}
         transparent

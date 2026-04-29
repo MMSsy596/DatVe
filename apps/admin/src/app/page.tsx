@@ -48,7 +48,7 @@ function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 export default function AdminPage() {
   const [token, setToken] = useState<string | null>(null);
   const [me, setMe] = useState<{ fullName: string; role: string } | null>(null);
-  const [email, setEmail] = useState("admin@datve.local");
+  const [email, setEmail] = useState("admin@phimbook.local");
   const [password, setPassword] = useState("");
   const [stats, setStats] = useState<Stats | null>(null);
   const [movies, setMovies] = useState<Item[]>([]);
