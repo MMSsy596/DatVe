@@ -510,6 +510,70 @@ const trailerCatalog = [
   "https://www.youtube.com/embed/qSqVVswa420?playsinline=1",
   "https://www.youtube.com/embed/6ZfuNTqbHE8?playsinline=1",
 ];
+
+const movieImagePrompts = {
+  "nguoi-nhen-da-vu-tru": "young masked web hero leaping through shattered neon portals, city skyline folding into parallel realities",
+  "lat-mat-8": "Vietnamese family comedy drama, relatives gathered around a dinner table, warm home chaos and emotional faces",
+  "bong-toi-bien-mat": "abandoned suburban hospital corridor, strange shadows dissolving under flickering emergency lights, horror mystery",
+  "dai-chien-ngan-ha": "epic starship battle above a glowing galaxy, astronauts and cosmic explosions, grand science fiction adventure",
+  "conan-vu-an-cuoi-cung": "anime detective boy investigating footprints in a frozen mountain town, blue ice and suspenseful clues",
+  "mat-ma-bien-dem": "crime investigators chasing a money laundering network at a dark harbor, rain, speedboats, encrypted screens",
+  "tho-san-mat-trang": "space adventurers crossing a moon desert toward ancient treasure ruins, silver dust and distant planet",
+  "ngay-mai-co-mua-sao-bang": "romantic couple under meteor shower with parallel timelines reflected in the sky, dreamy fantasy mood",
+  "ho-so-so-13": "young detective reopening a cold case file in a dim archive room, red string board and old evidence",
+  "toc-do-thanh-pho": "night street race through neon city, sports cars drifting past a family garage, kinetic action",
+  "dem-cuoi-o-sai-gon": "five strangers on a rainy Saigon night, glowing street food signs, dramatic choices and urban melancholy",
+  "hac-anh-troi-day": "ancient ritual circle breaking a sealed dark entity, candles, black smoke, supernatural horror",
+  "chien-tuyen-do": "special forces squad crossing a red-lit border battlefield, smoke, flares, dramatic war mission",
+  "vua-bep-hoc-duong": "school cooking competition, students in aprons racing with colorful dishes, funny family energy",
+  "trai-tim-co-khi": "young engineer facing a humanoid AI with glowing mechanical heart, romantic science fiction lab",
+  "sieu-diep-vu-a9": "female spy infiltrating an underground weapons network, sleek suit, laser grid, action espionage",
+  "than-dong-co-vay": "young go prodigy facing an international board game final, intense arena lights and black white stones",
+  "mua-he-cua-chung-ta": "old friends reuniting on a summer road trip, beach sunset, youthful Vietnamese romance",
+  "ban-do-thanh-pho-ngam": "two siblings following a treasure map through underground city tunnels, lanterns and crime adventure",
+  "mat-uoc-tren-may": "two young pilots above storm clouds hiding a dangerous secret, cockpit lights and emotional drama",
+  "bien-ban-sao-hoa": "Mars research crew losing contact with Earth, red dust storm, survival science base",
+  "van-cuoc-cuoi-ca": "female forensic doctor searching for a killer inside a hospital morgue, cold lights and crime suspense",
+  "dao-gio-do": "isolated island with red wind and stranded tourists near an ancient sacrifice site, survival horror",
+  "nhip-dap-42": "indie band performing in a threatened art center, stage lights, instruments, inspiring music drama",
+  "bao-trang-bac-cuc": "rescue team crossing Arctic whiteout to reach a trapped research ship, ice storm survival",
+  "hen-gap-o-dem-thu-bay": "two strangers meeting repeatedly on mysterious Saturday nights, cozy city lights, romantic comedy",
+  "lenh-truy-sat-0-gio": "ex-agent hunted through a city at midnight, secret document, motorcycles and thriller action",
+  "phong-thu-so-7": "young singer in haunted recording studio, glowing tape reels, distorted memories and music mystery",
+  "thanh-pho-khong-ngu": "night patrol confronting underground crime syndicate in sleepless metropolis, gritty drama",
+  "hanh-tinh-thu-chin": "deep space probe approaching mysterious ninth planet beyond the solar system, cosmic discovery",
+  "khuc-song-lang": "three sisters returning to a quiet riverside hometown for a missing father's will, family drama",
+  "tin-hieu-404": "programmers uncovering a social network manipulation system, glowing code, surveillance screens, tech thriller",
+  "doan-bang-mau-xanh": "blue VHS tape revealing impossible memories, retro television glow, psychological mystery",
+  "mua-san-sao": "young friends traveling central Vietnam to chase a rare meteor shower, open road and night sky",
+  "vu-dieu-duong-bien": "street dancer caught in cross-border martial arts operation, dynamic kicks, neon border checkpoint",
+  "nha-ga-cuoi-cung": "lost night passengers entering a train station that does not exist, fog, fantasy drama",
+  "bao-mua-neon": "smart city traffic system turning hostile, neon rain, autonomous cars hunting their creator",
+  "mat-lenh-hoa-phuong": "final-year students decoding mysterious letters under red flame trees at school, youth detective story",
+  "dong-song-khong-ten": "old ferryman on a nameless river under new moon, ghostly passengers and hidden secret",
+  "ranh-gioi-ky-uc": "neurosurgeon testing memory transplant technology, fragmented faces, erased murder case, psychological science",
+  "tram-cuoi-sao-kim": "repair crew waking in abandoned Venus station with twelve hours of oxygen, harsh orange atmosphere",
+  "ke-goi-mua": "drought-stricken coastal village welcoming first rain and ancient sacrifice omens, folk horror",
+  "so-ghe-27": "old cinema seat number 27 showing different movie endings, eerie theater, thriller mystery",
+  "ban-giao-huong-tro-tan": "fallen conductor leading a final orchestra in a fire-scarred city, ash, music, drama",
+};
+
+function buildMovieImageUrl(slug, title, shortDesc, type, index) {
+  const isPoster = type === "poster";
+  const promptCore = movieImagePrompts[slug] ?? `${title}, ${shortDesc}, cinematic Vietnamese movie key art`;
+  const prompt = [
+    isPoster ? "Vertical theatrical movie poster" : "Wide cinematic movie banner",
+    `for Vietnamese film "${title}"`,
+    promptCore,
+    "cinematic lighting, premium film still, high detail, no text, no logo, no watermark",
+  ].join(", ");
+  const width = isPoster ? 768 : 1280;
+  const height = isPoster ? 1152 : 720;
+  const seed = 24000 + index * 10 + (isPoster ? 1 : 2);
+
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&model=flux&seed=${seed}&nologo=true&enhance=true`;
+}
+
 const movies = movieSeedSource.map(([title, author, genre, duration, rating, shortDesc], index) => {
   const status = index < 18 ? (index % 5 === 0 ? "TRENDING" : "NOW_SHOWING") : "COMING_SOON";
   const releaseBase = addDays(new Date(), status === "COMING_SOON" ? 3 + (index - 18) : -(index % 20) - 1);
@@ -526,8 +590,8 @@ const movies = movieSeedSource.map(([title, author, genre, duration, rating, sho
     status,
     rating: rating > 0 ? rating : 7.2 + ((index % 8) * 0.2),
     badge: status === "COMING_SOON" ? randomPick(badgesSoon, index) : randomPick(badgesNow, index),
-    posterUrl: `/demo-media/posters/${slug}.svg`,
-    bannerUrl: `/demo-media/banners/${slug}.svg`,
+    posterUrl: buildMovieImageUrl(slug, title, shortDesc, "poster", index),
+    bannerUrl: buildMovieImageUrl(slug, title, shortDesc, "banner", index),
     trailerUrl: trailerCatalog[index % trailerCatalog.length],
     highlightColor: randomPick(palette, index),
     isFeatured: index < 12,
