@@ -1,6 +1,9 @@
 node_modules/
 apps/*/node_modules/
 .tools/
+.android-sdk/
+.gradle-home/
+.tmp/
 apps/*/.next/
 apps/*/.expo/
 apps/*/dist/
