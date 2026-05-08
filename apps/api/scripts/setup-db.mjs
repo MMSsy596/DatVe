@@ -449,11 +449,11 @@ const vouchers = [
 ];
 
 const banners = [
-  { id: 1, title: "Galaxy Week", subtitle: "Mua 2 vé tặng 1 combo mini cho suất sau 20h.", accentColor: "#1f2f73", imageUrl: "/demo-media/promos/banner-1.svg", sortOrder: 1, isActive: true },
-  { id: 2, title: "Premiere Night", subtitle: "Đặt sớm phim hot và nhận ưu đãi hội viên mới.", accentColor: "#5a1826", imageUrl: "/demo-media/promos/banner-2.svg", sortOrder: 2, isActive: true },
-  { id: 3, title: "Tuesday Date", subtitle: "Ghế đôi giảm 15% vào tối thứ 3 tại rạp liên kết.", accentColor: "#713b16", imageUrl: "/demo-media/promos/banner-3.svg", sortOrder: 3, isActive: true },
-  { id: 4, title: "Sinh viên xem đêm", subtitle: "Xuất trình thẻ sinh viên để nhận combo nước giá mềm.", accentColor: "#0f766e", imageUrl: "/demo-media/promos/banner-4.svg", sortOrder: 4, isActive: true },
-  { id: 5, title: "Marathon cuối tuần", subtitle: "Đặt 3 suất liên tiếp để mở voucher cho tháng sau.", accentColor: "#48257a", imageUrl: "/demo-media/promos/banner-5.svg", sortOrder: 5, isActive: true },
+  { id: 1, title: "Galaxy Week", subtitle: "Mua 2 vé tặng 1 combo mini cho suất sau 20h.", accentColor: "#1f2f73", imageUrl: "https://loremflickr.com/1280/720/cinema,galaxy,popcorn?lock=9301", sortOrder: 1, isActive: true },
+  { id: 2, title: "Premiere Night", subtitle: "Đặt sớm phim hot và nhận ưu đãi hội viên mới.", accentColor: "#5a1826", imageUrl: "https://loremflickr.com/1280/720/movie,premiere,red-carpet?lock=9302", sortOrder: 2, isActive: true },
+  { id: 3, title: "Tuesday Date", subtitle: "Ghế đôi giảm 15% vào tối thứ 3 tại rạp liên kết.", accentColor: "#713b16", imageUrl: "https://loremflickr.com/1280/720/cinema,couple,night?lock=9303", sortOrder: 3, isActive: true },
+  { id: 4, title: "Sinh viên xem đêm", subtitle: "Xuất trình thẻ sinh viên để nhận combo nước giá mềm.", accentColor: "#0f766e", imageUrl: "https://loremflickr.com/1280/720/students,cinema,popcorn?lock=9304", sortOrder: 4, isActive: true },
+  { id: 5, title: "Marathon cuối tuần", subtitle: "Đặt 3 suất liên tiếp để mở voucher cho tháng sau.", accentColor: "#48257a", imageUrl: "https://loremflickr.com/1280/720/movie-theater,weekend,screen?lock=9305", sortOrder: 5, isActive: true },
 ];
 
 const movieSeedSource = [
@@ -562,9 +562,60 @@ const movieImagePrompts = {
   "ban-giao-huong-tro-tan": "fallen conductor leading a final orchestra in a fire-scarred city, ash, music, drama",
 };
 
+const movieImageKeywords = {
+  "nguoi-nhen-da-vu-tru": ["spider", "city", "night"],
+  "lat-mat-8": ["vietnam", "family", "dinner"],
+  "bong-toi-bien-mat": ["abandoned", "hospital", "corridor"],
+  "dai-chien-ngan-ha": ["space", "galaxy", "spaceship"],
+  "conan-vu-an-cuoi-cung": ["detective", "snow", "mountain"],
+  "mat-ma-bien-dem": ["harbor", "night", "crime"],
+  "tho-san-mat-trang": ["astronaut", "moon", "desert"],
+  "ngay-mai-co-mua-sao-bang": ["meteor", "night", "romance"],
+  "ho-so-so-13": ["detective", "archive", "evidence"],
+  "toc-do-thanh-pho": ["sports-car", "night", "city"],
+  "dem-cuoi-o-sai-gon": ["saigon", "rain", "night"],
+  "hac-anh-troi-day": ["ritual", "candles", "dark"],
+  "chien-tuyen-do": ["soldiers", "battlefield", "smoke"],
+  "vua-bep-hoc-duong": ["students", "cooking", "school"],
+  "trai-tim-co-khi": ["robot", "engineer", "laboratory"],
+  "sieu-diep-vu-a9": ["spy", "laser", "security"],
+  "than-dong-co-vay": ["go", "board-game", "tournament"],
+  "mua-he-cua-chung-ta": ["beach", "friends", "sunset"],
+  "ban-do-thanh-pho-ngam": ["tunnel", "map", "adventure"],
+  "mat-uoc-tren-may": ["pilot", "cockpit", "clouds"],
+  "bien-ban-sao-hoa": ["mars", "astronaut", "habitat"],
+  "van-cuoc-cuoi-ca": ["forensic", "hospital", "doctor"],
+  "dao-gio-do": ["island", "storm", "survival"],
+  "nhip-dap-42": ["band", "stage", "lights"],
+  "bao-trang-bac-cuc": ["arctic", "ship", "storm"],
+  "hen-gap-o-dem-thu-bay": ["romantic", "city", "night"],
+  "lenh-truy-sat-0-gio": ["motorcycle", "chase", "night"],
+  "phong-thu-so-7": ["recording-studio", "microphone", "dark"],
+  "thanh-pho-khong-ngu": ["city", "night", "police"],
+  "hanh-tinh-thu-chin": ["space", "planet", "probe"],
+  "khuc-song-lang": ["river", "village", "family"],
+  "tin-hieu-404": ["computer", "code", "surveillance"],
+  "doan-bang-mau-xanh": ["vhs", "television", "blue"],
+  "mua-san-sao": ["meteor", "road", "friends"],
+  "vu-dieu-duong-bien": ["street-dance", "martial-arts", "neon"],
+  "nha-ga-cuoi-cung": ["train-station", "fog", "night"],
+  "bao-mua-neon": ["neon", "rain", "traffic"],
+  "mat-lenh-hoa-phuong": ["school", "students", "red-flowers"],
+  "dong-song-khong-ten": ["river", "boat", "moon"],
+  "ranh-gioi-ky-uc": ["brain", "scan", "laboratory"],
+  "tram-cuoi-sao-kim": ["space-station", "planet", "orange"],
+  "ke-goi-mua": ["village", "drought", "storm"],
+  "so-ghe-27": ["movie-theater", "red-seats", "empty"],
+  "ban-giao-huong-tro-tan": ["orchestra", "conductor", "stage"],
+};
+
 function buildMovieImageUrl(slug, title, shortDesc, type, index) {
   const isPoster = type === "poster";
-  return `/demo-media/${isPoster ? "posters" : "banners"}/${slug}.svg`;
+  const keywords = movieImageKeywords[slug] ?? ["cinema", "movie"];
+  const size = isPoster ? "768/1152" : "1280/720";
+  const lock = 9100 + index * 2 + (isPoster ? 0 : 1);
+  const query = keywords.map((keyword) => encodeURIComponent(keyword)).join(",");
+  return `https://loremflickr.com/${size}/${query}?lock=${lock}`;
 }
 
 const movies = movieSeedSource.map(([title, author, genre, duration, rating, shortDesc], index) => {
