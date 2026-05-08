@@ -4,6 +4,10 @@ import path from "node:path";
 import mysql from "mysql2/promise";
 
 function getDatabaseUrl() {
+  if (process.env.DATABASE_URL?.trim()) {
+    return process.env.DATABASE_URL.trim();
+  }
+
   const envPath = path.join(process.cwd(), ".env.local");
   const envContent = fs.readFileSync(envPath, "utf8");
   const line = envContent.split(/\r?\n/).find((item) => item.startsWith("DATABASE_URL="));
