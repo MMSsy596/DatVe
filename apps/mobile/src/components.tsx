@@ -2,8 +2,9 @@ import React from "react";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { SvgUri } from "react-native-svg";
 import { WebView } from "react-native-webview";
 import { palette, styles } from "./theme";
 import { AssistantMessage, Banner, ComboItem, Movie, PaymentProvider, ProfileData, ReminderItem, SeatMapRow, SeatSelection, Setter, SessionUser, ShowtimeItem, TicketDetail, TicketItem, ToastKind, ToastTone, Voucher } from "./types";
@@ -17,7 +18,17 @@ function isSvgAsset(uri?: string | null) {
 function MediaAsset({ uri, style, resizeMode = "cover" }: { uri?: string | null; style: any; resizeMode?: "cover" | "contain" | "stretch" | "center" }) {
   if (!uri) return null;
   if (isSvgAsset(uri)) {
-    return <View style={style} />;
+    return (
+      <View style={[style, { overflow: "hidden" }]}>
+        <SvgUri
+          uri={uri}
+          width="100%"
+          height="100%"
+          preserveAspectRatio={resizeMode === "contain" ? "xMidYMid meet" : "xMidYMid slice"}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+    );
   }
   return <Image source={{ uri }} style={style} resizeMode={resizeMode} />;
 }

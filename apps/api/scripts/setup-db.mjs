@@ -564,18 +564,7 @@ const movieImagePrompts = {
 
 function buildMovieImageUrl(slug, title, shortDesc, type, index) {
   const isPoster = type === "poster";
-  const promptCore = movieImagePrompts[slug] ?? `${title}, ${shortDesc}, cinematic Vietnamese movie key art`;
-  const prompt = [
-    isPoster ? "Vertical theatrical movie poster" : "Wide cinematic movie banner",
-    `for Vietnamese film "${title}"`,
-    promptCore,
-    "cinematic lighting, premium film still, high detail, no text, no logo, no watermark",
-  ].join(", ");
-  const width = isPoster ? 768 : 1280;
-  const height = isPoster ? 1152 : 720;
-  const seed = 24000 + index * 10 + (isPoster ? 1 : 2);
-
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&model=flux&seed=${seed}&nologo=true&enhance=true`;
+  return `/demo-media/${isPoster ? "posters" : "banners"}/${slug}.svg`;
 }
 
 const movies = movieSeedSource.map(([title, author, genre, duration, rating, shortDesc], index) => {
