@@ -10,6 +10,7 @@
     "start": "npm run start --workspace api",
     "build": "npm run build --workspace api",
     "mobile": "npm run start --workspace mobile",
+    "user": "npm run web --workspace mobile",
     "mobile:android": "npm run android --workspace mobile",
     "admin": "npm run dev --workspace admin",
     "api": "npm run dev --workspace api",

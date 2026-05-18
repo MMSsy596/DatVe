@@ -50,7 +50,8 @@ Mặc định:
 
 - API: `http://localhost:3001`
 - Admin: `http://localhost:3000`
-- Mobile: Expo dev server theo terminal, Android emulator gọi API qua `http://10.0.2.2:3001/api/v1`.
+- User web: Expo mở theo terminal, thường là `http://localhost:8081`.
+- Android emulator gọi API qua `http://10.0.2.2:3001/api/v1`.
 
 Nếu chỉ muốn chạy API và admin web:
 

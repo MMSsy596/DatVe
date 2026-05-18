@@ -9,7 +9,7 @@ const services = [
   ...(
     webOnly
       ? []
-      : [{ name: "Mobile", args: ["run", "start", "--workspace", "mobile"] }]
+      : [{ name: "User", args: ["run", "web", "--workspace", "mobile"] }]
   ),
 ];
 
@@ -47,7 +47,7 @@ function stopAll(exitCode = 0) {
 console.log(
   webOnly
     ? "Đang chạy local: API và Admin."
-    : "Đang chạy local: API, Admin và Mobile."
+    : "Đang chạy local: API, Admin và User Web."
 );
 
 for (const service of services) {
