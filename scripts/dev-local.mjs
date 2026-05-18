@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const webOnly = process.argv.includes("--web");
+const portsToFree = webOnly ? [3000, 3001] : [3000, 3001, 8081];
 
 const services = [
   { name: "API", args: ["run", "dev", "--workspace", "api"] },
@@ -15,6 +15,34 @@ const services = [
 
 const children = new Set();
 let shuttingDown = false;
+
+function npmSpawnArgs(args) {
+  if (process.platform !== "win32") {
+    return { command: "npm", args };
+  }
+
+  return {
+    command: process.env.ComSpec ?? "cmd.exe",
+    args: ["/d", "/s", "/c", ["npm", ...args].join(" ")],
+  };
+}
+
+function freeLocalPorts(ports) {
+  if (process.platform !== "win32") return;
+
+  const portList = ports.join(",");
+  spawnSync(
+    "powershell.exe",
+    [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-Command",
+      `$ports=@(${portList}); Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort } | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }`,
+    ],
+    { stdio: "ignore" }
+  );
+}
 
 function prefixOutput(serviceName, stream) {
   let pending = "";
@@ -49,12 +77,14 @@ console.log(
     ? "Đang chạy local: API và Admin."
     : "Đang chạy local: API, Admin và User Web."
 );
+console.log(`Đang dọn port local: ${portsToFree.join(", ")}.`);
+freeLocalPorts(portsToFree);
 
 for (const service of services) {
-  const child = spawn(npmCommand, service.args, {
+  const npmProcess = npmSpawnArgs(service.args);
+  const child = spawn(npmProcess.command, npmProcess.args, {
     cwd: process.cwd(),
     env: process.env,
-    shell: process.platform === "win32",
     windowsHide: false,
   });
 
