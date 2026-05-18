@@ -32,7 +32,7 @@ Tạo môi trường API:
 Copy-Item apps\api\.env.example apps\api\.env.local
 ```
 
-Sau đó sửa `DATABASE_URL`, `PUBLIC_API_ORIGIN` và các khóa thanh toán nếu cần.
+Sau đó sửa `DATABASE_URL` để trỏ MySQL online và giữ `PUBLIC_API_ORIGIN=http://localhost:3001` khi chạy local.
 
 Khởi tạo dữ liệu mẫu:
 
@@ -43,16 +43,22 @@ npm run db:setup --workspace api
 ## Chạy dự án
 
 ```powershell
-npm run api
-npm run admin
-npm run mobile
+npm run dev
 ```
 
 Mặc định:
 
 - API: `http://localhost:3001`
 - Admin: `http://localhost:3000`
-- Mobile: Expo dev server theo terminal.
+- Mobile: Expo dev server theo terminal, Android emulator gọi API qua `http://10.0.2.2:3001/api/v1`.
+
+Nếu chỉ muốn chạy API và admin web:
+
+```powershell
+npm run dev:web
+```
+
+Nếu chạy trên điện thoại thật, đổi `EXPO_PUBLIC_API_BASE_URL` trong `apps/mobile/.env` sang IP LAN của máy, ví dụ `http://192.168.1.10:3001/api/v1`.
 
 ## Kiểm tra chất lượng
 

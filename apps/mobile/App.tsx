@@ -57,9 +57,11 @@ const isLocalWebHost =
   Platform.OS === "web" &&
   typeof globalThis.location?.hostname === "string" &&
   ["localhost", "127.0.0.1"].includes(globalThis.location.hostname);
+const localNativeApiBaseUrl =
+  Platform.OS === "android" ? "http://10.0.2.2:3001/api/v1" : "http://localhost:3001/api/v1";
 const DEFAULT_API_BASE_URL = isLocalWebHost
   ? "http://localhost:3001/api/v1"
-  : configuredApiBaseUrl || "https://datve.up.railway.app/api/v1";
+  : configuredApiBaseUrl || localNativeApiBaseUrl;
 const SESSION_STORAGE_KEY = "phimbook.mobile.session";
 const ASSISTANT_SETTINGS_STORAGE_KEY = "phimbook.mobile.assistant.settings";
 const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
