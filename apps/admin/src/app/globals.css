@@ -1,12 +1,448 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
+  --bg-primary: #07080d;
+  --bg-secondary: #10121b;
+  --bg-sidebar: #08090f;
+  --bg-card: rgba(18, 20, 30, 0.86);
+  --bg-card-strong: rgba(24, 27, 39, 0.96);
+  --accent: #e63946;
+  --accent-hover: #ff4d5a;
+  --accent-gold: #fbbf24;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-purple: #8b5cf6;
+  
+  /* Focus Accents */
+  --neon-cyan: #e63946;
+  --neon-blue: #3b82f6;
+  --neon-purple: #8b5cf6;
+  --neon-green: #10b981;
+  --neon-lime: #10b981;
+  --neon-magenta: #e63946;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #8491a8;
+  
+  --border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.13);
+  --border-red: rgba(230, 57, 70, 0.22);
+  --shadow-soft: 0 18px 60px rgba(0, 0, 0, 0.32);
+  
+  --sidebar-width: 320px;
+  --header-height: 88px;
+}
+
+body, input, select, textarea, button, table, td, th, span, div, p, h1, h2, h3, h4, h5, h6 {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: "Segoe UI", sans-serif;
+  background: radial-gradient(circle at 18% 8%, rgba(230, 57, 70, 0.11) 0%, transparent 34%),
+              radial-gradient(circle at 86% 18%, rgba(59, 130, 246, 0.08) 0%, transparent 30%),
+              linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 28%),
+              var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+input,
+select,
+textarea {
+  text-indent: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slide-in {
+  animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(255,255,255,0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(230, 57, 70, 0.35), 0 0 50px rgba(230, 57, 70, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(230, 57, 70, 0.65), 0 0 70px rgba(230, 57, 70, 0.2);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 3.5s ease-in-out infinite;
+}
+
+/* Custom Floating Label Inputs (CinePlus style) - Cỡ chữ lớn hơn và Thụt lề tinh tế */
+.custom-input-field {
+  position: relative;
+  border-bottom: 2.5px solid rgba(255, 255, 255, 0.15);
+  margin: 32px 0 20px 0;
+  transition: all 0.25s ease;
+}
+
+.custom-input-field:focus-within {
+  border-bottom-color: var(--accent);
+}
+
+.custom-input-field input {
+  width: 100%;
+  height: 56px; /* Tăng từ 48px lên 56px */
+  color: #fff;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 20px; /* Tăng lên 20px */
+  padding: 8px 16px; /* Thụt vào trái phải 16px để tránh sát lề */
+}
+
+.custom-input-field label {
+  position: absolute;
+  color: var(--text-secondary);
+  top: 50%;
+  left: 16px; /* Thụt vào lề trái 16px khớp với input */
+  transform: translateY(-50%);
+  font-size: 20px; /* Tăng lên 20px */
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.custom-input-field input:focus ~ label,
+.custom-input-field input:not(:placeholder-shown) ~ label {
+  font-size: 15px; /* Tăng lên 15px */
+  top: -8px;
+  left: 12px; /* Dịch nhẹ khi float */
+  color: var(--accent);
+  transform: translateY(0);
+}
+
+/* Custom forget & remember style - Cỡ chữ lớn hơn */
+.custom-forget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 22px 0 28px 0;
+  font-size: 18px; /* Tăng lên 18px */
+  color: var(--text-secondary);
+}
+
+.custom-forget label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.custom-forget label input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 20px; /* Tăng từ 18px lên 20px */
+  height: 20px;
+  cursor: pointer;
+}
+
+.custom-forget label p {
+  margin-left: 10px;
+  transition: color 0.2s;
+}
+
+.custom-forget label:hover p {
+  color: var(--text-primary);
+}
+
+.custom-forget a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.custom-forget a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.custom-register {
+  text-align: center;
+  margin-top: 26px;
+  font-size: 18px; /* Tăng lên 18px */
+  color: var(--text-secondary);
+}
+
+.custom-register a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  margin-left: 6px;
+  transition: opacity 0.2s;
+}
+
+.custom-register a:hover {
+  opacity: 0.85;
+  text-decoration: underline;
+}
+
+/* CinePlus Premium Card CSS overrides - Luxury Glassmorphism */
+.cyber-card {
+  background: linear-gradient(180deg, rgba(24, 27, 39, 0.92), rgba(13, 15, 23, 0.86)) !important;
+  border: 1px solid var(--border) !important;
+  backdrop-filter: blur(22px) !important;
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px !important;
+  box-shadow: var(--shadow-soft) !important;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.cyber-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.14), transparent);
+}
+
+.cyber-card:hover {
+  border-color: rgba(230, 57, 70, 0.28) !important;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(230, 57, 70, 0.08) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Specific glows */
+.cyber-glow-cyan:hover,
+.cyber-glow-purple:hover,
+.cyber-glow-red:hover,
+.cyber-glow-green:hover {
+  border-color: rgba(230, 57, 70, 0.25);
+  box-shadow: 0 0 20px rgba(230, 57, 70, 0.05);
+}
+
+/* Grid & Spacing Utilities - Khoảng cách rộng rãi hơn */
+.cyber-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Live Dot pulse */
+@keyframes cyberPulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.cyber-pulse-green {
+  animation: cyberPulse 2s infinite ease-in-out;
+}
+
+/* Terminal Log Lines style - Đóng gói các dòng log thành từng thẻ nổi cách rời tinh tế */
+.terminal-container {
+  background: rgba(5, 6, 10, 0.72);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  padding: 18px !important;
+}
+
+.terminal-line {
+  display: flex;
+  gap: 1.2rem;
+  padding: 0.75rem 1.2rem;
+  margin-bottom: 10px; /* cách nhau 1 khoảng rõ rệt để phân biệt */
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  transition: all 0.2s ease;
+}
+
+.terminal-line:hover {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(230, 57, 70, 0.08);
+}
+
+.terminal-line:last-child {
+  margin-bottom: 0;
+}
+
+.terminal-timestamp {
+  color: var(--text-muted);
+}
+
+.terminal-tag {
+  font-weight: bold;
+}
+
+/* Dynamic Island expanded box shadow */
+.island-expanded {
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.75), 0 0 25px rgba(230, 57, 70, 0.08);
+  border-color: rgba(230, 57, 70, 0.25) !important;
+}
+
+/* Custom styled inputs inside cyber-dashboard */
+.cyber-input {
+  background: rgba(255, 255, 255, 0.045) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  color: var(--text-primary) !important;
+  transition: all 0.2s ease !important;
+  min-height: 54px !important;
+  font-size: 17px !important;
+  line-height: 1.55 !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+.cyber-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 10px rgba(230, 57, 70, 0.15) !important;
+}
+
+/* Tăng khoảng cách phân tách rõ rệt giữa các khung nội dung (Grid gaps & Stack spacing) */
+.admin-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent 70%);
+}
+
+.metric-spark {
+  background:
+    linear-gradient(90deg, rgba(230, 57, 70, 0.25), rgba(230, 57, 70, 0.02)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 16px);
+}
+
+.fade-in {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.fade-in > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 3rem !important;
+}
+
+.fade-in > .grid {
+  gap: 2.6rem !important;
+}
+
+.cyber-card .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1.6rem !important;
+}
+
+.cyber-card .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1.85rem !important;
+}
+
+.cyber-card .grid {
+  gap: 1.8rem !important;
+}
+
+.cyber-card p,
+.cyber-card label,
+.cyber-card span {
+  line-height: 1.55;
+}
+
+.cyber-card input[type="file"] {
+  padding-top: 13px !important;
+}
+
+table p {
+  line-height: 1.55 !important;
+}
+
+table .text-xs {
+  font-size: 0.92rem !important;
+}
+
+table .text-sm {
+  font-size: 1rem !important;
 }
