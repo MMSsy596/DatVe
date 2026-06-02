@@ -7,7 +7,7 @@ export async function GET() {
     await pool.query("SELECT 1");
 
     return NextResponse.json({
-      service: "phimbook-api",
+      service: "cineplus-api",
       status: "ok",
       database: "ok",
       timestamp: new Date().toISOString(),
@@ -15,7 +15,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       {
-        service: "phimbook-api",
+        service: "cineplus-api",
         status: "degraded",
         database: "error",
         message: error instanceof Error ? error.message : "Không kiểm tra được database.",

@@ -62,10 +62,10 @@ const localNativeApiBaseUrl =
 const DEFAULT_API_BASE_URL = isLocalWebHost
   ? "http://localhost:3001/api/v1"
   : configuredApiBaseUrl || localNativeApiBaseUrl;
-const SESSION_STORAGE_KEY = "phimbook.mobile.session";
-const ASSISTANT_SETTINGS_STORAGE_KEY = "phimbook.mobile.assistant.settings";
+const SESSION_STORAGE_KEY = "cineplus.mobile.session";
+const ASSISTANT_SETTINGS_STORAGE_KEY = "cineplus.mobile.assistant.settings";
 const DEFAULT_API_ORIGIN = DEFAULT_API_BASE_URL.replace(/\/api\/v1\/?$/, "");
-const APP_DISPLAY_NAME = "PhimBook";
+const APP_DISPLAY_NAME = "CinePlus";
 const TOAST_HIDE_BUFFER_MS = 260;
 const SWIPE_BACK_EDGE_WIDTH = Platform.OS === "android" ? 30 : 24;
 const SWIPE_BACK_TRIGGER_X = Platform.OS === "android" ? 94 : 78;
@@ -198,7 +198,7 @@ export default function App() {
   const [authToken, setAuthToken] = React.useState<string | null>(null);
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
   const [authName, setAuthName] = React.useState("Nguyễn Văn A");
-  const [authEmail, setAuthEmail] = React.useState("user@phimbook.local");
+  const [authEmail, setAuthEmail] = React.useState("user@cineplus.local");
   const [authPhone, setAuthPhone] = React.useState("0900000002");
   const [authPassword, setAuthPassword] = React.useState("User@123");
   const [authLoading, setAuthLoading] = React.useState(false);
@@ -233,7 +233,7 @@ export default function App() {
   const [selectedPaymentProvider, setSelectedPaymentProvider] = React.useState<PaymentProvider>("MOMO");
   const [selectedPaymentGatewayMode, setSelectedPaymentGatewayMode] = React.useState<"SANDBOX" | "REAL">("SANDBOX");
   const [customerName, setCustomerName] = React.useState("Nguyễn Văn A");
-  const [customerEmail, setCustomerEmail] = React.useState("user@phimbook.local");
+  const [customerEmail, setCustomerEmail] = React.useState("user@cineplus.local");
   const [customerPhone, setCustomerPhone] = React.useState("0900000002");
   const [bottomBarWidth, setBottomBarWidth] = React.useState(0);
   const [authGateMessage, setAuthGateMessage] = React.useState<string | null>(null);
@@ -798,7 +798,7 @@ export default function App() {
   React.useEffect(() => {
     const handlePaymentUrl = (url: string | null | undefined) => {
       if (!url) return;
-      const normalized = url.replace("phimbook://", "https://phimbook.local/").replace("datve://", "https://phimbook.local/");
+      const normalized = url.replace("cineplus://", "https://cineplus.local/").replace("datve://", "https://cineplus.local/");
       const parsed = new URL(normalized);
       if (parsed.pathname.replace(/^\//, "") !== "payment-result") return;
       const status = String(parsed.searchParams.get("status") ?? "");
@@ -1397,7 +1397,7 @@ export default function App() {
         body: JSON.stringify({
           bookingId: json.id,
           provider: selectedPaymentProvider,
-          returnUrl: "phimbook://payment-result",
+          returnUrl: "cineplus://payment-result",
           gatewayMode: selectedPaymentGatewayMode,
         }),
       });

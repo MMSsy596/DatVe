@@ -93,9 +93,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'phimbook.nanbao.mm'
+    namespace 'cineplus.nanbao.mm'
     defaultConfig {
-        applicationId 'phimbook.nanbao.mm'
+        applicationId 'cineplus.nanbao.mm'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 36

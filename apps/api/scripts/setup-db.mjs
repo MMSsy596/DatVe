@@ -426,18 +426,18 @@ for (const table of [
 await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
 const users = [
-  { id: 1, fullName: "Admin PhimBook", email: "admin@phimbook.local", phone: "0900000001", role: "ADMIN", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Admin%20PhimBook", password: "Admin@123" },
-  { id: 2, fullName: "Nguyễn Văn A", email: "user@phimbook.local", phone: "0900000002", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Nguyen%20Van%20A", password: "User@123" },
-  { id: 3, fullName: "Trần Minh Anh", email: "minh.anh@phimbook.local", phone: "0900000003", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Tran%20Minh%20Anh", password: "User@123" },
-  { id: 4, fullName: "Lê Hoàng Nam", email: "hoang.nam@phimbook.local", phone: "0900000004", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Le%20Hoang%20Nam", password: "User@123" },
-  { id: 5, fullName: "Phạm Gia Huy", email: "gia.huy@phimbook.local", phone: "0900000005", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Gia%20Huy", password: "User@123" },
-  { id: 6, fullName: "Võ Thu Trang", email: "thu.trang@phimbook.local", phone: "0900000006", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Vo%20Thu%20Trang", password: "User@123" },
-  { id: 7, fullName: "Bùi Khánh Linh", email: "khanh.linh@phimbook.local", phone: "0900000007", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Bui%20Khanh%20Linh", password: "User@123" },
-  { id: 8, fullName: "Đỗ Quốc Bảo", email: "quoc.bao@phimbook.local", phone: "0900000008", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Do%20Quoc%20Bao", password: "User@123" },
-  { id: 9, fullName: "Đặng Thanh Trúc", email: "thanh.truc@phimbook.local", phone: "0900000009", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Dang%20Thanh%20Truc", password: "User@123" },
-  { id: 10, fullName: "Phạm Đức Khoa", email: "duc.khoa@phimbook.local", phone: "0900000010", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Duc%20Khoa", password: "User@123" },
-  { id: 11, fullName: "Phan Nhật Vy", email: "nhat.vy@phimbook.local", phone: "0900000011", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Phan%20Nhat%20Vy", password: "User@123" },
-  { id: 12, fullName: "Cinema Ops 01", email: "ops01@phimbook.local", phone: "0900000012", role: "STAFF", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Cinema%20Ops%2001", password: "Staff@123" },
+  { id: 1, fullName: "Admin CinePlus", email: "admin@cineplus.local", phone: "0900000001", role: "ADMIN", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Admin%20CinePlus", password: "Admin@123" },
+  { id: 2, fullName: "Nguyễn Văn A", email: "user@cineplus.local", phone: "0900000002", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Nguyen%20Van%20A", password: "User@123" },
+  { id: 3, fullName: "Trần Minh Anh", email: "minh.anh@cineplus.local", phone: "0900000003", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Tran%20Minh%20Anh", password: "User@123" },
+  { id: 4, fullName: "Lê Hoàng Nam", email: "hoang.nam@cineplus.local", phone: "0900000004", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Le%20Hoang%20Nam", password: "User@123" },
+  { id: 5, fullName: "Phạm Gia Huy", email: "gia.huy@cineplus.local", phone: "0900000005", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Gia%20Huy", password: "User@123" },
+  { id: 6, fullName: "Võ Thu Trang", email: "thu.trang@cineplus.local", phone: "0900000006", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Vo%20Thu%20Trang", password: "User@123" },
+  { id: 7, fullName: "Bùi Khánh Linh", email: "khanh.linh@cineplus.local", phone: "0900000007", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Bui%20Khanh%20Linh", password: "User@123" },
+  { id: 8, fullName: "Đỗ Quốc Bảo", email: "quoc.bao@cineplus.local", phone: "0900000008", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Do%20Quoc%20Bao", password: "User@123" },
+  { id: 9, fullName: "Đặng Thanh Trúc", email: "thanh.truc@cineplus.local", phone: "0900000009", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Dang%20Thanh%20Truc", password: "User@123" },
+  { id: 10, fullName: "Phạm Đức Khoa", email: "duc.khoa@cineplus.local", phone: "0900000010", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Duc%20Khoa", password: "User@123" },
+  { id: 11, fullName: "Phan Nhật Vy", email: "nhat.vy@cineplus.local", phone: "0900000011", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Phan%20Nhat%20Vy", password: "User@123" },
+  { id: 12, fullName: "Cinema Ops 01", email: "ops01@cineplus.local", phone: "0900000012", role: "STAFF", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Cinema%20Ops%2001", password: "Staff@123" },
 ];
 
 const vouchers = [
@@ -985,7 +985,7 @@ for (let index = 0; index < activeShowtimes.length; index += 5) {
     amount: Math.max(rawOrder - effectiveDiscount, 0),
     status: status === "PAID" ? "SUCCESS" : status === "PENDING" ? "PENDING" : status === "HELD" ? "INITIATED" : "FAILED",
     checkoutUrl: `http://localhost:3001/pay/TXN${String(bookingCodeIndex).padStart(6, "0")}`,
-    returnUrl: "phimbook://payment-result",
+    returnUrl: "cineplus://payment-result",
     reviewStatus: status === "PENDING" ? "PENDING" : "AUTO",
     reviewNote: status === "FAILED" ? "Gateway mock trả về thất bại." : null,
     reviewedBy: status === "PENDING" && index % 2 === 0 ? 1 : null,

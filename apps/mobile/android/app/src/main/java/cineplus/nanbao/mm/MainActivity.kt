@@ -1,4 +1,4 @@
-package phimbook.nanbao.mm
+package cineplus.nanbao.mm
 
 import android.os.Build
 import android.os.Bundle

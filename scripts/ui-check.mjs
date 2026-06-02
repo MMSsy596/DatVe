@@ -216,8 +216,8 @@ async function main() {
 
     if (route.request().method() === "OPTIONS") return fulfill({});
     if (pathname === "/api/health") return fulfill({ status: "ok", database: "mock" });
-    if (pathname.endsWith("/auth/login")) return fulfill({ token: "ui-check-token", user: { fullName: "Admin PhimBook", role: "ADMIN" } });
-    if (pathname.endsWith("/auth/me")) return fulfill({ user: { id: 1, fullName: "Admin PhimBook", role: "ADMIN", email: "admin@phimbook.local" } });
+    if (pathname.endsWith("/auth/login")) return fulfill({ token: "ui-check-token", user: { fullName: "Admin CinePlus", role: "ADMIN" } });
+    if (pathname.endsWith("/auth/me")) return fulfill({ user: { id: 1, fullName: "Admin CinePlus", role: "ADMIN", email: "admin@cineplus.local" } });
     if (pathname.endsWith("/dashboard")) {
       return fulfill({ movies: 2, cinemas: 1, showtimes: 1, foods: 1, vouchers: 1, bookings: 8, revenue: 1250000, todayRevenue: 320000, weekRevenue: 980000, pendingReviews: 1, topMovies: [{ title: "Lật Mặt 8", revenue: 650000 }] });
     }
@@ -269,7 +269,7 @@ async function main() {
   await page.setViewportSize({ width: 1440, height: 900 });
   await safeGoto(page, "http://localhost:3000", "admin-dashboard-desktop");
   const emailInput = page.getByPlaceholder("Email");
-  await emailInput.fill("admin@phimbook.local");
+  await emailInput.fill("admin@cineplus.local");
   await page.getByPlaceholder("Mat khau").fill("Admin@123");
   await page.getByRole("button", { name: "Dang nhap" }).click();
   await page.waitForLoadState("networkidle");

@@ -54,7 +54,7 @@ export function createNonce(prefix: string) {
 export function safeRedirectUrl(candidate: string, fallback: string) {
   try {
     const url = new URL(candidate);
-    if (url.protocol === "phimbook:" || url.protocol === "datve:" || url.protocol === "https:" || url.protocol === "http:") {
+    if (url.protocol === "cineplus:" || url.protocol === "datve:" || url.protocol === "https:" || url.protocol === "http:") {
       return url.toString();
     }
     return fallback;

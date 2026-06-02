@@ -91,6 +91,6 @@ Write-Host ""
 Write-Host "  Admin: http://localhost:3000" -ForegroundColor Magenta
 Write-Host "  API:   http://localhost:3001/api/v1/health" -ForegroundColor Magenta
 Write-Host ""
-Write-Host "  Tài khoản admin: admin@phimbook.local / Admin@123" -ForegroundColor Yellow
+Write-Host "  Tài khoản admin: admin@cineplus.local / Admin@123" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Để dừng MySQL: .\dev.ps1 stop" -ForegroundColor DarkGray

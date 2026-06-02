@@ -120,7 +120,7 @@ export default function AdminPage() {
   const [token, setToken] = useState<string | null>(null);
   const [me, setMe] = useState<{ fullName: string; role: string } | null>(null);
   
-  const [email, setEmail] = useState("admin@phimbook.local");
+  const [email, setEmail] = useState("admin@cineplus.local");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
 

@@ -1,8 +1,8 @@
 ﻿{
   "expo": {
-    "name": "PhimBook",
-    "slug": "phimbook",
-    "scheme": "phimbook",
+    "name": "CinePlus",
+    "slug": "cineplus",
+    "scheme": "cineplus",
     "entryPoint": "./index.ts",
     "version": "3.6",
     "orientation": "portrait",
@@ -18,7 +18,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "phimbook.nanbao.mm",
+      "package": "cineplus.nanbao.mm",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

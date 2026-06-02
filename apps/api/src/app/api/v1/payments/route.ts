@@ -14,8 +14,8 @@ export async function POST(request: Request) {
       provider: v.oneOf(body.provider, ["MOMO", "ZALOPAY", "VNPAY"], "Cong thanh toan"),
       origin,
       returnUrl: safeRedirectUrl(
-        v.optionalString(body.returnUrl, "Return URL", { max: 512 }) ?? "phimbook://payment-result",
-        "phimbook://payment-result"
+        v.optionalString(body.returnUrl, "Return URL", { max: 512 }) ?? "cineplus://payment-result",
+        "cineplus://payment-result"
       ),
       ipAddr:
         headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ??

@@ -5,6 +5,6 @@
         android:insetTop="18dp"
         android:insetRight="18dp"
         android:insetBottom="18dp">
-        <bitmap android:src="@drawable/phimbook_icon" />
+        <bitmap android:src="@drawable/cineplus_icon" />
     </item>
 </layer-list>
