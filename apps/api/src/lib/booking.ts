@@ -355,6 +355,91 @@ export async function getBookingDetail(id: number) {
   };
 }
 
+export async function extendHold(bookingId: number) {
+  const pool = getPool();
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [[booking]] = await connection.query<RowDataPacket[]>(
+      `SELECT id, status, expires_at, extend_count
+       FROM bookings
+       WHERE id = ?
+       LIMIT 1
+       FOR UPDATE`,
+      [bookingId]
+    );
+
+    if (!booking) {
+      throw new Error("Không tìm thấy đơn đặt vé.");
+    }
+
+    if (booking.status !== "HELD") {
+      throw new Error("Chỉ có thể gia hạn đơn đang giữ ghế.");
+    }
+
+    const expiresAt = new Date(booking.expires_at).getTime();
+    if (expiresAt < Date.now()) {
+      throw new Error("Đơn giữ ghế đã hết hạn, không thể gia hạn.");
+    }
+
+    const MAX_EXTEND = 2;
+    const extendCount = Number(booking.extend_count ?? 0);
+    if (extendCount >= MAX_EXTEND) {
+      throw new Error(`Đã gia hạn tối đa ${MAX_EXTEND} lần, không thể gia hạn thêm.`);
+    }
+
+    // Kéo dài thêm 5 phút từ thời điểm expires_at hiện tại
+    const newExpiresAt = new Date(expiresAt + 5 * 60 * 1000);
+    const newExtendCount = extendCount + 1;
+
+    await connection.execute(
+      `UPDATE bookings
+       SET expires_at = ?, extend_count = ?
+       WHERE id = ?`,
+      [newExpiresAt, newExtendCount, bookingId]
+    );
+
+    await connection.commit();
+    return {
+      id: bookingId,
+      expiresAt: newExpiresAt.toISOString(),
+      extendCount: newExtendCount,
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function cancelHold(bookingId: number) {
+  const pool = getPool();
+  const [[booking]] = await pool.query<RowDataPacket[]>(
+    `SELECT id, status FROM bookings WHERE id = ? LIMIT 1`,
+    [bookingId]
+  );
+
+  if (!booking) {
+    throw new Error("Không tìm thấy đơn đặt vé.");
+  }
+
+  if (booking.status !== "HELD") {
+    throw new Error("Chỉ có thể hủy đơn đang giữ ghế.");
+  }
+
+  // Gán expires_at = NOW() để lập tức giải phóng ghế và cập nhật status = CANCELLED
+  await pool.execute(
+    `UPDATE bookings
+     SET status = 'CANCELLED', expires_at = NOW()
+     WHERE id = ? AND status = 'HELD'`,
+    [bookingId]
+  );
+
+  return { id: bookingId, status: "CANCELLED" };
+}
+
 export async function listBookings(userId?: number | null) {
   await cleanupExpiredHolds();
   const pool = getPool();

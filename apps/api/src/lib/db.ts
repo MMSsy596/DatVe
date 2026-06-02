@@ -128,6 +128,12 @@ export async function ensureRuntimeSchema() {
         );
       }
 
+      if (!(await hasColumn(pool, "bookings", "extend_count"))) {
+        await pool.execute(
+          "ALTER TABLE bookings ADD COLUMN extend_count INT NOT NULL DEFAULT 0 AFTER expires_at"
+        );
+      }
+
       if (!(await hasTable(pool, "user_push_tokens"))) {
         await pool.execute(`
           CREATE TABLE user_push_tokens (

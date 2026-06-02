@@ -135,6 +135,16 @@ export const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
   },
+  aiConfirmTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  aiConfirmBody: {
+    color: palette.muted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   aiTrustRow: {
     flexDirection: "row",
     alignItems: "center",

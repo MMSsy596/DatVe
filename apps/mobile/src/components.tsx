@@ -3017,9 +3017,45 @@ export function SeatScreen({ movie, showtime, onBack, onContinue, selectedSeats,
   );
 }
 
-export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combosData: ComboItem[]; selectedSeats: SeatSelection[]; selectedComboIds: number[]; selectedPaymentProvider: PaymentProvider; selectedPaymentGatewayMode: "SANDBOX" | "REAL"; onSelectPaymentProvider: (provider: PaymentProvider) => void; onSelectPaymentGatewayMode: (mode: "SANDBOX" | "REAL") => void; onToggleCombo: (id: number) => void; customerName: string; setCustomerName: Setter<string>; customerEmail: string; setCustomerEmail: Setter<string>; customerPhone: string; setCustomerPhone: Setter<string>; onConfirm: () => void; confirming: boolean; vouchers: Voucher[]; voucherCode: string; setVoucherCode: Setter<string>; appliedVoucherCode: string | null; estimatedDiscount: number; }) {
-  const { movie, onBack, combosData, selectedSeats, selectedComboIds, selectedPaymentProvider, selectedPaymentGatewayMode, onSelectPaymentProvider, onSelectPaymentGatewayMode, onToggleCombo, customerName, setCustomerName, customerEmail, setCustomerEmail, customerPhone, setCustomerPhone, onConfirm, confirming, vouchers, voucherCode, setVoucherCode, appliedVoucherCode, estimatedDiscount } = props;
+export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combosData: ComboItem[]; selectedSeats: SeatSelection[]; selectedComboIds: number[]; selectedPaymentProvider: PaymentProvider; selectedPaymentGatewayMode: "SANDBOX" | "REAL"; onSelectPaymentProvider: (provider: PaymentProvider) => void; onSelectPaymentGatewayMode: (mode: "SANDBOX" | "REAL") => void; onToggleCombo: (id: number) => void; customerName: string; setCustomerName: Setter<string>; customerEmail: string; setCustomerEmail: Setter<string>; customerPhone: string; setCustomerPhone: Setter<string>; onConfirm: () => void; confirming: boolean; vouchers: Voucher[]; voucherCode: string; setVoucherCode: Setter<string>; appliedVoucherCode: string | null; estimatedDiscount: number; holdExpiresAt?: string | null; onHoldExpired?: () => void; extendCount?: number; onExtendHold?: () => Promise<boolean>; onCancelHold?: () => void; extending?: boolean; cancelling?: boolean; }) {
+  const { movie, onBack, combosData, selectedSeats, selectedComboIds, selectedPaymentProvider, selectedPaymentGatewayMode, onSelectPaymentProvider, onSelectPaymentGatewayMode, onToggleCombo, customerName, setCustomerName, customerEmail, setCustomerEmail, customerPhone, setCustomerPhone, onConfirm, confirming, vouchers, voucherCode, setVoucherCode, appliedVoucherCode, estimatedDiscount, holdExpiresAt, onHoldExpired, extendCount = 0, onExtendHold, onCancelHold, extending = false, cancelling = false } = props;
   const scrollY = React.useRef(new Animated.Value(0)).current;
+  const [timeRemaining, setTimeRemaining] = React.useState<number>(0);
+  
+  React.useEffect(() => {
+    if (!holdExpiresAt) return;
+    
+    const updateTimer = () => {
+      const now = Date.now();
+      const expires = new Date(holdExpiresAt).getTime();
+      const remaining = Math.max(0, Math.floor((expires - now) / 1000));
+      setTimeRemaining(remaining);
+      return remaining;
+    };
+
+    // Chạy ngay lập tức
+    updateTimer();
+
+    const interval = setInterval(() => {
+      const remaining = updateTimer();
+      if (remaining === 0 && onHoldExpired) {
+        clearInterval(interval);
+        onHoldExpired();
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [holdExpiresAt, onHoldExpired]);
+  
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const MAX_EXTEND = 2;
+  const canExtend = (extendCount < MAX_EXTEND) && !!onExtendHold && timeRemaining > 0;
+  
   const selectedCombos = combosData.filter((combo) => selectedComboIds.includes(combo.id));
   const subtotal = selectedSeats.reduce((sum, item) => sum + item.price, 0) + selectedCombos.reduce((sum, item) => sum + item.unitPrice, 0);
   const total = Math.max(subtotal - estimatedDiscount, 0);
@@ -3062,6 +3098,111 @@ export function CheckoutScreen(props: { movie: Movie; onBack: () => void; combos
           <Text style={styles.detailTitle}>Xác nhận đơn đặt vé</Text>
           <Text style={styles.detailMeta}>{movie.title} • {seatLabel}</Text>
         </View>
+
+
+        {/* Countdown Timer + Hold Actions */}
+        {holdExpiresAt && (
+          <View style={{ gap: 10 }}>
+            {/* Timer bar */}
+            <View style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 16,
+              backgroundColor: timeRemaining === 0
+                ? "rgba(100,100,100,0.12)"
+                : timeRemaining < 60
+                  ? "rgba(211,47,47,0.15)"
+                  : "rgba(250,189,0,0.15)",
+              borderWidth: 1,
+              borderColor: timeRemaining === 0
+                ? "rgba(150,150,150,0.2)"
+                : timeRemaining < 60
+                  ? "rgba(211,47,47,0.3)"
+                  : "rgba(250,189,0,0.3)",
+            }}>
+              <MaterialCommunityIcons
+                name={timeRemaining === 0 ? "clock-remove-outline" : "clock-alert-outline"}
+                size={20}
+                color={timeRemaining === 0 ? palette.muted : timeRemaining < 60 ? "#ffb3ac" : "#fabd00"}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  color: timeRemaining === 0 ? palette.muted : timeRemaining < 60 ? "#ffb3ac" : "#fabd00",
+                  fontSize: 13,
+                  fontWeight: "700",
+                }}>
+                  {timeRemaining === 0 ? "Đã hết thời gian giữ ghế" : `Giữ ghế còn: ${formatTime(timeRemaining)}`}
+                </Text>
+                <Text style={{ color: palette.muted, fontSize: 11, marginTop: 2 }}>
+                  {timeRemaining === 0
+                    ? "Vui lòng quay lại và chọn ghế mới"
+                    : timeRemaining < 60
+                      ? "Vui lòng thanh toán ngay!"
+                      : `Hoàn tất thanh toán trước khi hết thời gian${extendCount > 0 ? ` • Đã gia hạn ${extendCount}/${MAX_EXTEND}` : ""}`}
+                </Text>
+              </View>
+            </View>
+
+            {/* Action buttons */}
+            {(canExtend || !!onCancelHold) && (
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                {canExtend && (
+                  <Pressable
+                    onPress={extending ? undefined : onExtendHold}
+                    disabled={extending}
+                    style={{
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      paddingVertical: 11,
+                      borderRadius: 14,
+                      backgroundColor: extending ? "rgba(250,189,0,0.06)" : "rgba(250,189,0,0.12)",
+                      borderWidth: 1,
+                      borderColor: "rgba(250,189,0,0.3)",
+                    }}
+                  >
+                    {extending
+                      ? <ActivityIndicator size="small" color="#fabd00" />
+                      : <MaterialCommunityIcons name="clock-plus-outline" size={16} color="#fabd00" />}
+                    <Text style={{ color: "#fabd00", fontSize: 13, fontWeight: "800" }}>
+                      {extending ? "Đang gia hạn..." : `Gia hạn (${extendCount}/${MAX_EXTEND})`}
+                    </Text>
+                  </Pressable>
+                )}
+                {!!onCancelHold && (
+                  <Pressable
+                    onPress={cancelling ? undefined : onCancelHold}
+                    disabled={cancelling}
+                    style={{
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      paddingVertical: 11,
+                      borderRadius: 14,
+                      backgroundColor: cancelling ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.06)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255,255,255,0.12)",
+                    }}
+                  >
+                    {cancelling
+                      ? <ActivityIndicator size="small" color={palette.muted} />
+                      : <MaterialCommunityIcons name="sofa-single-outline" size={16} color={palette.muted} />}
+                    <Text style={{ color: palette.muted, fontSize: 13, fontWeight: "800" }}>
+                      {cancelling ? "Đang hủy..." : "Chọn lại ghế"}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={{ flexDirection: "row", gap: 14, borderRadius: 24, padding: 16, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
           <View style={{ width: 96, height: 132, borderRadius: 18, overflow: "hidden", backgroundColor: movie.tone || palette.panel }}>

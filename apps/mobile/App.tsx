@@ -231,6 +231,10 @@ export default function App() {
   const [seatLoadingShowtimeId, setSeatLoadingShowtimeId] = React.useState<number | null>(null);
   const [reminderLoading, setReminderLoading] = React.useState<"schedule" | "cancel" | null>(null);
   const [heldBookingId, setHeldBookingId] = React.useState<number | null>(null);
+  const [holdExpiresAt, setHoldExpiresAt] = React.useState<string | null>(null);
+  const [extendCount, setExtendCount] = React.useState(0);
+  const [extending, setExtending] = React.useState(false);
+  const [cancelling, setCancelling] = React.useState(false);
   const [selectedComboIds, setSelectedComboIds] = React.useState<number[]>([]);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = React.useState<PaymentProvider>("MOMO");
   const [selectedPaymentGatewayMode, setSelectedPaymentGatewayMode] = React.useState<"SANDBOX" | "REAL">("SANDBOX");
@@ -864,6 +868,7 @@ export default function App() {
       setSelectedPaymentProvider("MOMO");
       setSelectedPaymentGatewayMode("SANDBOX");
       setHeldBookingId(null);
+      setHoldExpiresAt(null);
       try {
         await fetchSeatMap(nextShowtime.id);
         navigate({ screen: "seats", tab: activeTab });
@@ -1062,6 +1067,8 @@ export default function App() {
       setSelectedPaymentGatewayMode("SANDBOX");
       setSelectedSeats([]);
       setHeldBookingId(null);
+      setHoldExpiresAt(null);
+      setExtendCount(0);
 
       try {
         const rows = await fetchSeatMap(showtime.id);
@@ -1358,6 +1365,8 @@ export default function App() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.error ?? "Không thể giữ ghế");
       setHeldBookingId(json.id);
+      setHoldExpiresAt(json.expiresAt);
+      setExtendCount(0);
       navigate({ screen: "checkout", tab: activeTab });
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Không thể giữ ghế", "error", "seat");
@@ -1366,6 +1375,67 @@ export default function App() {
       setHolding(false);
     }
   };
+
+  const handleHoldExpired = React.useCallback(() => {
+    showToast("Thời gian giữ ghế đã hết. Vui lòng chọn lại ghế.", "error", "seat");
+    setHeldBookingId(null);
+    setHoldExpiresAt(null);
+    setExtendCount(0);
+    setSelectedSeats([]);
+    setSelectedComboIds([]);
+    setVoucherCode("");
+    goBack();
+  }, [goBack, showToast]);
+
+  const extendCurrentHold = React.useCallback(async (): Promise<boolean> => {
+    if (!heldBookingId || extending) return false;
+    setExtending(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/bookings/${heldBookingId}/extend`, {
+        method: "POST",
+        headers: { ...apiHeaders() },
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? "Không thể gia hạn giữ ghế");
+      setHoldExpiresAt(json.expiresAt);
+      setExtendCount(Number(json.extendCount ?? 0));
+      showToast("Đã gia hạn thêm 5 phút. Hãy thanh toán nhanh nhé!", "success", "seat");
+      return true;
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Không thể gia hạn giữ ghế", "error", "seat");
+      return false;
+    } finally {
+      setExtending(false);
+    }
+  }, [apiBaseUrl, apiHeaders, extending, heldBookingId, showToast]);
+
+  const cancelCurrentHold = React.useCallback(async () => {
+    if (!heldBookingId || cancelling) return;
+    setCancelling(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/bookings/${heldBookingId}`, {
+        method: "DELETE",
+        headers: { ...apiHeaders() },
+      });
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        throw new Error(json.error ?? "Không thể hủy giữ ghế");
+      }
+      showToast("Đã hủy giữ ghế. Bạn có thể chọn ghế mới.", "info", "seat");
+    } catch (error) {
+      // Dù API lỗi, vẫn reset state để user không bị stuck
+      showToast(error instanceof Error ? error.message : "Đã hủy giữ ghế", "info", "seat");
+    } finally {
+      setCancelling(false);
+      setHeldBookingId(null);
+      setHoldExpiresAt(null);
+      setExtendCount(0);
+      setSelectedSeats([]);
+      setSelectedComboIds([]);
+      setVoucherCode("");
+      goBack();
+    }
+  }, [apiBaseUrl, apiHeaders, cancelling, goBack, heldBookingId, showToast]);
 
   const confirmBooking = async () => {
     if (confirming) return;
@@ -1774,6 +1844,13 @@ export default function App() {
         setVoucherCode={setVoucherCode}
         appliedVoucherCode={voucherCode.trim() ? voucherCode.trim().toUpperCase() : null}
         estimatedDiscount={estimateVoucherDiscount()}
+        holdExpiresAt={holdExpiresAt}
+        onHoldExpired={handleHoldExpired}
+        extendCount={extendCount}
+        onExtendHold={extendCurrentHold}
+        onCancelHold={cancelCurrentHold}
+        extending={extending}
+        cancelling={cancelling}
       />
     );
   } else if (activeTab === "home") {
