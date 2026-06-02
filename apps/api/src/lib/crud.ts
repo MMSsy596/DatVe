@@ -11,6 +11,7 @@ export type MoviePayload = {
   releaseDate?: string | null;
   status: "COMING_SOON" | "NOW_SHOWING" | "TRENDING";
   rating: number;
+  ageRating?: "P" | "K" | "T13" | "T16" | "T18";
   badge?: string | null;
   posterUrl?: string | null;
   bannerUrl?: string | null;
@@ -260,7 +261,7 @@ export async function listMovies() {
   await ensureRuntimeSchema();
   const pool = getPool();
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, slug, title, subtitle, synopsis, genre, duration_minutes, release_date, status, rating, badge, poster_url, banner_url, trailer_url, highlight_color, is_featured, box_office_rank
+    `SELECT id, slug, title, subtitle, synopsis, genre, duration_minutes, release_date, status, rating, age_rating, badge, poster_url, banner_url, trailer_url, highlight_color, is_featured, box_office_rank
      FROM movies
      ORDER BY is_featured DESC, box_office_rank ASC, id DESC`
   );
@@ -272,8 +273,8 @@ export async function createMovie(payload: MoviePayload) {
   const pool = getPool();
   const [result] = await pool.execute<ResultSetHeader>(
     `INSERT INTO movies
-      (slug, title, subtitle, synopsis, genre, duration_minutes, release_date, status, rating, badge, poster_url, banner_url, trailer_url, highlight_color, is_featured, box_office_rank)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (slug, title, subtitle, synopsis, genre, duration_minutes, release_date, status, rating, age_rating, badge, poster_url, banner_url, trailer_url, highlight_color, is_featured, box_office_rank)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       payload.slug,
       payload.title,
@@ -284,6 +285,7 @@ export async function createMovie(payload: MoviePayload) {
       payload.releaseDate ?? null,
       payload.status,
       payload.rating,
+      payload.ageRating ?? "T16",
       payload.badge ?? null,
       payload.posterUrl ?? null,
       payload.bannerUrl ?? null,
@@ -301,7 +303,7 @@ export async function updateMovie(id: number, payload: MoviePayload) {
   const pool = getPool();
   await pool.execute(
     `UPDATE movies
-     SET slug = ?, title = ?, subtitle = ?, synopsis = ?, genre = ?, duration_minutes = ?, release_date = ?, status = ?, rating = ?, badge = ?, poster_url = ?, banner_url = ?, trailer_url = ?, highlight_color = ?, is_featured = ?, box_office_rank = ?
+     SET slug = ?, title = ?, subtitle = ?, synopsis = ?, genre = ?, duration_minutes = ?, release_date = ?, status = ?, rating = ?, age_rating = ?, badge = ?, poster_url = ?, banner_url = ?, trailer_url = ?, highlight_color = ?, is_featured = ?, box_office_rank = ?
      WHERE id = ?`,
     [
       payload.slug,
@@ -313,6 +315,7 @@ export async function updateMovie(id: number, payload: MoviePayload) {
       payload.releaseDate ?? null,
       payload.status,
       payload.rating,
+      payload.ageRating ?? "T16",
       payload.badge ?? null,
       payload.posterUrl ?? null,
       payload.bannerUrl ?? null,

@@ -22,6 +22,7 @@ export type Movie = {
   genre: string;
   runtime: string;
   score: string;
+  ageRating?: "P" | "K" | "T13" | "T16" | "T18";
   badge: string;
   tone: string;
   description: string;

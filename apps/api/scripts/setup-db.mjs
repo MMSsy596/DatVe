@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS movies (
   release_date DATE NULL,
   status ENUM('COMING_SOON','NOW_SHOWING','TRENDING') NOT NULL DEFAULT 'NOW_SHOWING',
   rating DECIMAL(3,1) NOT NULL DEFAULT 0,
+  age_rating ENUM('P','K','T13','T16','T18') NOT NULL DEFAULT 'T16',
   badge VARCHAR(80) NULL,
   poster_url TEXT NULL,
   banner_url TEXT NULL,
@@ -622,6 +623,11 @@ const movies = movieSeedSource.map(([title, author, genre, duration, rating, sho
   const status = index < 18 ? (index % 5 === 0 ? "TRENDING" : "NOW_SHOWING") : "COMING_SOON";
   const releaseBase = addDays(new Date(), status === "COMING_SOON" ? 3 + (index - 18) : -(index % 20) - 1);
   const slug = slugify(title);
+  
+  // Age rating distribution: P, K, T13, T16, T18
+  const ageRatings = ["P", "K", "T13", "T16", "T18"];
+  const ageRating = ageRatings[index % ageRatings.length];
+  
   return {
     id: index + 1,
     slug,
@@ -633,6 +639,7 @@ const movies = movieSeedSource.map(([title, author, genre, duration, rating, sho
     releaseDate: toMysqlDate(releaseBase),
     status,
     rating: rating > 0 ? rating : 7.2 + ((index % 8) * 0.2),
+    ageRating,
     badge: status === "COMING_SOON" ? randomPick(badgesSoon, index) : randomPick(badgesNow, index),
     posterUrl: buildMovieImageUrl(slug, title, shortDesc, "poster", index),
     bannerUrl: buildMovieImageUrl(slug, title, shortDesc, "banner", index),
@@ -767,7 +774,7 @@ await bulkInsert(
 
 await bulkInsert(
   "movies",
-  ["id", "slug", "title", "subtitle", "synopsis", "genre", "duration_minutes", "release_date", "status", "rating", "badge", "poster_url", "banner_url", "trailer_url", "highlight_color", "is_featured", "box_office_rank"],
+  ["id", "slug", "title", "subtitle", "synopsis", "genre", "duration_minutes", "release_date", "status", "rating", "age_rating", "badge", "poster_url", "banner_url", "trailer_url", "highlight_color", "is_featured", "box_office_rank"],
   movies.map((movie) => [
     movie.id,
     movie.slug,
@@ -779,6 +786,7 @@ await bulkInsert(
     movie.releaseDate,
     movie.status,
     movie.rating,
+    movie.ageRating,
     movie.badge,
     movie.posterUrl,
     movie.bannerUrl,

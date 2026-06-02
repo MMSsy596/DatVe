@@ -104,6 +104,12 @@ export async function ensureRuntimeSchema() {
         await pool.execute("ALTER TABLE movies ADD COLUMN trailer_url TEXT NULL AFTER banner_url");
       }
 
+      if (!(await hasColumn(pool, "movies", "age_rating"))) {
+        await pool.execute(
+          "ALTER TABLE movies ADD COLUMN age_rating ENUM('P','K','T13','T16','T18') NOT NULL DEFAULT 'T16' AFTER rating"
+        );
+      }
+
       if (!(await hasColumn(pool, "payments", "provider_order_id"))) {
         await pool.execute(
           "ALTER TABLE payments ADD COLUMN provider_order_id VARCHAR(120) NULL AFTER provider_txn_ref"

@@ -2050,7 +2050,11 @@ export function MovieDetailScreen(props: { movie: Movie; onBack: () => void; onB
 
           <View style={{ position: "absolute", top: 16, left: 16, flexDirection: "row", gap: 8 }}>
             <Text style={{ color: "#fff6f0", fontSize: 11, fontWeight: "900", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.42)" }}>{movie.badge || "IMAX"}</Text>
-            <Text style={{ color: "#fff6f0", fontSize: 11, fontWeight: "900", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(195,13,18,0.38)" }}>T16</Text>
+            {movie.ageRating && (
+              <Text style={{ color: "#fff6f0", fontSize: 11, fontWeight: "900", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(195,13,18,0.38)" }}>
+                {movie.ageRating === "T13" ? "13+" : movie.ageRating === "T16" ? "16+" : movie.ageRating === "T18" ? "18+" : movie.ageRating}
+              </Text>
+            )}
           </View>
 
           <View style={{ marginTop: "auto", padding: 20, gap: 10 }}>

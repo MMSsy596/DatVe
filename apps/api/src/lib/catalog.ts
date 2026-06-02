@@ -18,6 +18,7 @@ type MovieRow = RowDataPacket & {
   genre: string;
   duration_minutes: number;
   rating: string | number;
+  age_rating: "P" | "K" | "T13" | "T16" | "T18";
   badge: string | null;
   poster_url: string | null;
   banner_url: string | null;
@@ -64,7 +65,7 @@ export async function getCatalogData() {
   );
 
   const [movies] = await pool.query<MovieRow[]>(
-    `SELECT id, slug, title, subtitle, genre, duration_minutes, rating, badge, poster_url, banner_url, trailer_url, highlight_color, status, is_featured, box_office_rank
+    `SELECT id, slug, title, subtitle, genre, duration_minutes, rating, age_rating, badge, poster_url, banner_url, trailer_url, highlight_color, status, is_featured, box_office_rank
      FROM movies
      ORDER BY is_featured DESC, box_office_rank ASC, id ASC`
   );
@@ -118,6 +119,7 @@ export async function getCatalogData() {
       genre: item.genre,
       durationMinutes: item.duration_minutes,
       rating: Number(item.rating),
+      ageRating: item.age_rating,
       badge: item.badge,
       posterUrl: item.poster_url,
       bannerUrl: item.banner_url,

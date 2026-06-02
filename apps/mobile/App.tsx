@@ -222,6 +222,8 @@ export default function App() {
   const [exploreWatchlistFilter, setExploreWatchlistFilter] = React.useState<"ALL" | "ONLY">("ALL");
   const [holding, setHolding] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
+  const [ageConfirmVisible, setAgeConfirmVisible] = React.useState(false);
+  const [ageConfirmAccepted, setAgeConfirmAccepted] = React.useState(false);
   const [favoriteSubmitting, setFavoriteSubmitting] = React.useState(false);
   const [watchlistSubmitting, setWatchlistSubmitting] = React.useState(false);
   const [ticketOpeningId, setTicketOpeningId] = React.useState<number | null>(null);
@@ -449,6 +451,7 @@ export default function App() {
         genre: item.genre,
         runtime: `${item.durationMinutes} phút`,
         score: String(item.rating),
+        ageRating: item.ageRating ?? "T16",
         badge: item.badge ?? "Đang chiếu",
         tone: item.highlightColor ?? "#c41010",
         description: item.subtitle ?? "Phim đang được quản lý từ backend Đặt Vé.",
@@ -1370,6 +1373,14 @@ export default function App() {
       promptAuth("Hãy đăng nhập để thanh toán vé.", { screen: "checkout", tab: activeTab });
       return;
     }
+    
+    // Check age rating and show confirmation if needed
+    const ageRating = selectedMovie.ageRating || "T16";
+    if (!ageConfirmAccepted && ageRating !== "P") {
+      setAgeConfirmVisible(true);
+      return;
+    }
+    
     if (!heldBookingId) return showToast("Cần giữ ghế trước khi tạo booking.", "error", "seat");
     setConfirming(true);
     try {
@@ -2100,6 +2111,38 @@ export default function App() {
           ))}
         </View>
       ) : null}
+
+      {/* Age Confirmation Modal */}
+      <Modal visible={ageConfirmVisible} transparent animationType="fade" onRequestClose={() => setAgeConfirmVisible(false)}>
+        <View style={styles.aiConfirmBackdrop}>
+          <View style={styles.aiConfirmCard}>
+            <Text style={styles.aiConfirmTitle}>Xác nhận độ tuổi</Text>
+            <Text style={styles.aiConfirmBody}>
+              {(() => {
+                const rating = selectedMovie.ageRating || "T16";
+                const ageLimit = rating === "P" ? "mọi lứa tuổi" : rating === "K" ? "trẻ em dưới 13 tuổi (cần có cha mẹ)" : rating === "T13" ? "từ đủ 13 tuổi trở lên" : rating === "T16" ? "từ đủ 16 tuổi trở lên" : "từ đủ 18 tuổi trở lên";
+                return `Tôi xác nhận mua vé cho người xem ${ageLimit} và đồng ý cung cấp giấy tờ tùy thân để xác thực độ tuổi người xem. CinePlus sẽ không hoàn tiền nếu người xem không đáp ứng đủ điều kiện. Theo quy định của Bộ Văn hóa, Thể thao và Du lịch.`;
+              })()}
+            </Text>
+            <View style={styles.aiConfirmActions}>
+              <Pressable style={[styles.paymentMethod, styles.aiConfirmAction]} onPress={() => setAgeConfirmVisible(false)}>
+                <Text style={styles.paymentMethodText}>Hủy</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.paymentMethod, styles.paymentMethodActive, styles.aiConfirmAction]}
+                onPress={() => {
+                  setAgeConfirmAccepted(true);
+                  setAgeConfirmVisible(false);
+                  // Retry booking after confirmation
+                  setTimeout(() => confirmBooking(), 100);
+                }}
+              >
+                <Text style={[styles.paymentMethodText, styles.paymentMethodTextActive]}>Tôi đồng ý</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
