@@ -20,6 +20,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "checkin", label: "Check-in", icon: "✓" },
   { id: "banners", label: "Banners", icon: "▱" },
   { id: "users", label: "Người dùng", icon: "◎" },
+  { id: "feedbacks", label: "Góp ý", icon: "✉" },
 ];
 
 export function Sidebar({
@@ -28,12 +29,14 @@ export function Sidebar({
   user,
   onLogout,
   pendingPayments,
+  pendingFeedbacks,
 }: {
   active: ActiveSection;
   onNavigate: (s: ActiveSection) => void;
   user: { fullName: string; role: string } | null;
   onLogout: () => void;
   pendingPayments?: number;
+  pendingFeedbacks?: number;
 }) {
   return (
     <aside
@@ -75,7 +78,11 @@ export function Sidebar({
         <ul className="space-y-2.5">
           {MENU_ITEMS.map((item) => {
             const isActive = active === item.id;
-            const hasBadge = item.id === "payments" && pendingPayments && pendingPayments > 0;
+            const hasBadge =
+              (item.id === "payments" && pendingPayments && pendingPayments > 0) ||
+              (item.id === "feedbacks" && pendingFeedbacks && pendingFeedbacks > 0);
+            const badgeCount =
+              item.id === "payments" ? pendingPayments : pendingFeedbacks;
             return (
               <li key={item.id}>
                 <button
@@ -115,7 +122,7 @@ export function Sidebar({
                         boxShadow: "0 0 10px rgba(230,57,70,0.5)",
                       }}
                     >
-                      {pendingPayments}
+                      {badgeCount}
                     </span>
                   )}
                   

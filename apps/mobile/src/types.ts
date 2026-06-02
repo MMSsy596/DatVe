@@ -1,7 +1,7 @@
 import React from "react";
 
 export type TabId = "home" | "explore" | "assistant" | "favorites" | "watchlist" | "tickets" | "profile";
-export type ScreenId = "tabs" | "movie" | "seats" | "checkout" | "ticket" | "auth";
+export type ScreenId = "tabs" | "movie" | "seats" | "checkout" | "ticket" | "auth" | "feedback";
 export type PaymentProvider = "MOMO" | "ZALOPAY" | "VNPAY";
 export type ToastTone = "info" | "success" | "error";
 export type ToastKind = "ticket" | "favorite" | "seat" | "payment" | "reminder" | "auth" | "system";
@@ -203,3 +203,25 @@ export type AssistantMessage = {
 };
 
 export type Setter<T> = React.Dispatch<React.SetStateAction<T>>;
+
+export type FeedbackItem = {
+  id: number;
+  userId: number;
+  type: "SERVICE" | "CINEMA" | "TICKET" | "OTHER";
+  cinemaId: number | null;
+  bookingId: number | null;
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  status: "PENDING" | "PROCESSING" | "RESOLVED" | "REJECTED";
+  responseContent: string | null;
+  responderId: number | null;
+  respondedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customerName: string;
+  customerEmail: string;
+  cinemaName: string | null;
+  bookingCode: string | null;
+  responderName?: string | null;
+};

@@ -20,6 +20,7 @@ import {
   TicketsScreen,
   Toast,
   UserMovieListScreen,
+  FeedbackScreen,
 } from "./src/components";
 import {
   useFonts,
@@ -50,6 +51,7 @@ import {
   ToastPayload,
   ToastTone,
   Voucher,
+  FeedbackItem,
 } from "./src/types";
 
 const configuredApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
@@ -238,6 +240,9 @@ export default function App() {
   const [selectedComboIds, setSelectedComboIds] = React.useState<number[]>([]);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = React.useState<PaymentProvider>("MOMO");
   const [selectedPaymentGatewayMode, setSelectedPaymentGatewayMode] = React.useState<"SANDBOX" | "REAL">("SANDBOX");
+  const [feedbacksData, setFeedbacksData] = React.useState<FeedbackItem[]>([]);
+  const [cinemasData, setCinemasData] = React.useState<any[]>([]);
+  const [feedbackSubmitting, setFeedbackSubmitting] = React.useState(false);
   const [customerName, setCustomerName] = React.useState("Nguyễn Văn A");
   const [customerEmail, setCustomerEmail] = React.useState("user@cineplus.local");
   const [customerPhone, setCustomerPhone] = React.useState("0900000002");
@@ -441,11 +446,13 @@ export default function App() {
   const loadRemoteData = React.useCallback(async () => {
     setLoadingRemote(true);
     try {
-      const [meJson, catalog] = await Promise.all([
+      const [meJson, catalog, cinemasJson] = await Promise.all([
         authToken ? requestJson("/auth/me") : Promise.resolve(null),
         requestJson("/catalog"),
+        requestJson("/cinemas").catch(() => ({ cinemas: [] })),
       ]);
       setSessionUser(meJson?.user ?? null);
+      setCinemasData(cinemasJson?.cinemas ?? []);
 
       const remoteMovies: Movie[] = (catalog.featuredMovies ?? []).map((item: any) => ({
         id: item.id,
@@ -514,16 +521,18 @@ export default function App() {
         setProfileData(null);
         setVouchersData([]);
         setRemindersData([]);
+        setFeedbacksData([]);
         return;
       }
 
-      const [bookingJson, favoriteJson, watchlistJson, profileJson, voucherJson, reminderJson] = await Promise.all([
+      const [bookingJson, favoriteJson, watchlistJson, profileJson, voucherJson, reminderJson, feedbackJson] = await Promise.all([
         requestJson("/bookings"),
         requestJson("/favorites"),
         requestJson("/watchlist"),
         requestJson("/profile"),
         requestJson("/vouchers"),
         requestJson("/reminders"),
+        requestJson("/feedbacks").catch(() => ({ feedbacks: [] })),
       ]);
 
       setTickets(
@@ -543,6 +552,7 @@ export default function App() {
       setProfileData(profileJson);
       setVouchersData(voucherJson.vouchers ?? []);
       setRemindersData(reminderJson.reminders ?? []);
+      setFeedbacksData(feedbackJson?.feedbacks ?? []);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không tải được dữ liệu";
       if (authToken && /unauthorized|token|đăng nhập|phiên/i.test(message.toLowerCase())) {
@@ -554,6 +564,7 @@ export default function App() {
         setWatchlistMovieIds([]);
         setVouchersData([]);
         setRemindersData([]);
+        setFeedbacksData([]);
       }
       showToast(message, "error", "system");
     } finally {
@@ -1335,6 +1346,35 @@ export default function App() {
     }
   };
 
+  const handleSubmitFeedback = React.useCallback(
+    async (payload: {
+      type: "SERVICE" | "CINEMA" | "TICKET" | "OTHER";
+      cinemaId: number | null;
+      bookingId: number | null;
+      title: string;
+      content: string;
+      imageUrl: string;
+    }) => {
+      setFeedbackSubmitting(true);
+      try {
+        await requestJson("/feedbacks", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        showToast("Gửi góp ý thành công!", "success", "system");
+        await loadRemoteData();
+        return true;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Không thể gửi góp ý";
+        showToast(message, "error", "system");
+        return false;
+      } finally {
+        setFeedbackSubmitting(false);
+      }
+    },
+    [loadRemoteData, requestJson, showToast]
+  );
+
   const toggleSeat = React.useCallback((seats: SeatSelection[]) => {
     setSelectedSeats((prev) =>
       seats.every((seat) => prev.some((item) => item.seatCode === seat.seatCode && item.seatType === seat.seatType))
@@ -1816,6 +1856,23 @@ export default function App() {
     );
   } else if (screen === "ticket" && selectedTicketDetail) {
     content = <TicketDetailScreen ticket={selectedTicketDetail} onBack={() => goBack()} onScheduleReminder={scheduleReminder} onCancelReminder={cancelTicketReminder} reminderLoading={reminderLoading} />;
+  } else if (screen === "feedback") {
+    content = (
+      <FeedbackScreen
+        onBack={() => goBack()}
+        cinemas={cinemasData}
+        bookings={tickets.map((t) => ({
+          id: t.bookingId,
+          bookingCode: t.bookingCode,
+          showtime: { movieTitle: t.movie }
+        }))}
+        feedbacks={feedbacksData}
+        submitting={feedbackSubmitting}
+        onSubmit={handleSubmitFeedback}
+        onReload={loadRemoteData}
+        loading={loadingRemote}
+      />
+    );
   } else if (screen === "checkout") {
     content = (
       <CheckoutScreen
@@ -1951,6 +2008,13 @@ export default function App() {
         onLogout={logout}
         loading={loadingRemote}
         logoutLoading={logoutLoading}
+        onNavigateToFeedback={() => {
+          if (!authToken) {
+            promptAuth("Bạn cần đăng nhập để gửi góp ý.");
+          } else {
+            navigate({ screen: "feedback", tab: activeTab });
+          }
+        }}
       />
     );
   }

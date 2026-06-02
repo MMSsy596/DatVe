@@ -10,7 +10,29 @@ export type ActiveSection =
   | "payments"
   | "checkin"
   | "banners"
-  | "users";
+  | "users"
+  | "feedbacks";
+
+export type FeedbackItem = {
+  id: number;
+  userId: number;
+  type: "SERVICE" | "CINEMA" | "TICKET" | "OTHER";
+  cinemaId: number | null;
+  bookingId: number | null;
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  status: "PENDING" | "PROCESSING" | "RESOLVED" | "REJECTED";
+  responseContent: string | null;
+  responderId: number | null;
+  respondedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customerName: string;
+  customerEmail: string;
+  cinemaName: string | null;
+  bookingCode: string | null;
+};
 
 export type Item = Record<string, unknown>;
 

@@ -134,6 +134,40 @@ export async function ensureRuntimeSchema() {
         );
       }
 
+      if (!(await hasColumn(pool, "users", "cinema_id"))) {
+        await pool.execute(
+          "ALTER TABLE users ADD COLUMN cinema_id BIGINT UNSIGNED NULL AFTER role, ADD CONSTRAINT fk_users_cinema FOREIGN KEY (cinema_id) REFERENCES cinemas(id) ON DELETE SET NULL"
+        );
+      }
+
+      if (!(await hasTable(pool, "feedbacks"))) {
+        await pool.execute(`
+          CREATE TABLE feedbacks (
+            id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+            user_id BIGINT UNSIGNED NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            cinema_id BIGINT UNSIGNED NULL,
+            booking_id BIGINT UNSIGNED NULL,
+            title VARCHAR(255) NOT NULL,
+            content TEXT NOT NULL,
+            image_url TEXT NULL,
+            status ENUM('PENDING', 'PROCESSING', 'RESOLVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+            response_content TEXT NULL,
+            responder_id BIGINT UNSIGNED NULL,
+            responded_at DATETIME NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_feedbacks_user (user_id),
+            KEY idx_feedbacks_cinema (cinema_id),
+            KEY idx_feedbacks_status (status),
+            CONSTRAINT fk_feedbacks_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_feedbacks_cinema FOREIGN KEY (cinema_id) REFERENCES cinemas(id) ON DELETE SET NULL,
+            CONSTRAINT fk_feedbacks_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL,
+            CONSTRAINT fk_feedbacks_responder FOREIGN KEY (responder_id) REFERENCES users(id) ON DELETE SET NULL
+          )
+        `);
+      }
+
       if (!(await hasTable(pool, "user_push_tokens"))) {
         await pool.execute(`
           CREATE TABLE user_push_tokens (

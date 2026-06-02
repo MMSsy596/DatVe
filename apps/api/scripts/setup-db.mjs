@@ -139,10 +139,12 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NULL,
   phone VARCHAR(30) NULL,
   role ENUM('USER','ADMIN','STAFF') NOT NULL DEFAULT 'USER',
+  cinema_id BIGINT UNSIGNED NULL,
   avatar_url TEXT NULL,
   password_updated_at DATETIME NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_users_cinema FOREIGN KEY (cinema_id) REFERENCES cinemas(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -438,7 +440,7 @@ const users = [
   { id: 9, fullName: "Đặng Thanh Trúc", email: "thanh.truc@cineplus.local", phone: "0900000009", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Dang%20Thanh%20Truc", password: "User@123" },
   { id: 10, fullName: "Phạm Đức Khoa", email: "duc.khoa@cineplus.local", phone: "0900000010", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Pham%20Duc%20Khoa", password: "User@123" },
   { id: 11, fullName: "Phan Nhật Vy", email: "nhat.vy@cineplus.local", phone: "0900000011", role: "USER", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Phan%20Nhat%20Vy", password: "User@123" },
-  { id: 12, fullName: "Cinema Ops 01", email: "ops01@cineplus.local", phone: "0900000012", role: "STAFF", avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Cinema%20Ops%2001", password: "Staff@123" },
+  { id: 12, fullName: "Cinema Ops 01", email: "ops01@cineplus.local", phone: "0900000012", role: "STAFF", cinemaId: 1, avatarUrl: "https://api.dicebear.com/9.x/initials/svg?seed=Cinema%20Ops%2001", password: "Staff@123" },
 ];
 
 const vouchers = [
@@ -762,8 +764,8 @@ for (let dayOffset = 3; dayOffset < 10; dayOffset += 1) {
 
 await bulkInsert(
   "users",
-  ["id", "full_name", "email", "password_hash", "phone", "role", "avatar_url"],
-  users.map((user) => [user.id, user.fullName, user.email, hashPassword(user.password), user.phone, user.role, user.avatarUrl])
+  ["id", "full_name", "email", "password_hash", "phone", "role", "cinema_id", "avatar_url"],
+  users.map((user) => [user.id, user.fullName, user.email, hashPassword(user.password), user.phone, user.role, user.cinemaId ?? null, user.avatarUrl])
 );
 
 await bulkInsert(

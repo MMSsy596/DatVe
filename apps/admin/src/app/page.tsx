@@ -15,6 +15,7 @@ import { PaymentsSection } from "./sections/PaymentsSection";
 import { CheckinSection } from "./sections/CheckinSection";
 import { BannersSection } from "./sections/BannersSection";
 import { UsersSection } from "./sections/UsersSection";
+import { FeedbacksSection } from "./sections/FeedbacksSection";
 
 import type {
   ActiveSection,
@@ -27,6 +28,7 @@ import type {
   FoodForm,
   VoucherForm,
   BannerForm,
+  FeedbackItem,
 } from "./types";
 
 const apiBase =
@@ -56,6 +58,7 @@ function Topbar({
     checkin: { title: "Check-in", desc: "Xác thực vé tại rạp" },
     banners: { title: "Banners", desc: "Nội dung quảng cáo hiển thị trên ứng dụng" },
     users: { title: "Người dùng", desc: "Tài khoản, vai trò và phân quyền" },
+    feedbacks: { title: "Góp ý khách hàng", desc: "Tiếp nhận, phân loại và phản hồi góp ý" },
   };
   const current = LABELS[section];
 
@@ -138,6 +141,7 @@ export default function AdminPage() {
   const [payments, setPayments] = useState<Item[]>([]);
   const [banners, setBanners] = useState<Item[]>([]);
   const [users, setUsers] = useState<Item[]>([]);
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
 
   // UI state
   const [error, setError] = useState<string | null>(null);
@@ -276,6 +280,7 @@ export default function AdminPage() {
         paymentRes,
         bannerRes,
         usersRes,
+        feedbackRes,
       ] = await Promise.all([
         requestJson("/auth/me"),
         requestJson("/dashboard"),
@@ -288,6 +293,7 @@ export default function AdminPage() {
         requestJson("/operations/payments"),
         requestJson("/banners"),
         requestJson("/admin/users"),
+        requestJson("/feedbacks"),
       ]);
       setMe(meRes.user);
       setStats(dashboard);
@@ -300,6 +306,7 @@ export default function AdminPage() {
       setPayments(paymentRes.payments ?? []);
       setBanners(bannerRes.banners ?? []);
       setUsers(usersRes.users ?? []);
+      setFeedbacks(feedbackRes.feedbacks ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không thể tải dữ liệu");
     } finally {
@@ -366,6 +373,7 @@ export default function AdminPage() {
     setPayments([]);
     setBanners([]);
     setUsers([]);
+    setFeedbacks([]);
   };
 
   // ─── Not logged in ────────────────────────────────────────────────────────
@@ -385,6 +393,7 @@ export default function AdminPage() {
 
   // ─── Pending payments count ───────────────────────────────────────────────
   const pendingPayments = payments.filter((p) => p.review_status === "PENDING").length;
+  const pendingFeedbacks = feedbacks.filter((f) => f.status === "PENDING").length;
 
   // ─── Render section ───────────────────────────────────────────────────────
   const renderSection = () => {
@@ -596,6 +605,20 @@ export default function AdminPage() {
           />
         );
 
+      case "feedbacks":
+        return (
+          <FeedbacksSection
+            feedbacks={feedbacks}
+            onReload={loadAll}
+            onRespond={async (id, responseContent, status) => {
+              await requestJson(`/feedbacks/${id}`, {
+                method: "PATCH",
+                body: JSON.stringify({ responseContent, status }),
+              });
+            }}
+          />
+        );
+
       default:
         return null;
     }
@@ -610,6 +633,7 @@ export default function AdminPage() {
         user={me}
         onLogout={logout}
         pendingPayments={pendingPayments}
+        pendingFeedbacks={pendingFeedbacks}
       />
 
       {/* Main content */}

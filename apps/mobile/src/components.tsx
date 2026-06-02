@@ -7,7 +7,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SvgUri } from "react-native-svg";
 import { WebView } from "react-native-webview";
 import { palette, styles } from "./theme";
-import { AssistantMessage, Banner, ComboItem, Movie, PaymentProvider, ProfileData, ReminderItem, SeatMapRow, SeatSelection, Setter, SessionUser, ShowtimeItem, TicketDetail, TicketItem, ToastKind, ToastTone, Voucher } from "./types";
+import { AssistantMessage, Banner, ComboItem, Movie, PaymentProvider, ProfileData, ReminderItem, SeatMapRow, SeatSelection, Setter, SessionUser, ShowtimeItem, TicketDetail, TicketItem, ToastKind, ToastTone, Voucher, FeedbackItem } from "./types";
 
 const formatCurrency = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
 
@@ -1724,8 +1724,9 @@ export function ProfileScreen(props: {
   onLogout: () => void;
   loading?: boolean;
   logoutLoading?: boolean;
+  onNavigateToFeedback?: () => void;
 }) {
-  const { onReload, profile, sessionUser, reminders, onLogout, loading = false, logoutLoading = false } = props;
+  const { onReload, profile, sessionUser, reminders, onLogout, loading = false, logoutLoading = false, onNavigateToFeedback } = props;
   const [aiAutoBook, setAiAutoBook] = React.useState(true);
   const [aiNotifyDeal, setAiNotifyDeal] = React.useState(true);
   const [systemPush, setSystemPush] = React.useState(true);
@@ -1741,6 +1742,41 @@ export function ProfileScreen(props: {
     { code: "COMBO79", title: "Combo bắp + nước 79.000đ", note: "Hiệu lực đến cuối tuần" },
     { code: "EARLY45", title: "Suất sáng giảm 45.000đ", note: "Khung 08:00 - 11:00" },
   ];
+
+  const ClickableRow = ({
+    title,
+    detail,
+    onPress,
+    icon,
+  }: {
+    title: string;
+    detail: string;
+    onPress: () => void;
+    icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  }) => (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        borderRadius: 18,
+        padding: 12,
+        backgroundColor: "rgba(255,255,255,0.03)",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.08)",
+      }}
+    >
+      <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(195,13,18,0.18)" }}>
+        <MaterialCommunityIcons name={icon} size={18} color="#fff2eb" />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={{ color: palette.text, fontSize: 14, fontWeight: "800" }}>{title}</Text>
+        <Text style={{ color: palette.muted, fontSize: 12 }}>{detail}</Text>
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={20} color={palette.muted} />
+    </Pressable>
+  );
 
   const SettingRow = ({
     title,
@@ -1859,6 +1895,11 @@ export function ProfileScreen(props: {
         <Text style={styles.accountTitle}>Cài đặt AI trợ lý</Text>
         <SettingRow title="AI tự gợi ý suất phù hợp" detail="Tối ưu theo ngân sách và giờ rảnh" value={aiAutoBook} onToggle={setAiAutoBook} icon="robot-outline" />
         <SettingRow title="Thông báo ưu đãi thông minh" detail="Nhắc voucher gần hết hạn" value={aiNotifyDeal} onToggle={setAiNotifyDeal} icon="bell-ring-outline" />
+      </View>
+
+      <View style={styles.accountRow}>
+        <Text style={styles.accountTitle}>Hỗ trợ & Góp ý</Text>
+        <ClickableRow title="Gửi góp ý của bạn" detail="Báo lỗi hoặc đề xuất cải thiện dịch vụ" onPress={() => onNavigateToFeedback?.()} icon="comment-quote-outline" />
       </View>
 
       <View style={styles.accountRow}>
@@ -3473,6 +3514,570 @@ export function TicketDetailScreen({ ticket, onBack, onScheduleReminder, onCance
         <Text style={styles.checkoutPrice}>{formatCurrency(ticket.totalAmount)}</Text>
       </View>
     </ScrollView>
+  );
+}
+
+export function FeedbackScreen(props: {
+  onBack: () => void;
+  cinemas: Array<{ id: number; name: string }>;
+  bookings: Array<{ id: number; bookingCode: string; showtime: { movieTitle: string } }>;
+  feedbacks: FeedbackItem[];
+  submitting: boolean;
+  onSubmit: (payload: {
+    type: "SERVICE" | "CINEMA" | "TICKET" | "OTHER";
+    cinemaId: number | null;
+    bookingId: number | null;
+    title: string;
+    content: string;
+    imageUrl: string;
+  }) => Promise<boolean>;
+  onReload: () => void;
+  loading: boolean;
+}) {
+  const { onBack, cinemas, bookings, feedbacks, submitting, onSubmit, onReload, loading } = props;
+  const [activeTab, setActiveTab] = React.useState<"history" | "new">("new");
+  
+  // Form states
+  const [type, setType] = React.useState<"SERVICE" | "CINEMA" | "TICKET" | "OTHER">("SERVICE");
+  const [selectedCinema, setSelectedCinema] = React.useState<{ id: number; name: string } | null>(null);
+  const [selectedBooking, setSelectedBooking] = React.useState<{ id: number; bookingCode: string; movieTitle: string } | null>(null);
+  const [title, setTitle] = React.useState("");
+  const [content, setContent] = React.useState("");
+  const [imageUrl, setImageUrl] = React.useState("");
+  
+  // Pickers state
+  const [showCinemaPicker, setShowCinemaPicker] = React.useState(false);
+  const [showBookingPicker, setShowBookingPicker] = React.useState(false);
+  
+  // Detail modal state
+  const [selectedFeedback, setSelectedFeedback] = React.useState<FeedbackItem | null>(null);
+
+  const handleSend = async () => {
+    if (!title.trim() || !content.trim()) {
+      return;
+    }
+    const success = await onSubmit({
+      type,
+      cinemaId: selectedCinema?.id ?? null,
+      bookingId: selectedBooking?.id ?? null,
+      title: title.trim(),
+      content: content.trim(),
+      imageUrl: imageUrl.trim(),
+    });
+    if (success) {
+      setTitle("");
+      setContent("");
+      setImageUrl("");
+      setSelectedCinema(null);
+      setSelectedBooking(null);
+      setType("SERVICE");
+      setActiveTab("history");
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    if (status === "PENDING") return "#fabd00";
+    if (status === "PROCESSING") return "#4ba3e3";
+    if (status === "RESOLVED") return "#2ec4b6";
+    return "#ff5c5c";
+  };
+
+  const getStatusLabel = (status: string) => {
+    if (status === "PENDING") return "Chờ xử lý";
+    if (status === "PROCESSING") return "Đang xử lý";
+    if (status === "RESOLVED") return "Đã giải quyết";
+    return "Từ chối";
+  };
+
+  const getTypeLabel = (t: string) => {
+    if (t === "SERVICE") return "Dịch vụ";
+    if (t === "CINEMA") return "Rạp chiếu";
+    if (t === "TICKET") return "Vé xem phim";
+    return "Ý kiến khác";
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Header */}
+      <View style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 18,
+        paddingTop: 12,
+        paddingBottom: 11,
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(255,255,255,0.08)",
+        backgroundColor: palette.bg,
+      }}>
+        <Pressable onPress={onBack} style={{ padding: 4 }}>
+          <Text style={{ color: palette.cyan, fontSize: 14, fontWeight: "800" }}>← Quay lại</Text>
+        </Pressable>
+        <Text style={{ flex: 1, textAlign: "center", marginRight: 60, color: palette.text, fontSize: 18, fontWeight: "900" }}>Hỗ trợ & Góp ý</Text>
+      </View>
+
+      {/* Tabs */}
+      <View style={{ flexDirection: "row", paddingHorizontal: 18, paddingVertical: 12, gap: 10 }}>
+        <Pressable
+          onPress={() => setActiveTab("new")}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            borderRadius: 14,
+            alignItems: "center",
+            backgroundColor: activeTab === "new" ? "rgba(195,13,18,0.9)" : "rgba(255,255,255,0.04)",
+            borderWidth: 1,
+            borderColor: activeTab === "new" ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)",
+          }}
+        >
+          <Text style={{ color: palette.text, fontWeight: "800", fontSize: 13 }}>Gửi góp ý mới</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            setActiveTab("history");
+            onReload();
+          }}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            borderRadius: 14,
+            alignItems: "center",
+            backgroundColor: activeTab === "history" ? "rgba(195,13,18,0.9)" : "rgba(255,255,255,0.04)",
+            borderWidth: 1,
+            borderColor: activeTab === "history" ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)",
+          }}
+        >
+          <Text style={{ color: palette.text, fontWeight: "800", fontSize: 13 }}>Góp ý của tôi</Text>
+        </Pressable>
+      </View>
+
+      {/* Main content */}
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 60, gap: 16 }}>
+        {activeTab === "new" ? (
+          <View style={{ gap: 14 }}>
+            {/* Loại góp ý */}
+            <View style={{ gap: 6 }}>
+              <Text style={{ color: palette.text, fontSize: 13, fontWeight: "800" }}>Loại góp ý</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {(["SERVICE", "CINEMA", "TICKET", "OTHER"] as const).map((t) => (
+                  <Pressable
+                    key={t}
+                    onPress={() => setType(t)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: type === t ? "rgba(115,246,221,0.5)" : "rgba(255,255,255,0.1)",
+                      backgroundColor: type === t ? "rgba(115,246,221,0.12)" : "rgba(255,255,255,0.02)",
+                    }}
+                  >
+                    <Text style={{ color: type === t ? palette.cyan : palette.muted, fontSize: 12, fontWeight: "800" }}>
+                      {getTypeLabel(t)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            {/* Rạp liên quan */}
+            <View style={{ gap: 6 }}>
+              <Text style={{ color: palette.text, fontSize: 13, fontWeight: "800" }}>Rạp chiếu liên quan (tùy chọn)</Text>
+              <Pressable
+                onPress={() => setShowCinemaPicker(!showCinemaPicker)}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderRadius: 14,
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.12)",
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                }}
+              >
+                <Text style={{ color: selectedCinema ? palette.text : palette.muted, fontSize: 13 }}>
+                  {selectedCinema ? selectedCinema.name : "-- Chọn rạp --"}
+                </Text>
+                <MaterialCommunityIcons name="chevron-down" size={18} color={palette.muted} />
+              </Pressable>
+              
+              {showCinemaPicker && (
+                <View style={{
+                  borderRadius: 14,
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.08)",
+                  padding: 8,
+                  gap: 4,
+                }}>
+                  <Pressable
+                    onPress={() => {
+                      setSelectedCinema(null);
+                      setShowCinemaPicker(false);
+                    }}
+                    style={{ padding: 10, borderRadius: 8, backgroundColor: !selectedCinema ? "rgba(255,255,255,0.05)" : "transparent" }}
+                  >
+                    <Text style={{ color: palette.muted, fontSize: 13 }}>Không liên quan đến rạp</Text>
+                  </Pressable>
+                  {cinemas.map((c) => (
+                    <Pressable
+                      key={c.id}
+                      onPress={() => {
+                        setSelectedCinema(c);
+                        setShowCinemaPicker(false);
+                      }}
+                      style={{ padding: 10, borderRadius: 8, backgroundColor: selectedCinema?.id === c.id ? "rgba(115,246,221,0.08)" : "transparent" }}
+                    >
+                      <Text style={{ color: palette.text, fontSize: 13 }}>{c.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Vé liên quan */}
+            <View style={{ gap: 6 }}>
+              <Text style={{ color: palette.text, fontSize: 13, fontWeight: "800" }}>Vé xem phim liên quan (tùy chọn)</Text>
+              <Pressable
+                onPress={() => setShowBookingPicker(!showBookingPicker)}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderRadius: 14,
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.12)",
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                }}
+              >
+                <Text style={{ color: selectedBooking ? palette.text : palette.muted, fontSize: 13 }}>
+                  {selectedBooking ? `${selectedBooking.bookingCode} - ${selectedBooking.movieTitle}` : "-- Chọn mã vé --"}
+                </Text>
+                <MaterialCommunityIcons name="chevron-down" size={18} color={palette.muted} />
+              </Pressable>
+
+              {showBookingPicker && (
+                <View style={{
+                  borderRadius: 14,
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.08)",
+                  padding: 8,
+                  gap: 4,
+                }}>
+                  <Pressable
+                    onPress={() => {
+                      setSelectedBooking(null);
+                      setShowBookingPicker(false);
+                    }}
+                    style={{ padding: 10, borderRadius: 8, backgroundColor: !selectedBooking ? "rgba(255,255,255,0.05)" : "transparent" }}
+                  >
+                    <Text style={{ color: palette.muted, fontSize: 13 }}>Không liên quan đến vé</Text>
+                  </Pressable>
+                  {bookings.length === 0 && (
+                    <Text style={{ color: palette.muted, fontSize: 12, padding: 10 }}>Bạn chưa có vé nào đặt.</Text>
+                  )}
+                  {bookings.map((b) => (
+                    <Pressable
+                      key={b.id}
+                      onPress={() => {
+                        setSelectedBooking({ id: b.id, bookingCode: b.bookingCode, movieTitle: b.showtime.movieTitle });
+                        setShowBookingPicker(false);
+                      }}
+                      style={{ padding: 10, borderRadius: 8, backgroundColor: selectedBooking?.id === b.id ? "rgba(115,246,221,0.08)" : "transparent" }}
+                    >
+                      <Text style={{ color: palette.text, fontSize: 13 }}>{b.bookingCode} - {b.showtime.movieTitle}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Tiêu đề */}
+            <View style={{ gap: 6 }}>
+              <Text style={{ color: palette.text, fontSize: 13, fontWeight: "800" }}>Tiêu đề góp ý</Text>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Vd: Lỗi kết nối thanh toán MoMo, Thái độ nhân viên..."
+                placeholderTextColor={palette.muted}
+                style={styles.input}
+              />
+            </View>
+
+            {/* Nội dung */}
+            <View style={{ gap: 6 }}>
+              <Text style={{ color: palette.text, fontSize: 13, fontWeight: "800" }}>Nội dung chi tiết</Text>
+              <TextInput
+                value={content}
+                onChangeText={setContent}
+                placeholder="Hãy mô tả chi tiết vấn đề bạn gặp phải..."
+                placeholderTextColor={palette.muted}
+                multiline
+                numberOfLines={5}
+                style={[styles.input, { height: 110, textAlignVertical: "top" }]}
+              />
+            </View>
+
+            {/* Ảnh đính kèm (URL) */}
+            <View style={{ gap: 6 }}>
+              <Text style={{ color: palette.text, fontSize: 13, fontWeight: "800" }}>Link ảnh minh họa (nếu có)</Text>
+              <TextInput
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                placeholder="https://image-url.com/photo.jpg"
+                placeholderTextColor={palette.muted}
+                style={styles.input}
+              />
+            </View>
+
+            {/* Gửi */}
+            <View style={{ marginTop: 8 }}>
+              <NeonButton
+                label="Gửi Góp Ý"
+                onPress={handleSend}
+                loading={submitting}
+                disabled={!title.trim() || !content.trim() || submitting}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={{ gap: 12 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={styles.accountTitle}>Lịch sử góp ý</Text>
+              {loading && <ActivityIndicator size="small" color={palette.cyan} />}
+            </View>
+            
+            {feedbacks.length === 0 && !loading && (
+              <View style={{
+                borderRadius: 22,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.08)",
+                padding: 30,
+                alignItems: "center",
+                gap: 8,
+                backgroundColor: "rgba(255,255,255,0.01)",
+              }}>
+                <MaterialCommunityIcons name="email-open-outline" size={32} color={palette.muted} />
+                <Text style={{ color: palette.muted, fontSize: 13 }}>Bạn chưa gửi góp ý nào.</Text>
+              </View>
+            )}
+
+            {feedbacks.map((f) => (
+              <Pressable
+                key={f.id}
+                onPress={() => setSelectedFeedback(f)}
+                style={{
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.06)",
+                  padding: 16,
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  gap: 8,
+                }}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <Text style={{ flex: 1, color: palette.text, fontSize: 15, fontWeight: "900" }} numberOfLines={1}>
+                    {f.title}
+                  </Text>
+                  <View style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                    backgroundColor: `${getStatusColor(f.status)}15`,
+                    borderWidth: 1,
+                    borderColor: `${getStatusColor(f.status)}30`,
+                  }}>
+                    <Text style={{ color: getStatusColor(f.status), fontSize: 10, fontWeight: "900" }}>
+                      {getStatusLabel(f.status)}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={{ color: palette.muted, fontSize: 12 }} numberOfLines={2}>
+                  {f.content}
+                </Text>
+
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                  <Text style={{ color: palette.cyan, fontSize: 11, fontWeight: "800" }}>
+                    {getTypeLabel(f.type)} {f.cinemaName ? `• ${f.cinemaName}` : ""}
+                  </Text>
+                  <Text style={{ color: palette.muted, fontSize: 10 }}>
+                    {new Date(f.createdAt).toLocaleDateString("vi-VN")}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Detail Modal */}
+      <Modal
+        visible={!!selectedFeedback}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedFeedback(null)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.85)",
+          justifyContent: "flex-end",
+        }}>
+          <View style={{
+            backgroundColor: "#161618",
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.1)",
+            paddingHorizontal: 18,
+            paddingTop: 20,
+            paddingBottom: 40,
+            maxHeight: "85%",
+          }}>
+            {selectedFeedback && (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+                {/* Header */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={{ color: palette.text, fontSize: 18, fontWeight: "900" }}>{selectedFeedback.title}</Text>
+                    <Text style={{ color: palette.cyan, fontSize: 12, fontWeight: "800" }}>
+                      Loại: {getTypeLabel(selectedFeedback.type)}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setSelectedFeedback(null)}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 999,
+                      backgroundColor: "rgba(255,255,255,0.1)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <MaterialCommunityIcons name="close" size={16} color={palette.text} />
+                  </Pressable>
+                </View>
+
+                {/* Status indicator */}
+                <View style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: 12,
+                  borderRadius: 14,
+                  backgroundColor: `${getStatusColor(selectedFeedback.status)}12`,
+                  borderWidth: 1,
+                  borderColor: `${getStatusColor(selectedFeedback.status)}24`,
+                }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: getStatusColor(selectedFeedback.status) }} />
+                  <Text style={{ color: getStatusColor(selectedFeedback.status), fontSize: 13, fontWeight: "900" }}>
+                    Trạng thái: {getStatusLabel(selectedFeedback.status)}
+                  </Text>
+                  <Text style={{ color: palette.muted, fontSize: 11, marginLeft: "auto" }}>
+                    Gửi lúc: {formatDateTime(selectedFeedback.createdAt)}
+                  </Text>
+                </View>
+
+                {/* Content */}
+                <View style={{ gap: 6 }}>
+                  <Text style={{ color: palette.muted, fontSize: 12, fontWeight: "700" }}>Chi tiết góp ý</Text>
+                  <Text style={{ color: palette.text, fontSize: 14, lineHeight: 22 }}>{selectedFeedback.content}</Text>
+                </View>
+
+                {/* Image */}
+                {selectedFeedback.imageUrl ? (
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ color: palette.muted, fontSize: 12, fontWeight: "700" }}>Hình ảnh đính kèm</Text>
+                    <Image
+                      source={{ uri: selectedFeedback.imageUrl }}
+                      style={{ width: "100%", height: 180, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.02)" }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                ) : null}
+
+                {/* Meta details */}
+                {(selectedFeedback.cinemaName || selectedFeedback.bookingCode) && (
+                  <View style={{
+                    padding: 14,
+                    borderRadius: 16,
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.06)",
+                    gap: 6,
+                  }}>
+                    {selectedFeedback.cinemaName && (
+                      <Text style={{ color: palette.muted, fontSize: 12 }}>
+                        Rạp liên quan: <Text style={{ color: palette.text, fontWeight: "800" }}>{selectedFeedback.cinemaName}</Text>
+                      </Text>
+                    )}
+                    {selectedFeedback.bookingCode && (
+                      <Text style={{ color: palette.muted, fontSize: 12 }}>
+                        Mã vé liên quan: <Text style={{ color: palette.text, fontWeight: "800" }}>{selectedFeedback.bookingCode}</Text>
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {/* Admin/Manager Response */}
+                {selectedFeedback.responseContent ? (
+                  <View style={{
+                    padding: 16,
+                    borderRadius: 18,
+                    backgroundColor: "rgba(46,196,182,0.07)",
+                    borderWidth: 1,
+                    borderColor: "rgba(46,196,182,0.22)",
+                    gap: 8,
+                    marginTop: 4,
+                  }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <MaterialCommunityIcons name="forum-outline" size={16} color="#2ec4b6" />
+                      <Text style={{ color: "#2ec4b6", fontSize: 13, fontWeight: "900" }}>
+                        Phản hồi từ Ban Quản Lý
+                      </Text>
+                      {selectedFeedback.respondedAt && (
+                        <Text style={{ color: palette.muted, fontSize: 10, marginLeft: "auto" }}>
+                          {formatDateTime(selectedFeedback.respondedAt)}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={{ color: palette.text, fontSize: 13, lineHeight: 20 }}>
+                      {selectedFeedback.responseContent}
+                    </Text>
+                    {selectedFeedback.responderName && (
+                      <Text style={{ color: palette.muted, fontSize: 11, alignSelf: "flex-end", marginTop: 2 }}>
+                        Người phản hồi: {selectedFeedback.responderName}
+                      </Text>
+                    )}
+                  </View>
+                ) : (
+                  <View style={{
+                    padding: 16,
+                    borderRadius: 18,
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.05)",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 4,
+                  }}>
+                    <MaterialCommunityIcons name="clock-outline" size={20} color={palette.muted} />
+                    <Text style={{ color: palette.muted, fontSize: 12, textAlign: "center" }}>
+                      Ý kiến của bạn đã được gửi thành công. Chúng tôi đang kiểm tra và phản hồi sớm nhất có thể.
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
